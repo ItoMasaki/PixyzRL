@@ -1,0 +1,51 @@
+# https://packaging.python.org/en/latest/tutorials/packaging-projects/
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml/
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "serket2"
+version = "0.1.0"
+dependencies = [
+  "torch>=2.1.1",
+  "torchaudio>=2.1.1",
+  "torchvision>=0.16.1",
+  "pixyz>=0.3.3"
+]
+requires-python = ">=3.10"
+authors = [
+  { name = "Lotfi El Hafi", email = "lotfi.elhafi@em.ci.ritsumei.ac.jp" },
+  { name = "Masaki Ito", email = "ito.masaki@em.ci.ritsumei.ac.jp" },
+  { name = "Taichi Sakaguchi", email = "sakaguchi.taichi@em.ci.ritsumei.ac.jp" },
+  { name = "Hiroshi Shirouzu", email = "shirouzu.hiroshi@em.ci.ritsumei.ac.jp" },
+  { name = "Tadahiro Taniguchi", email = "taniguchi@em.ci.ritsumei.ac.jp" },
+  { name = "Tomoaki Nakamura", email = "tnakamura@uec.ac.jp" }
+]
+maintainers = [
+  { name = "Lotfi El Hafi", email = "lotfi.elhafi@em.ci.ritsumei.ac.jp" }
+]
+description = "Symbol Emergence in Robotics Toolkit 2 (Serket 2)"
+readme = { file = "README.md", content-type = "text/markdown" }
+license = { file = "LICENSE" }
+keywords = [
+  "serket2",
+  "serket"
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3.10",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: MIT License",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence"
+]
+
+[project.optional-dependencies]
+gitlab-ci = [
+  "coverage>=7.3.2",
+  "pytest>=7.4.3"
+]
+
+[project.urls]
+Repository = "https://gitlab.com/emlab/Serket2"
