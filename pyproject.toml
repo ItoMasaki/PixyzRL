@@ -6,7 +6,7 @@ requires = ["setuptools >= 61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "serket2"
+name = "pixyzrl"
 version = "0.1.0"
 dependencies = [
   "torch>=2.1.1",
@@ -16,22 +16,17 @@ dependencies = [
 ]
 requires-python = ">=3.10"
 authors = [
-  { name = "Lotfi El Hafi", email = "lotfi.elhafi@em.ci.ritsumei.ac.jp" },
   { name = "Masaki Ito", email = "ito.masaki@em.ci.ritsumei.ac.jp" },
-  { name = "Taichi Sakaguchi", email = "sakaguchi.taichi@em.ci.ritsumei.ac.jp" },
-  { name = "Hiroshi Shirouzu", email = "shirouzu.hiroshi@em.ci.ritsumei.ac.jp" },
-  { name = "Tadahiro Taniguchi", email = "taniguchi@em.ci.ritsumei.ac.jp" },
-  { name = "Tomoaki Nakamura", email = "tnakamura@uec.ac.jp" }
 ]
 maintainers = [
-  { name = "Lotfi El Hafi", email = "lotfi.elhafi@em.ci.ritsumei.ac.jp" }
+  { name = "Masaki Ito", email = "ito.masaki@em.ci.ritsumei.ac.jp" },
 ]
-description = "Symbol Emergence in Robotics Toolkit 2 (Serket 2)"
+description = "Reinforcement Learning with Pixyz (PixyzRL)"
 readme = { file = "README.md", content-type = "text/markdown" }
 license = { file = "LICENSE" }
 keywords = [
-  "serket2",
-  "serket"
+  "pixyzrl",
+  "pixyz"
 ]
 classifiers = [
   "Development Status :: 4 - Beta",
@@ -48,4 +43,4 @@ gitlab-ci = [
 ]
 
 [project.urls]
-Repository = "https://gitlab.com/emlab/Serket2"
+Repository = "https://github.com/ItoMasaki/PixyzRL"
