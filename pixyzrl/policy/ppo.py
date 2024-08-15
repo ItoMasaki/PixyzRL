@@ -1,9 +1,10 @@
-
+import numpy as np
 import torch
-from losses import ClipLoss, MSELoss, RatioLoss
-from memory import RolloutBuffer
 from pixyz.losses import MinLoss, Parameter, ValueLoss
 from pixyz.models import Model
+
+from pixyzrl.losses import ClipLoss, MSELoss, RatioLoss
+from pixyzrl.memory import RolloutBuffer
 
 
 class PPO(Model):
@@ -43,7 +44,7 @@ class PPO(Model):
         #########################
         #      Setup model      #
         #########################
-        super().__init__(loss=loss_func, distributions=[self.actor, self.critic], retain_graph=False, optimizer=torch.optim.Adam, optimizer_params={"lr": 0.0002})
+        super().__init__(loss=loss_func, distributions=[self.actor, self.critic], optimizer=torch.optim.Adam, optimizer_params={"lr": 0.0002})
 
         self.optimizer = torch.optim.Adam([{"params": self.actor.parameters(), "lr": 0.0002}, {"params": self.critic.parameters(), "lr": 0.0002}])
 
@@ -55,8 +56,8 @@ class PPO(Model):
             state = state.to(self.device).detach()
             belief = belief.to(self.device).detach()
 
-            action = self.actor_old.sample({"s_tn1": state, "h_tn1": belief})["a_tn1"].detach()
-            state_val = self.critic.sample({"s_tn1": state, "h_tn1": belief})["v_tn1"].detach()
+            action = self.actor_old.sample({"s_t": state, "z_t": belief})["a_t"].detach()
+            state_val = self.critic.sample({"s_t": state, "z_t": belief})["v_t"].detach()
 
             self.buffer.states.append(state)
             self.buffer.beliefs.append(belief)
@@ -64,7 +65,7 @@ class PPO(Model):
             self.buffer.actions.append(action)
             self.buffer.state_values.append(state_val)
 
-            return action.detach().cpu().numpy()
+            return action.detach().cpu().numpy().astype(np.float64)
 
     def get_discount_reward(self):
         rewards = []
