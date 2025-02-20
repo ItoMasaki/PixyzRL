@@ -45,15 +45,15 @@ class ExperienceReplay(Dataset):
 
         """
         if not nonterminated:
-            np.save(
-                f"data/{self.idx}.npy",
-                {
-                    "observations": np.array(self.observations),
-                    "actions": np.array(self.actions),
-                    "rewards": np.array(self.rewards),
-                    "nonterminated": np.array(self.nonterminated),
-                },
-            )
+            # np.save(
+            #     f"data/{self.idx}.npy",
+            #     {
+            #         "observations": np.array(self.observations),
+            #         "actions": np.array(self.actions),
+            #         "rewards": np.array(self.rewards),
+            #         "nonterminated": np.array(self.nonterminated),
+            #     },
+            # )
 
             self.observations = []
             self.actions = []
@@ -69,7 +69,7 @@ class ExperienceReplay(Dataset):
             self.nonterminated.append([nonterminated])
 
     def prepare(self) -> None:
-        observations: list[NDArray[np.float64]] = [np.ndarray((0, 96, 96, 3), dtype=np.int64) for _ in range(self.batch_size)]
+        observations: list[NDArray[np.float64]] = [np.ndarray((0, 64, 64, 3), dtype=np.int64) for _ in range(self.batch_size)]
         actions: list[NDArray[np.float64]] = [np.ndarray((0, 3)) for _ in range(self.batch_size)]
         rewards: list[NDArray[np.float64]] = [np.ndarray((0, 1)) for _ in range(self.batch_size)]
         nonterminated: list[NDArray[np.float64]] = [np.ndarray((0, 1)) for _ in range(self.batch_size)]
@@ -152,36 +152,22 @@ class ExperienceReplay(Dataset):
 
 
 class RolloutBuffer:
-    def __init__(self):
+    """Buffer for storing rollout data."""
+
+    def __init__(self) -> None:
+        """Initialize the buffer."""
         self.actions = []
         self.states = []
-        self.beliefs = []
         self.logprobs = []
         self.rewards = []
         self.state_values = []
         self.is_terminals = []
 
-    def clear(self):
+    def clear(self) -> None:
+        """Clear the buffer."""
         del self.actions[:]
         del self.states[:]
-        del self.beliefs[:]
         del self.logprobs[:]
         del self.rewards[:]
         del self.state_values[:]
         del self.is_terminals[:]
-
-    def compute_returns_and_advantage(self, last_values, dones):
-        last_values = last_values.cpu().flatten()
-
-        last_gae_lam = 0
-        for step in reversed(range(self.buffer_size)):
-            if step == self.buffer_size - 1:
-                next_non_terminal = 1.0 - dones.to(torch.float32)
-                next_values = last_values
-            else:
-                next_non_terminal = 1.0 - self.episode_starts[step + 1]
-                next_values = self.values[step + 1]
-            delta = self.rewards[step] + gamma * next_values * next_non_terminal - self.values[step]
-            last_gae_lam = delta + gamma * gae_lambda * next_non_terminal * last_gae_lam
-            self.advantages[step] = last_gae_lam
-        self.returns = self.advantages + self.values

@@ -14,7 +14,7 @@ dependencies = [
   "torchvision>=0.16.1",
   "pixyz",
   "gymnasium[box2d]",
-  "cpprb"
+  "torchrl",
 ]
 requires-python = ">=3.10"
 authors = [

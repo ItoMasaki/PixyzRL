@@ -12,18 +12,19 @@ class Encoder(dists.Normal):
         super().__init__(var=["s_t"], cond_var=["o_t", "z_t"], name="p")
         self.feature_extractor = nn.Sequential(  # models.resnet18()
             nn.Conv2d(3, 8, 5, 2),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Conv2d(8, 32, 5, 2),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Conv2d(32, 128, 3, 2),
+            nn.SiLU(),
+            nn.Conv2d(128, 256, 3, 2),
             nn.Flatten(),
-            nn.Linear(12800, 1000),
-            nn.ReLU(),
+            nn.Linear(1024, 1000),
         )
 
         self.loc_scale = nn.Sequential(
             nn.Linear(1000 + belief_size, 512),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(512, state_size * 2),
         )
 
@@ -47,17 +48,17 @@ class Decoder(dists.Normal):
 
         self.feature_extractor = nn.Sequential(
             nn.Linear(state_size + belief_size, 256),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(256, 256),
         )
 
         self.loc = nn.Sequential(
             nn.ConvTranspose2d(256, 128, 6, stride=5),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose2d(128, 64, 6, stride=5),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose2d(64, 32, 5, stride=3),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.ConvTranspose2d(32, 3, 2, stride=1),
         )
 
@@ -77,16 +78,16 @@ class Reward(dists.Normal):
 
         self.feature_extractor = nn.Sequential(
             nn.Linear(belief_size + state_size, 256),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(256, 256),
-            nn.ReLU(),
+            nn.SiLU(),
         )
 
         self.loc = nn.Sequential(
             nn.Linear(256, 256),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(256, 256),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(256, 1),
         )
 
@@ -97,7 +98,7 @@ class Reward(dists.Normal):
 
         loc = self.loc(h)
 
-        return {"loc": loc, "scale": 0.1}
+        return {"loc": loc, "scale": 1.0}
 
 
 class Transition(dists.Deterministic):
@@ -107,12 +108,11 @@ class Transition(dists.Deterministic):
         self.fc_embed_state_action = nn.Linear(state_size + action_size, belief_size)
         self.rnn = nn.GRUCell(belief_size, belief_size)
 
-        self.act_fn = nn.ReLU()
+        self.act_fn = nn.SiLU()
 
     def forward(self, s_t: torch.Tensor, a_t: torch.Tensor, z_t: torch.Tensor, t_t: torch.Tensor) -> dict[str, torch.Tensor]:
         hidden = self.act_fn(self.fc_embed_state_action(torch.cat([s_t, a_t], dim=1) * t_t))
         z_tp1 = self.rnn(hidden, z_t * t_t)
-
         return {"z_tp1": z_tp1}
 
 
@@ -122,16 +122,16 @@ class Stochastic(dists.Normal):
 
         self.feature_extractor = nn.Sequential(
             nn.Linear(state_size, state_size),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(state_size, state_size),
-            nn.ReLU(),
+            nn.SiLU(),
         )
 
         self.loc_scale = nn.Sequential(
             nn.Linear(state_size, belief_size),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(belief_size, belief_size),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(belief_size, belief_size * 2),
         )
 
@@ -141,7 +141,7 @@ class Stochastic(dists.Normal):
         loc_scale = self.loc_scale(h)
         loc, scale = torch.chunk(loc_scale, 2, dim=-1)
 
-        return {"loc": loc, "scale": F.softplus(scale) + 0.001}
+        return {"loc": loc, "scale": F.softplus(scale) + 0.01}
 
 
 class Actor(dists.Normal):
@@ -174,7 +174,7 @@ class Actor(dists.Normal):
         loc_2 = torch.sigmoid(loc[:, 2])
 
         loc = torch.stack([loc_0, loc_1, loc_2], dim=-1)
-        scale = torch.clamp(F.softplus(scale) + 0.1, 0.1, 10.0)
+        scale = torch.clamp(F.softplus(scale) + 0.01, 0.01, 1.0)
 
         return {"loc": loc, "scale": scale}
 
@@ -185,14 +185,14 @@ class Critic(dists.Normal):
 
         self.feature_extractor = nn.Sequential(
             nn.Linear(belief_size + state_size, 256),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(256, 256),
-            nn.ReLU(),
+            nn.SiLU(),
         )
 
         self.loc = nn.Sequential(
             nn.Linear(256, 256),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Linear(256, 1),
         )
 

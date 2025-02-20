@@ -5,11 +5,11 @@ from typing import Any
 import sympy
 import torch
 from pixyz.distributions import Distribution
-from pixyz.losses.losses import Loss, LossSelfOperator, MinLoss, Parameter
+from pixyz.losses.losses import Loss, LossSelfOperator, MinLoss, NegLoss, Parameter
 from torch import nn
 
 
-def ppo(actor: Distribution, actor_old: Distribution, clip_param: float = 0.2) -> MinLoss:
+def ppo(actor: Distribution, actor_old: Distribution, clip_param: float = 0.2) -> NegLoss:
     """Proximal Policy Optimization."""
     surr1 = RatioLoss(actor, actor_old) * Parameter("A")
     surr2 = ClipLoss(RatioLoss(actor, actor_old), 1 - clip_param, 1 + clip_param) * Parameter("A")
@@ -75,8 +75,8 @@ class RatioLoss(Loss):
         return sympy.Symbol(f"\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}")
 
     def forward(self, x_dict: dict[str, Any], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[None, None]]:
-        p_log_prob = self.p.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict)
-        q_log_prob = self.q.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict)
+        p_log_prob = self.p.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+        q_log_prob = self.q.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
 
         ratio = torch.exp(p_log_prob - q_log_prob.detach())
 
@@ -149,19 +149,22 @@ class MSELoss(Loss):
 
     """
 
-    def __init__(self, var1: str, var2: str) -> None:
-        super().__init__([var1, var2])
+    def __init__(self, p: Distribution, var: str, reduction: str = "mean") -> None:
+        """Initialize the loss."""
+        super().__init__([*p.cond_var, var])
 
-        self.var1 = var1
-        self.var2 = var2
+        self.p = p
+        self.var = var
 
-        self.MSELoss = nn.MSELoss(reduction="none")
+        self.MSELoss = nn.MSELoss(reduction=reduction)
 
     @property
-    def _symbol(self):
-        return sympy.Symbol(f"MSE({self.var1},{self.var2})")
+    def _symbol(self) -> sympy.Symbol:
+        """Return the symbol of the loss."""
+        return sympy.Symbol(f"MSE({self.p.prob_text}, {self.var2})")
 
-    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
-        loss = self.MSELoss(x_dict[self.var1], x_dict[self.var2])
+    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -> tuple[torch.Tensor, dict[str, Any]]:
+        """Forward pass."""
+        loss = self.MSELoss(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var]).mean()
 
         return loss, {}
