@@ -1,5 +1,6 @@
 """Refactored implementation of experience replay and rollout buffer with BaseStorage."""
 
+from collections.abc import Sequence
 from typing import Any
 
 import torch
@@ -19,7 +20,7 @@ class BaseStorage:
 
     def add(self, data: TensorDict) -> None:
         """Add a new experience to the buffer."""
-        self.buffer.extend(data)
+        self.buffer.add(data)
 
     def sample(self) -> TensorDict:
         """Sample a batch of experiences."""
