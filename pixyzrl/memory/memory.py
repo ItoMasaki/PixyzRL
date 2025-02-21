@@ -5,7 +5,8 @@ import torch
 from numpy.typing import NDArray
 from tensordict import TensorDict
 from torch.utils.data import Dataset
-from torchrl.data import LazyTensorStorage, ReplayBuffer
+from torchrl.data import LazyTensorStorage
+from torchrl.data import ReplayBuffer as TorchRLReplayBuffer
 
 
 class ExperienceReplay(Dataset):
@@ -153,7 +154,7 @@ class ExperienceReplay(Dataset):
         return [data[i : i + chunk_size] for i in range(0, len(data), chunk_size)]
 
 
-class RolloutBuffer:
+class ReplayBuffer:
     """Buffer for storing rollout data using torchrl."""
 
     def __init__(self, obs_shape: tuple[int], action_shape: tuple[int], buffer_size: int, batch_size: int, device: str = "cpu") -> None:
@@ -167,12 +168,12 @@ class RolloutBuffer:
             batch_size (int): Batch size for sampling.
             device (str): Device to store the tensors (cpu or cuda).
         """
-        self.obs_shape = obs_shape
-        self.action_shape = action_shape
         self.device = device
         self.batch_size = batch_size
+        self.obs_shape = obs_shape
+        self.action_shape = action_shape
 
-        self.buffer = ReplayBuffer(storage=LazyTensorStorage(buffer_size), batch_size=batch_size)
+        self.buffer = TorchRLReplayBuffer(storage=LazyTensorStorage(buffer_size), batch_size=batch_size)
 
     def add(self, obs: torch.Tensor, action: torch.Tensor, logprob: torch.Tensor, reward: torch.Tensor, state_value: torch.Tensor, done: torch.Tensor) -> None:
         """
