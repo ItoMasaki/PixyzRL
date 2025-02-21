@@ -3,7 +3,9 @@
 import numpy as np
 import torch
 from numpy.typing import NDArray
+from tensordict import TensorDict
 from torch.utils.data import Dataset
+from torchrl.data import LazyTensorStorage, ReplayBuffer
 
 
 class ExperienceReplay(Dataset):
@@ -152,22 +154,64 @@ class ExperienceReplay(Dataset):
 
 
 class RolloutBuffer:
-    """Buffer for storing rollout data."""
+    """Buffer for storing rollout data using torchrl."""
 
-    def __init__(self) -> None:
-        """Initialize the buffer."""
-        self.actions = []
-        self.states = []
-        self.logprobs = []
-        self.rewards = []
-        self.state_values = []
-        self.is_terminals = []
+    def __init__(self, obs_shape: tuple[int], action_shape: tuple[int], buffer_size: int, batch_size: int, device: str = "cpu") -> None:
+        """
+        Initialize the rollout buffer.
+
+        Args:
+            obs_shape (tuple): Shape of the observations.
+            action_shape (tuple): Shape of the actions.
+            buffer_size (int): Maximum size of the buffer.
+            batch_size (int): Batch size for sampling.
+            device (str): Device to store the tensors (cpu or cuda).
+        """
+        self.obs_shape = obs_shape
+        self.action_shape = action_shape
+        self.device = device
+        self.batch_size = batch_size
+
+        self.buffer = ReplayBuffer(storage=LazyTensorStorage(buffer_size), batch_size=batch_size)
+
+    def add(self, obs: torch.Tensor, action: torch.Tensor, logprob: torch.Tensor, reward: torch.Tensor, state_value: torch.Tensor, done: torch.Tensor) -> None:
+        """
+        Add new experiences to the buffer.
+
+        Args:
+            obs (torch.Tensor): Observations.
+            action (torch.Tensor): Actions taken.
+            logprob (torch.Tensor): Log probabilities of actions.
+            reward (torch.Tensor): Rewards received.
+            state_value (torch.Tensor): Value function estimates.
+            done (torch.Tensor): Done flags indicating episode termination.
+        """
+        data = TensorDict(
+            {
+                "obs": obs.to(self.device),
+                "action": action.to(self.device),
+                "logprob": logprob.to(self.device),
+                "reward": reward.to(self.device).unsqueeze(-1),
+                "state_value": state_value.to(self.device).unsqueeze(-1),
+                "done": done.to(self.device).unsqueeze(-1),
+            },
+            batch_size=obs.shape[0],
+        )
+        self.buffer.extend(data)
+
+    def sample(self) -> TensorDict:
+        """
+        Sample a batch of experiences.
+
+        Returns:
+            TensorDict: A batch of sampled experiences.
+        """
+        return self.buffer.sample().to(self.device)
 
     def clear(self) -> None:
         """Clear the buffer."""
-        del self.actions[:]
-        del self.states[:]
-        del self.logprobs[:]
-        del self.rewards[:]
-        del self.state_values[:]
-        del self.is_terminals[:]
+        self.buffer = ReplayBuffer(storage=LazyTensorStorage(self.buffer.storage.max_size), batch_size=self.batch_size)
+
+    def __len__(self) -> int:
+        """Return the current size of the buffer."""
+        return len(self.buffer)
