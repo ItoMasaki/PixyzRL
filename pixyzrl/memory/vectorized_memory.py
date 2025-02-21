@@ -1,12 +1,16 @@
+from typing import Any
+
 import numpy as np
 import torch
-from torchrl.data import LazyTensorStorage, ReplayBuffer, TensorDict
+from numpy.typing import NDArray
+from tensordict import TensorDict
+from torchrl.data import LazyTensorStorage, ReplayBuffer
 
 
 class VectorizedReplayBuffer:
     """Experience replay buffer for vectorized environments using torchrl."""
 
-    def __init__(self, obs_shape: tuple[int], action_shape: tuple[int], buffer_size: int, num_envs: int, batch_size: int, device="cpu"):
+    def __init__(self, obs_shape: tuple[int], action_shape: tuple[int], buffer_size: int, num_envs: int, batch_size: int, device: str = "cpu") -> None:
         """
         Initialize the replay buffer.
 
@@ -29,7 +33,7 @@ class VectorizedReplayBuffer:
         self.action_shape = action_shape
         self.num_envs = num_envs
 
-    def add(self, obs, action, reward, done) -> None:
+    def add(self, obs: NDArray[Any] | torch.Tensor, action: NDArray[Any] | torch.Tensor, reward: NDArray[Any] | torch.Tensor, done: NDArray[Any] | torch.Tensor) -> None:
         """
         Add new experiences to the buffer.
 
@@ -63,7 +67,7 @@ class VectorizedReplayBuffer:
         # `ReplayBuffer` に追加
         self.buffer.extend(data)
 
-    def sample(self):
+    def sample(self) -> TensorDict:
         """
         Sample a batch of experiences.
 

@@ -15,6 +15,7 @@ dependencies = [
   "pixyz",
   "gymnasium[box2d]",
   "torchrl",
+  "tensordict",
 ]
 requires-python = ">=3.10"
 authors = [
