@@ -10,7 +10,8 @@ from numpy.typing import NDArray
 from pixyz import distributions as dists
 from torch import nn
 
-from pixyzrl.policy_gradient.ppo.ppo import PPO
+from pixyzrl.memory import RolloutBuffer
+from pixyzrl.policy_gradient.ppo import PPO
 
 ################################## set device ##################################
 
@@ -18,27 +19,8 @@ from pixyzrl.policy_gradient.ppo.ppo import PPO
 TWO_CH = 2
 THREE_CH = 3
 
-
-class RolloutBuffer:
-    """Buffer for storing rollout data."""
-
-    def __init__(self) -> None:
-        """Initialize the buffer."""
-        self.actions = []
-        self.states = []
-        self.logprobs = []
-        self.rewards = []
-        self.state_values = []
-        self.is_terminals = []
-
-    def clear(self) -> None:
-        """Clear the buffer."""
-        del self.actions[:]
-        del self.states[:]
-        del self.logprobs[:]
-        del self.rewards[:]
-        del self.state_values[:]
-        del self.is_terminals[:]
+# Buffer for storing rollout data
+buffer = RolloutBuffer()
 
 
 class FeatureExtractor(dists.Deterministic):
@@ -56,8 +38,6 @@ class FeatureExtractor(dists.Deterministic):
             nn.LazyConv2d(64, kernel_size=3, stride=1),
             nn.SiLU(),
             nn.Flatten(),
-            nn.LazyLinear(2048),
-            nn.SiLU(),
         )
 
     def forward(self, o: torch.Tensor) -> dict[str, torch.Tensor]:
@@ -133,7 +113,7 @@ def main() -> None:
     lr_actor = 0.0003
     lr_critic = 0.001
     max_episodes = 5000
-    update_episodes = 10
+    update_episodes = 5
     device = "mps"
 
     # Shared CNN layers
@@ -163,7 +143,7 @@ def main() -> None:
             done = terminated or truncated
             agent.store_transition(reward, done)
             total_reward += reward
-            print(f"Episode: {i_episode + 1}, Total reward: {total_reward}       ", end="\r")
+            print(f" Episode: {i_episode + 1}, Total reward: {total_reward}       ", end="\r")
 
             # plt.cla()
             # plt.imshow(state)
@@ -180,3 +160,63 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+def store_transition(reward: NDArray[Any], done: int | bool) -> None:
+    """Store transition data in the buffer."""
+    buffer.rewards.append(reward)
+    buffer.is_terminals.append(done)
+
+
+def select_action(state: tuple[torch.Tensor | NDArray[Any]] | torch.Tensor | NDArray[Any]) -> NDArray[Any]:
+    """Select an action."""
+
+    with torch.no_grad():
+        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+
+        s = shared_cnn.sample({"o": state})["s"]
+        action = actor_old.sample({"s": s})["a"]
+        state_val = critic.sample({"s": s})["v"]
+
+    buffer.states.append(state)
+    buffer.actions.append(action)
+    buffer.state_values.append(state_val)
+
+    return action.detach().cpu().numpy().flatten()
+
+
+def update() -> None:
+    """Update the agent."""
+    # Monte Carlo estimate of returns
+    rewards = []
+    discounted_reward = 0
+    for reward, is_terminal in zip(reversed(buffer.rewards), reversed(buffer.is_terminals), strict=False):
+        if is_terminal:
+            discounted_reward = 0
+        discounted_reward = reward + (gamma * discounted_reward)
+        rewards.insert(0, discounted_reward)
+
+    # Normalizing the rewards
+    rewards = torch.tensor(rewards, dtype=torch.float32).to(device)
+    rewards = (rewards - rewards.mean()) / (rewards.std() + 1e-7)
+
+    # Convert list to tensor
+    old_states = torch.cat(buffer.states, dim=0).detach()
+    old_actions = torch.squeeze(torch.stack(buffer.actions, dim=0)).detach()
+    old_state_values = torch.squeeze(torch.stack(buffer.state_values, dim=0)).detach()
+
+    # Calculate advantages
+    advantages = rewards.detach() - old_state_values.detach()
+
+    # Optimize policy for K epochs
+    print()
+    for idx, _ in enumerate(range(K_epochs)):
+        # Evaluating old actions and values
+        loss = train({"o": old_states.detach(), "a": old_actions, "A": advantages, "r": rewards})
+        print(f" {idx + 1} Loss: {loss}", end="\r")
+
+    # Copy new weights into old policy
+    actor_old.load_state_dict(actor.state_dict())
+
+    # Clear buffer
+    buffer.clear()
