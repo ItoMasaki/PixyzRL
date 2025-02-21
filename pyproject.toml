@@ -15,7 +15,6 @@ dependencies = [
   "pixyz",
   "gymnasium[box2d]",
   "torchrl",
-  "tensordict",
 ]
 requires-python = ">=3.10"
 authors = [
@@ -40,10 +39,33 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+dev = [
+  "black",
+  "flake8",
+  "mypy",
+  "isort",
+  "pre-commit",
+  "pytest",
+  "pytest-cov"
+]
 gitlab-ci = [
   "coverage>=7.3.2",
   "pytest>=7.4.3"
 ]
+
+[project.scripts]
+pixyzrl-train = "pixyzrl.trainer:main"
+pixyzrl-eval = "pixyzrl.evaluation:main"
+
+[tool.black]
+line-length = 88
+target-version = ['py310']
+
+[tool.isort]
+profile = "black"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
 [project.urls]
 Repository = "https://github.com/ItoMasaki/PixyzRL"
