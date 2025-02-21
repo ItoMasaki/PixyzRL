@@ -52,3 +52,9 @@ class PPO(Model):
                 {"params": self.critic.parameters(), "lr": self.lr_critic},
             ],
         )
+
+    def select_action(self, state: torch.Tensor) -> dict[str, torch.Tensor]:
+        """Select an action."""
+        with torch.no_grad():
+            state = self.shared_cnn.sample({"o": state.to(self.device)})
+            return self.actor_old.sample({"s": state}) | self.critic.sample({"s": state})

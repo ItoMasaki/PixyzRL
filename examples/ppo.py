@@ -172,7 +172,7 @@ def select_action(state: tuple[torch.Tensor | NDArray[Any]] | torch.Tensor | NDA
     """Select an action."""
 
     with torch.no_grad():
-        state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
+        state = torch.FloatTensor(state).unsqueeze(0).to(device)
 
         s = shared_cnn.sample({"o": state})["s"]
         action = actor_old.sample({"s": s})["a"]
