@@ -1,6 +1,5 @@
 """Refactored implementation of experience replay and rollout buffer with BaseStorage."""
 
-from collections.abc import Sequence
 from typing import Any
 
 import torch
