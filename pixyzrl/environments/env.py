@@ -63,7 +63,7 @@ class BaseEnv(ABC):
 class Env(BaseEnv):
     """Standard single Gym environment wrapper."""
 
-    def __init__(self, env_name: str, action_var: str = "a", seed: int = 42) -> None:
+    def __init__(self, env_name: str, action_var: str = "a", seed: int = 42, render_mode: str = "human") -> None:
         """
         Initialize the environment.
 
@@ -77,7 +77,7 @@ class Env(BaseEnv):
             env = Env("CartPole-v1", action_var="a", seed=42)
         """
         super().__init__(env_name, num_envs=1, seed=seed)
-        self.env = gym.make(env_name)
+        self.env = gym.make(env_name, render_mode=render_mode)
         self.action_var = action_var
         self.env.reset(seed=seed)
 
@@ -116,10 +116,6 @@ class Env(BaseEnv):
         if isinstance(action, np.int64 | np.float64 | float):
             obs, reward, truncated, terminated, info = self.env.step(action)
             return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info
-
-        if self.action_var not in action:
-            msg = f"Action variable '{self.action_var}' not found in action dict."
-            raise ValueError(msg)
 
         obs, reward, truncated, terminated, info = self.env.step(action[self.action_var].squeeze().to("cpu").numpy())
         return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info

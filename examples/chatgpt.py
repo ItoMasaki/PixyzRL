@@ -1,28 +1,48 @@
+import numpy as np
 import torch
+from pixyz.distributions import Normal
 
 from pixyzrl.environments import Env
+from pixyzrl.memory import Memory
+from pixyzrl.policy_gradient.ppo import PPO
+from pixyzrl.trainer import Trainer
 
 
-def test_environment(env_name="CartPole-v1", num_steps=10):
-    """Test a reinforcement learning environment."""
-    env = Env(env_name, action_var="a")  # `action_var` を明示的に指定
-    obs, info = env.reset()
-    print(f"Initial Observation: {obs}")
+def main():
+    # 環境の設定
+    env = Env("CartPole-v1")
+    obs_shape = env.observation_space.shape
+    action_shape = (1,)  # CartPoleは離散アクション
 
-    for step in range(num_steps):
-        action_value = env.action_space.sample()  # Select a random action
-        action_tensor = torch.tensor(action_value, dtype=torch.float32).unsqueeze(0)  # Tensor に変換
-        action = {"a": action_tensor}  # 辞書として渡す
+    # メモリの設定
+    memory = Memory(obs_shape, action_shape, buffer_size=10000)
 
-        next_obs, reward, done, truncated, info = env.step(action)
-        print(f"Step {step}: Action={action}, Reward={reward}, Done={done}")
+    # PPOエージェントの作成
+    actor = Normal(loc="s", scale="s", var=["a"], cond_var=["s"], name="actor")
+    critic = Normal(loc="s", scale="s", var=["v"], cond_var=["s"], name="critic")
+    ppo_agent = PPO(actor, critic, shared_cnn=None, gamma=0.99, eps_clip=0.2, k_epochs=4, lr_actor=3e-4, lr_critic=1e-3, device="cpu")
 
-        if done:
-            print("Episode finished. Resetting environment.")
-            obs, info = env.reset()
+    # トレーナーの作成
+    trainer = Trainer(env, memory, ppo_agent, device="cpu")
 
-    env.close()
+    # トレーニングの実行
+    trainer.train(num_iterations=1000)
+
+    # テストの実行
+    obs, _ = env.reset()
+    done = False
+    total_reward = 0
+
+    while not done:
+        action_dict = ppo_agent.select_action(torch.tensor(obs, dtype=torch.float32))
+        action = action_dict["a"].detach().numpy()
+        next_obs, reward, done, _ = env.step(action)
+        memory.add(obs, action, reward, done)
+        obs = next_obs
+        total_reward += reward
+
+    print(f"Total Reward: {total_reward}")
 
 
 if __name__ == "__main__":
-    test_environment()
+    main()
