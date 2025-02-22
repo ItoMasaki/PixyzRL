@@ -1,4 +1,4 @@
-from .memory import BaseStorage, ExperienceReplay, RolloutBuffer
+from .memory import Memory, RolloutBuffer
 from .vectorized_memory import VectorizedRolloutBuffer
 
-__all__ = ["BaseStorage", "ExperienceReplay", "RolloutBuffer", "VectorizedRolloutBuffer"]
+__all__ = ["Memory", "RolloutBuffer", "VectorizedRolloutBuffer"]

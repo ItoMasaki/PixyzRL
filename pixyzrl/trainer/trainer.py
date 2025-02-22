@@ -1,21 +1,37 @@
 """Trainer class to manage training of reinforcement learning agents."""
 
 import torch
+from torchrl.objectives.value import ValueEstimatorBase
+
+from pixyzrl.logger import Logger
 
 
 class Trainer:
     """Trainer class to manage training of reinforcement learning agents."""
 
-    def __init__(self, env, memory, agent, device, logger: Logger = None):
-        """Initialize the trainer with the environment, memory, agent, and optional logger."""
+    def __init__(self, env, memory, agent, device, value_function: ValueEstimatorBase, logger: Logger = None):
+        """Initialize the trainer with the environment, memory, agent, and optional logger.
+
+        :param env: Environment for training.
+        :param memory: Memory buffer.
+        :param agent: RL agent.
+        :param device: Device to run training on.
+        :param value_function: An instance of ValueEstimatorBase (e.g., TD0Estimator, TD1Estimator, TDLambdaEstimator, GAE).
+        :param logger: Optional logger.
+        """
         self.env = env
         self.memory = memory
         self.agent = agent
         self.device = device
+        self.value_function = value_function
         self.logger = logger
 
         if self.logger:
             self.logger.log("Trainer initialized.")
+
+    def compute_value(self, obs, next_obs, reward, done):
+        """Compute value based on the selected value function method."""
+        return self.value_function(obs, next_obs, reward, done)
 
     def collect_experiences(self):
         """Collect experiences from the environment and store them in memory."""
@@ -26,7 +42,8 @@ class Trainer:
             action_dict = self.agent.select_action(torch.tensor(obs, dtype=torch.float32, device=self.device))
             action = action_dict["a"]
             next_obs, reward, dones, _ = self.env.step(action.cpu().numpy())
-            self.memory.add(obs, action.cpu().numpy(), reward, dones)
+            value = self.compute_value(obs, next_obs, reward, dones)
+            self.memory.add(obs, action.cpu().numpy(), reward, dones, value.cpu().numpy())
             obs = next_obs
             done = torch.tensor(dones, dtype=torch.bool, device=self.device)
 

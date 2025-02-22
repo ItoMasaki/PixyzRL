@@ -1,45 +1,39 @@
-import torch
-from pixyz.distributions import Normal
+from pixyzrl.environments.env import Env
+from pixyzrl.memory import Memory
 
-from pixyzrl.environments import Env
-from pixyzrl.memory import ExperienceReplay
-from pixyzrl.policy_gradient.ppo import PPO
-from pixyzrl.trainer import Trainer
-
-# 環境のセットアップ
-env_name = "CarRacing-v3"
+# 環境の作成
+env_name = "CartPole-v1"
 env = Env(env_name)
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# 観測空間と行動空間の取得
+# メモリの作成
 obs_shape = env.observation_space.shape
-action_shape = env.action_space.shape
+action_shape = (1,)
+buffer_size = 1000  # 記録する経験の最大数
+memory = Memory(obs_shape, action_shape, buffer_size, device="cpu")
 
-# メモリバッファの初期化
-buffer_size = 5000
-batch_size = 64
-memory = ExperienceReplay(obs_shape, action_shape, buffer_size, batch_size, device)
+# エピソードのシミュレーション
+episodes = 10
+max_steps = 200
 
-# PPOエージェントの設定
-gamma = 0.99
-eps_clip = 0.2
-k_epochs = 4
-lr_actor = 3e-4
-lr_critic = 1e-3
+for episode in range(episodes):
+    obs, _ = env.reset()
+    done = False
+    step = 0
 
-# ActorとCriticの定義
-actor = Normal(loc="s", scale="s", var=["a"], cond_var=["s"], name="actor")
-critic = Normal(loc="s", scale="s", var=["v"], cond_var=["s"], name="critic")
+    while not done and step < max_steps:
+        action = env.action_space.sample()  # ランダムな行動を選択
+        next_obs, reward, done, _, _ = env.step(action)
 
-# PPOエージェントの作成
-agent = PPO(actor, critic, None, gamma, eps_clip, k_epochs, lr_actor, lr_critic, device)
+        # メモリにデータを保存
+        memory.add(obs, action, reward, done)
 
-# トレーナーの作成
-trainer = Trainer(env, memory, agent, device)
+        obs = next_obs
+        step += 1
 
-# 学習の実行
-num_iterations = 1000
-trainer.train(num_iterations)
+    print(f"Episode {episode + 1}: Steps = {step}")
 
-# モデルの保存
-trainer.save_model("ppo_carracing.pth")
+env.close()
+
+# メモリのサンプルデータを取得
+sample = memory.sample()
+print("Sample from Memory:", sample)

@@ -15,7 +15,7 @@ from pixyzrl.losses import ClipLoss, MSELoss, RatioLoss
 class PPO(Model):
     """PPO agent using Pixyz."""
 
-    def __init__(self, actor: dists.Distribution, critic: dists.Distribution, shared_cnn: dists.Distribution, gamma: float, eps_clip: float, k_epochs: int, lr_actor: float, lr_critic: float, device: str) -> None:
+    def __init__(self, actor: dists.Distribution, critic: dists.Distribution, shared_cnn: dists.Distribution, gamma: float, eps_clip: float, k_epochs: int, lr_actor: float, lr_critic: float, device: str | torch.device) -> None:
         """Initialize the PPO agent."""
         self.gamma = gamma
         self.eps_clip = eps_clip
@@ -57,4 +57,4 @@ class PPO(Model):
         """Select an action."""
         with torch.no_grad():
             state = self.shared_cnn.sample({"o": state.to(self.device)})
-            return self.actor_old.sample({"s": state}) | self.critic.sample({"s": state})
+            return self.actor_old.sample(state) | self.critic.sample(state)

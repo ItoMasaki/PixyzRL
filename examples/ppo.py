@@ -2,25 +2,25 @@
 
 from typing import Any
 
-import gymnasium as gym
 import numpy as np
 import torch
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 from pixyz import distributions as dists
 from torch import nn
+from torchvision.transforms import Compose, Lambda, Normalize, ToTensor
 
+from pixyzrl.environments.env import Env
 from pixyzrl.memory import RolloutBuffer
 from pixyzrl.policy_gradient.ppo import PPO
 
 ################################## set device ##################################
 
 
-TWO_CH = 2
-THREE_CH = 3
+IMAGE_CH = 3
 
 # Buffer for storing rollout data
-buffer = RolloutBuffer()
+# buffer = RolloutBuffer()
 
 
 class FeatureExtractor(dists.Deterministic):
@@ -91,19 +91,6 @@ class Critic(dists.Deterministic):
         return {"v": self.value(s)}
 
 
-def preprocess_state(state: NDArray[Any]) -> NDArray[Any]:
-    """Preprocess the state."""
-    # 正規化 (0-255 -> 0-1)
-    if state.dtype == np.uint8:
-        state = state.astype(np.float32) / 255.0
-
-    # チャネルの順序を変更 (H, W, C) -> (C, H, W)
-    if len(state.shape) == THREE_CH:
-        state = np.transpose(state, (2, 0, 1))
-
-    return state
-
-
 def main() -> None:
     """Main function."""
     action_dim = 3
@@ -128,7 +115,15 @@ def main() -> None:
     agent = PPO(actor, critic, shared_cnn, gamma, eps_clip, k_epochs, lr_actor, lr_critic, device)
 
     # Define environment
-    env = gym.make("CarRacing-v3", render_mode="rgb_array")
+    env = Env("CarRacing-v3")
+
+    # 96, 96, 3 -> 3, 96, 96
+    transform = Compose(
+        [
+            ToTensor(),
+            Lambda(lambda x: x.unsqueeze(0) if len(x.shape) == IMAGE_CH else x),
+        ],
+    )
 
     # Training loop
     for i_episode in range(max_episodes):
@@ -137,11 +132,11 @@ def main() -> None:
         done = False
 
         while not done:
-            state = preprocess_state(state)
+            state = transform(state)
             action = agent.select_action(state)
             state, reward, truncated, terminated, info = env.step(action)
             done = terminated or truncated
-            agent.store_transition(reward, done)
+            # agent.store_transition(reward, done)
             total_reward += reward
             print(f" Episode: {i_episode + 1}, Total reward: {total_reward}       ", end="\r")
 
