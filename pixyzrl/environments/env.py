@@ -1,11 +1,13 @@
 """Single Gym environment wrapper."""
 
 from abc import ABC, abstractmethod
-from typing import Any, SupportsFloat
+from typing import Any
 
 import gymnasium as gym
+import numpy as np
 import torch
 from gymnasium.spaces import Space
+from numpy.typing import NDArray
 
 
 class BaseEnv(ABC):
@@ -31,7 +33,7 @@ class BaseEnv(ABC):
         ...
 
     @abstractmethod
-    def step(self, action: dict[str, torch.Tensor]) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(self, action: dict[str, torch.Tensor]) -> tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]:
         """Step through the environment."""
         ...
 
@@ -79,7 +81,7 @@ class Env(BaseEnv):
         self.action_var = action_var
         self.env.reset(seed=seed)
 
-    def reset(self) -> tuple[Any, dict[str, Any]]:
+    def reset(self) -> tuple[NDArray[Any], dict[str, Any]]:
         """Reset the environment.
 
         Args:
@@ -90,30 +92,37 @@ class Env(BaseEnv):
             env = Env("CartPole-v1", action_var="a", seed=42)
             obs, info = env.reset()
         """
-        return self.env.reset()
+        obs, info = self.env.reset()
+        return np.array([obs]), info
 
-    def step(self, action: dict[str, torch.Tensor] | torch.Tensor) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(self, action: dict[str, torch.Tensor] | torch.Tensor | np.int64 | np.float64 | float) -> tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]:
         """Take a step in the environment.
 
         Args:
             action (dict[str, torch.Tensor] | torch.Tensor): Action to take.
         Returns:
-            tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]: Observation, reward, done, info.
+            tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]: Observation, reward, truncated, terminated, and additional information.
 
         Example:
             env = Env("CartPole-v1", action_var="a", seed=42)
             obs, info = env.reset()
-            obs, reward, done, info = env.step({"a": torch.tensor([0])})
+            obs, reward, truncated, terminated, info = env.step({"a": torch.tensor([0])})
         """
 
         if isinstance(action, torch.Tensor):
-            return self.env.step(action.to("cpu").numpy())
+            obs, reward, truncated, terminated, info = self.env.step(action.to("cpu").numpy())
+            return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info
+
+        if isinstance(action, np.int64 | np.float64 | float):
+            obs, reward, truncated, terminated, info = self.env.step(action)
+            return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info
 
         if self.action_var not in action:
             msg = f"Action variable '{self.action_var}' not found in action dict."
             raise ValueError(msg)
 
-        return self.env.step(action[self.action_var].squeeze().to("cpu").numpy())
+        obs, reward, truncated, terminated, info = self.env.step(action[self.action_var].squeeze().to("cpu").numpy())
+        return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info
 
     def close(self) -> None:
         """Close the environment.

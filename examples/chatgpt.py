@@ -1,39 +1,28 @@
-from pixyzrl.environments.env import Env
-from pixyzrl.memory import Memory
+import torch
 
-# 環境の作成
-env_name = "CartPole-v1"
-env = Env(env_name)
+from pixyzrl.environments import Env
 
-# メモリの作成
-obs_shape = env.observation_space.shape
-action_shape = (1,)
-buffer_size = 1000  # 記録する経験の最大数
-memory = Memory(obs_shape, action_shape, buffer_size, device="cpu")
 
-# エピソードのシミュレーション
-episodes = 10
-max_steps = 200
+def test_environment(env_name="CartPole-v1", num_steps=10):
+    """Test a reinforcement learning environment."""
+    env = Env(env_name, action_var="a")  # `action_var` を明示的に指定
+    obs, info = env.reset()
+    print(f"Initial Observation: {obs}")
 
-for episode in range(episodes):
-    obs, _ = env.reset()
-    done = False
-    step = 0
+    for step in range(num_steps):
+        action_value = env.action_space.sample()  # Select a random action
+        action_tensor = torch.tensor(action_value, dtype=torch.float32).unsqueeze(0)  # Tensor に変換
+        action = {"a": action_tensor}  # 辞書として渡す
 
-    while not done and step < max_steps:
-        action = env.action_space.sample()  # ランダムな行動を選択
-        next_obs, reward, done, _, _ = env.step(action)
+        next_obs, reward, done, truncated, info = env.step(action)
+        print(f"Step {step}: Action={action}, Reward={reward}, Done={done}")
 
-        # メモリにデータを保存
-        memory.add(obs, action, reward, done)
+        if done:
+            print("Episode finished. Resetting environment.")
+            obs, info = env.reset()
 
-        obs = next_obs
-        step += 1
+    env.close()
 
-    print(f"Episode {episode + 1}: Steps = {step}")
 
-env.close()
-
-# メモリのサンプルデータを取得
-sample = memory.sample()
-print("Sample from Memory:", sample)
+if __name__ == "__main__":
+    test_environment()
