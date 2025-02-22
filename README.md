@@ -43,12 +43,45 @@ env = Env("CartPole-v1")
 `PPO` クラスを使用して、エージェントを作成します。
 
 ```python
-from pixyz.distributions import Normal
+import torch.nn as nn
+import torch.nn.functional as F
+from pixyz.distributions import Normal, Determinisic
 from pixyzrl.policy_gradient.ppo import PPO
 
-actor = Normal(loc="s", scale="s", var=["a"], cond_var=["s"], name="actor")
-critic = Normal(loc="s", scale="s", var=["v"], cond_var=["s"], name="critic")
-ppo_agent = PPO(actor, critic, shared_cnn=None, gamma=0.99, eps_clip=0.2, k_epochs=4, lr_actor=3e-4, lr_critic=1e-3, device="cpu")
+
+class Actor(Normal):
+    def __init__(self, state_dim, action_dim):
+        super().__init__(var=["a"], cond_var=["s"], name="actor")
+        self.fc1 = nn.Linear(state_dim, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc_loc = nn.Linear(64, action_dim)  # 平均
+        self.fc_scale = nn.Linear(64, action_dim)  # 標準偏差の生の出力
+
+    def forward(self, s):
+        h = F.relu(self.fc1(s))
+        h = F.relu(self.fc2(h))
+        loc = self.fc_loc(h)  # 平均 (μ)
+        scale = F.softplus(self.fc_scale(h)) + 1e-6  # 標準偏差 (σ), softplus で正の値に
+        return {"loc": loc, "scale": scale}
+
+class Critic(Determinisic):
+    def __init__(self, state_dim):
+        super().__init__(var=["v"], cond_var=["s"], name="critic")
+        self.fc1 = nn.Linear(state_dim, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc_loc = nn.Linear(64, 1)
+        self.fc_scale = nn.Linear(64, 1)
+
+    def forward(self, s):
+        h = F.relu(self.fc1(s))
+        h = F.relu(self.fc2(h))
+        loc = self.fc_loc(h)
+        scale = F.softplus(self.fc_scale(h)) + 1e-6
+        return {"loc": loc, "scale": scale}
+
+actor = Actor(state_dim, action_dim)
+critic = Critic(state_dim)
+agent = PPO(actor, critic, shared_cnn=None, gamma=0.99, eps_clip=0.2, k_epochs=4, lr_actor=3e-4, lr_critic=1e-3, device="cpu")
 ```
 
 ### 3. トレーニングの実行
@@ -60,15 +93,15 @@ from pixyzrl.trainer import Trainer
 from pixyzrl.memory import ExperienceReplay
 
 memory = ExperienceReplay((4,), (1,), buffer_size=10000, batch_size=64)
-trainer = Trainer(env, memory, ppo_agent, device="cpu")
+trainer = Trainer(env, memory, agent, device="cpu")
 trainer.train(num_iterations=1000)
 ```
 
 ### 4. モデルの保存とロード
 
 ```python
-ppo_agent.save_model("ppo_model.pth")
-ppo_agent.load_model("ppo_model.pth")
+agent.save_model("ppo_model.pth")
+agent.load_model("ppo_model.pth")
 ```
 
 ## ディレクトリ構成
@@ -77,12 +110,7 @@ ppo_agent.load_model("ppo_model.pth")
 PixyzRL
 ├── docs
 │   └── pixyz
-│       ├── DeepMarkovModel.md
-│       ├── DistributionAPITutorial.md
-│       ├── LossAPITutorial.md
-│       ├── ModelAPITutorial.md
-│       ├── Overview.md
-│       └── README.md
+│       └── README.pixyz.md
 ├── examples        # サンプルコード
 ├── pixyzrl
 │   ├── environments  # 環境のラッパー

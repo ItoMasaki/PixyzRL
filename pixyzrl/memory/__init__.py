@@ -1,3 +1,3 @@
-from .memory import Memory, RolloutBuffer
+from .memory import Memory
 
-__all__ = ["Memory", "RolloutBuffer"]
+__all__ = ["Memory"]

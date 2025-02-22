@@ -1,55 +1,77 @@
 import torch
-from pixyz.distributions import Normal
-from torch import nn
+import torch.nn as nn
+import torch.nn.functional as F
+from pixyz.distributions import Deterministic, Normal
 
 from pixyzrl.environments import Env
-from pixyzrl.memory import ExperienceMemory
+from pixyzrl.memory import Memory
 from pixyzrl.policy_gradient.ppo import PPO
 from pixyzrl.trainer import Trainer
 
-# 環境の作成
+# 環境のセットアップ
 env = Env("CartPole-v1")
 
+# 状態とアクションの次元
+state_dim = env.observation_space.shape[0]
+action_dim = env.action_space.shape[0] if len(env.action_space.shape) > 0 else 1
 
-# アクターネットワークの作成
+
+# Actor ネットワーク
 class Actor(Normal):
-    def __init__(self):
+    def __init__(self, state_dim, action_dim):
         super().__init__(var=["a"], cond_var=["s"], name="actor")
-        self.fc1 = nn.Linear(4, 64)
-        self.fc2 = nn.Linear(64, 2)
+        self.fc1 = nn.Linear(state_dim, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc_loc = nn.Linear(64, action_dim)  # 平均
+        self.fc_scale = nn.Linear(64, action_dim)  # 標準偏差
 
     def forward(self, s):
-        h = torch.relu(self.fc1(s))
-        return {"loc": self.fc2(h), "scale": torch.ones_like(self.fc2(h))}
+        h = F.relu(self.fc1(s))
+        h = F.relu(self.fc2(h))
+        loc = self.fc_loc(h)
+        scale = F.softplus(self.fc_scale(h)) + 1e-6  # 正の値にするために softplus を適用
+        return {"loc": loc, "scale": scale}
 
 
-class Critic(Normal):
-    def __init__(self):
+# Critic ネットワーク
+class Critic(Deterministic):
+    def __init__(self, state_dim):
         super().__init__(var=["v"], cond_var=["s"], name="critic")
-        self.fc1 = nn.Linear(4, 64)
-        self.fc2 = nn.Linear(64, 1)
+        self.fc1 = nn.Linear(state_dim, 64)
+        self.fc2 = nn.Linear(64, 64)
+        self.fc_out = nn.Linear(64, 1)
 
     def forward(self, s):
-        h = torch.relu(self.fc1(s))
-        return {"loc": self.fc2(h), "scale": torch.ones_like(self.fc2(h))}
+        h = F.relu(self.fc1(s))
+        h = F.relu(self.fc2(h))
+        return {"v": self.fc_out(h)}
 
 
-actor = Actor()
-critic = Critic()
+# Actor-Critic の初期化
+actor = Actor(state_dim, action_dim)
+critic = Critic(state_dim)
 
-# PPOエージェントの作成
-ppo_agent = PPO(actor=actor, critic=critic, shared_cnn=None, gamma=0.99, eps_clip=0.2, k_epochs=4, lr_actor=3e-4, lr_critic=1e-3, device="cpu")
+# PPO エージェントの作成
+agent = PPO(
+    actor=actor,
+    critic=critic,
+    shared_cnn=None,  # 画像入力などを考慮する場合はCNNを追加
+    gamma=0.99,
+    eps_clip=0.2,
+    k_epochs=4,
+    lr_actor=3e-4,
+    lr_critic=1e-3,
+    device="cpu",
+)
 
-# メモリの作成
-memory = ExperienceMemory(obs_shape=(4,), action_shape=(1,), buffer_size=10000)
+# メモリバッファ
+memory = Memory(obs_shape=(state_dim,), action_shape=(action_dim,), buffer_size=10000)
 
 # トレーナーの作成
-trainer = Trainer(env, memory, ppo_agent, device="cpu")
+trainer = Trainer(env, memory, agent, device="cpu")
 
 # 学習の実行
 trainer.train(num_iterations=1000)
 
 # モデルの保存
-ppo_agent.save_model("ppo_cartpole.pth")
-
-print("Training completed and model saved.")
+agent.save_model("ppo_model.pth")
