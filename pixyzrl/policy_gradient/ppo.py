@@ -19,15 +19,19 @@ class PPO(Model):
         self,
         actor: dists.Distribution,
         critic: dists.Distribution,
-        shared_cnn: dists.Distribution | None,
+        shared_net: dists.Distribution | None,
         gamma: float,
         eps_clip: float,
         k_epochs: int,
         lr_actor: float,
         lr_critic: float,
         device: str,
+        mse_coef: float = 0.5,
+        entropy_coef: float = 0.01,
     ) -> None:
         """Initialize the PPO agent."""
+        self.mse_coef = mse_coef
+        self.entropy_coef = entropy_coef
         self.gamma = gamma
         self.eps_clip = eps_clip
         self.K_epochs = k_epochs
@@ -36,7 +40,7 @@ class PPO(Model):
         self.device = device
 
         # Shared CNN layers (optional)
-        self.shared_cnn = shared_cnn
+        self.shared_net = shared_net
 
         # Actor network
         self.actor = actor
@@ -53,13 +57,12 @@ class PPO(Model):
 
         mse_loss = MSELoss(self.critic, "r")
 
-        # Loss calculation supports both A2C (shared_cnn) and TRPO (independent actor/critic)
-        if self.shared_cnn is not None:
-            loss = E(self.shared_cnn, ppo_loss + 0.5 * mse_loss - 0.01 * Entropy(self.actor)).mean()
-        else:
-            loss = (ppo_loss + 0.5 * mse_loss - 0.01 * Entropy(self.actor)).mean()
+        if self.shared_net is not None:  # A2C
+            loss = E(self.shared_net, ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
+        else:  # TRPO
+            loss = (ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
 
-        super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_cnn] if self.shared_cnn else []), optimizer=Adam, optimizer_params={})
+        super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []), optimizer=Adam, optimizer_params={})
 
         # Optimizer
         self.optimizer = torch.optim.Adam(
@@ -72,6 +75,6 @@ class PPO(Model):
     def select_action(self, state: torch.Tensor) -> dict[str, torch.Tensor]:
         """Select an action."""
         with torch.no_grad():
-            if self.shared_cnn is not None:
-                state = self.shared_cnn.sample({"o": state.to(self.device)})
+            if self.shared_net is not None:
+                state = self.shared_net.sample({"o": state.to(self.device)})
             return self.actor_old.sample({"s": state}) | self.critic.sample({"s": state})
