@@ -11,7 +11,7 @@ from torch import nn
 from torchvision.transforms import Compose, Lambda, Normalize, ToTensor
 
 from pixyzrl.environments.env import Env
-from pixyzrl.memory import RolloutBuffer
+from pixyzrl.memory import Memory
 from pixyzrl.policy_gradient.ppo import PPO
 
 ################################## set device ##################################
@@ -52,6 +52,16 @@ class Actor(dists.Normal):
         """Initialize the actor network."""
         super().__init__(cond_var=["s"], var=["a"], name=name)
 
+        self.feature_extract = nn.Sequential(
+            nn.LazyConv2d(32, kernel_size=8, stride=4),
+            nn.SiLU(),
+            nn.LazyConv2d(64, kernel_size=4, stride=2),
+            nn.SiLU(),
+            nn.LazyConv2d(64, kernel_size=3, stride=1),
+            nn.SiLU(),
+            nn.Flatten(),
+        )
+
         self.loc = nn.Sequential(
             nn.LazyLinear(512),
             nn.SiLU(),
@@ -68,6 +78,7 @@ class Actor(dists.Normal):
 
     def forward(self, s: torch.Tensor) -> dict[str, torch.Tensor]:  # type: ignore  # noqa: PGH003
         """Forward pass."""
+        s = self.feature_extract(s)
         loc = self.loc(s)
         scale = self.scale(s)
         return {"loc": loc, "scale": scale}
@@ -80,6 +91,16 @@ class Critic(dists.Deterministic):
         """Initialize the critic network."""
         super().__init__(var=["v"], cond_var=["s"], name="critic")
 
+        self.feature_extract = nn.Sequential(
+            nn.LazyConv2d(32, kernel_size=8, stride=4),
+            nn.SiLU(),
+            nn.LazyConv2d(64, kernel_size=4, stride=2),
+            nn.SiLU(),
+            nn.LazyConv2d(64, kernel_size=3, stride=1),
+            nn.SiLU(),
+            nn.Flatten(),
+        )
+
         self.value = nn.Sequential(
             nn.LazyLinear(512),
             nn.SiLU(),
@@ -88,6 +109,7 @@ class Critic(dists.Deterministic):
 
     def forward(self, s: torch.Tensor) -> dict[str, torch.Tensor]:
         """Forward pass."""
+        s = self.feature_extract(s)
         return {"v": self.value(s)}
 
 
@@ -112,7 +134,7 @@ def main() -> None:
     # Critic network
     critic = Critic().to(device)
 
-    agent = PPO(actor, critic, shared_cnn, gamma, eps_clip, k_epochs, lr_actor, lr_critic, device)
+    agent = PPO(actor, critic, shared_net=None, gamma=gamma, eps_clip=eps_clip, k_epochs=k_epochs, lr_actor=lr_actor, lr_critic=lr_critic, device=device)
 
     # Define environment
     env = Env("CarRacing-v3")
@@ -120,8 +142,9 @@ def main() -> None:
     # 96, 96, 3 -> 3, 96, 96
     transform = Compose(
         [
-            ToTensor(),
-            Lambda(lambda x: x.unsqueeze(0) if len(x.shape) == IMAGE_CH else x),
+            Lambda(lambda x: torch.Tensor(x)),
+            Lambda(lambda x: x.to(device)),
+            Lambda(lambda x: x.permute(0, 3, 1, 2)),
         ],
     )
 

@@ -1,7 +1,6 @@
 """Trainer class to manage training of reinforcement learning agents."""
 
 import torch
-from torchrl.objectives.value import ValueEstimatorBase
 
 from pixyzrl.logger import Logger
 
@@ -9,7 +8,7 @@ from pixyzrl.logger import Logger
 class Trainer:
     """Trainer class to manage training of reinforcement learning agents."""
 
-    def __init__(self, env, memory, agent, device, value_function: ValueEstimatorBase, logger: Logger = None):
+    def __init__(self, env, memory, agent, device, logger: Logger = None):
         """Initialize the trainer with the environment, memory, agent, and optional logger.
 
         :param env: Environment for training.
@@ -23,7 +22,7 @@ class Trainer:
         self.memory = memory
         self.agent = agent
         self.device = device
-        self.value_function = value_function
+        # self.value_function = value_function
         self.logger = logger
 
         if self.logger:
@@ -35,15 +34,14 @@ class Trainer:
 
     def collect_experiences(self):
         """Collect experiences from the environment and store them in memory."""
-        obs = self.env.reset()
+        obs, info = self.env.reset()
         done = torch.zeros(self.env.get_num_envs(), dtype=torch.bool, device=self.device)
 
         while not done.all():
-            action_dict = self.agent.select_action(torch.tensor(obs, dtype=torch.float32, device=self.device))
-            action = action_dict["a"]
-            next_obs, reward, dones, _ = self.env.step(action.cpu().numpy())
-            value = self.compute_value(obs, next_obs, reward, dones)
-            self.memory.add(obs, action.cpu().numpy(), reward, dones, value.cpu().numpy())
+            action = self.agent.select_action(torch.tensor(obs, dtype=torch.float32, device=self.device))
+            next_obs, reward, truncated, terminated, _ = self.env.step(action)
+            dones = truncated | terminated
+            self.memory.add(obs, action["a"].cpu().numpy(), reward, dones, action["v"].cpu().numpy())
             obs = next_obs
             done = torch.tensor(dones, dtype=torch.bool, device=self.device)
 
@@ -55,11 +53,29 @@ class Trainer:
         for iteration in range(num_iterations):
             self.collect_experiences()
             batch = self.memory.sample()
-            self.agent.update(batch)
-            self.memory.buffer.clear()
+            returns = self.monte_carlo_estimate(batch["r"], self.agent.gamma, batch["d"])
+            advantages = returns - batch["v"]
+
+            if iteration % 4 == 0:
+                self.agent.train(batch | {"A": advantages})
+                self.memory.clear()
 
             if self.logger:
                 self.logger.log(f"Iteration {iteration + 1}/{num_iterations} completed.")
+
+    def monte_carlo_estimate(self, rewards, gamma, is_terminals):
+        """Compute the Monte Carlo estimate of returns."""
+        returns = []
+        discounted_reward = 0
+
+        for reward, is_terminal in zip(reversed(rewards), reversed(is_terminals)):
+            if is_terminal:
+                discounted_reward = 0
+
+            discounted_reward = reward + (gamma * discounted_reward)
+            returns.insert(0, discounted_reward)
+
+        return torch.Tensor(returns)
 
     def save_model(self, path: str):
         """Save the trained model."""

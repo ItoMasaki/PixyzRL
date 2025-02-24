@@ -6,7 +6,7 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 import torch
-from gymnasium.spaces import Space
+from gymnasium.spaces import Box, Discrete, Space
 from numpy.typing import NDArray
 
 
@@ -28,12 +28,12 @@ class BaseEnv(ABC):
         self.seed = seed
 
     @abstractmethod
-    def reset(self) -> tuple[Any, dict[str, Any]]:
+    def reset(self) -> tuple[torch.Tensor, dict[str, Any]]:
         """Reset the environment."""
         ...
 
     @abstractmethod
-    def step(self, action: dict[str, torch.Tensor]) -> tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]:
+    def step(self, action: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """Step through the environment."""
         ...
 
@@ -46,6 +46,10 @@ class BaseEnv(ABC):
     def render(self) -> None:
         """Render the environment."""
         ...
+
+    def get_num_envs(self) -> int:
+        """Return the number of environments."""
+        return self.num_envs
 
     @property
     @abstractmethod
@@ -69,107 +73,91 @@ class Env(BaseEnv):
 
         Args:
             env_name (str): Name of the gym environment.
-            action_var (str, optional): Name of the action variable. Defaults to "a".
-            seed (int, optional): Random seed for reproducibility. Defaults to 42.
-        Returns:
+            action_var (str): Name of the action variable.
+            seed (int): Random seed for reproducibility.
+            render_mode (str): Rendering mode (e.g., "human", "rgb_array", "ansi").
 
-        Example:
-            env = Env("CartPole-v1", action_var="a", seed=42)
+        Examples:
+            >>> env = Env("CartPole-v1")
         """
         super().__init__(env_name, num_envs=1, seed=seed)
         self.env = gym.make(env_name, render_mode=render_mode)
         self.action_var = action_var
         self.env.reset(seed=seed)
 
-    def reset(self) -> tuple[NDArray[Any], dict[str, Any]]:
+    def reset(self) -> tuple[torch.Tensor, dict[str, Any]]:
         """Reset the environment.
 
-        Args:
         Returns:
-            tuple[Any, dict[str, Any]]: Observation and additional information.
+            tuple[NDArray[Any], dict[str, Any]]: Observation
 
-        Example:
-            env = Env("CartPole-v1", action_var="a", seed=42)
-            obs, info = env.reset()
+        Examples:
+            >>> obs, info = env.reset()
         """
         obs, info = self.env.reset()
-        return np.array([obs]), info
+        return torch.Tensor(obs), info
 
-    def step(self, action: dict[str, torch.Tensor] | torch.Tensor | np.int64 | np.float64 | float) -> tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]:
-        """Take a step in the environment.
+    def step(self, action: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
+        """Take a step in the environment with support for both discrete and continuous actions.
 
         Args:
-            action (dict[str, torch.Tensor] | torch.Tensor): Action to take.
-        Returns:
-            tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]: Observation, reward, truncated, terminated, and additional information.
+            action (Any): Action to take in the environment.
 
-        Example:
-            env = Env("CartPole-v1", action_var="a", seed=42)
-            obs, info = env.reset()
-            obs, reward, truncated, terminated, info = env.step({"a": torch.tensor([0])})
+        Returns:
+            tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]: Observation, reward, truncated, terminated, info
+
+        Examples:
+            >>> obs, reward, truncated, terminated, info = env.step(action)
         """
 
+        if isinstance(action, dict):
+            action = action[self.action_var]
+
         if isinstance(action, torch.Tensor):
-            obs, reward, truncated, terminated, info = self.env.step(action.to("cpu").numpy())
-            return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info
+            action = action.detach().cpu().numpy()
 
-        if isinstance(action, np.int64 | np.float64 | float):
-            obs, reward, truncated, terminated, info = self.env.step(action)
-            return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info
+        if isinstance(self.env.action_space, Discrete):
+            if isinstance(action, np.ndarray):
+                action = int(action.argmax())  # Categoricalの出力を整数アクションに変換
+            elif isinstance(action, float | np.float64):
+                action = int(action)  # 確実に整数に変換
 
-        obs, reward, truncated, terminated, info = self.env.step(action[self.action_var].squeeze().to("cpu").numpy())
-        return np.array([obs]), np.array([reward]), np.array([truncated]), np.array([terminated]), info
+        elif isinstance(self.env.action_space, Box):
+            action = np.clip(action, self.env.action_space.low, self.env.action_space.high)  # 連続値を制限
+
+        obs, reward, truncated, terminated, info = self.env.step(action)
+        return torch.Tensor(obs), torch.Tensor([reward]), torch.Tensor([truncated]), torch.Tensor([terminated]), info
 
     def close(self) -> None:
         """Close the environment.
 
-        Args:
-        Returns:
-
-        Example:
-            env = Env("CartPole-v1", action_var="a", seed=42)
-            obs, info = env.reset()
-            env.close()
+        Examples:
+            >>> env.close()
         """
         self.env.close()
 
     def render(self) -> None:
         """Render the environment.
 
-        Args:
-        Returns:
-
-        Example:
-            env = Env("CartPole-v1", action_var="a", seed=42)
-            obs, info = env.reset()
-            env.render()
+        Examples:
+            >>> env.render()
         """
         self.env.render()
 
     @property
-    def observation_space(self) -> gym.Space[Any]:
+    def observation_space(self) -> Space[Any]:
         """Return observation space.
 
-        Args:
-        Returns:
-            gym.Space[Any]: Observation space.
-
-        Example:
-            env = Env("CartPole-v1", action_var="a", seed=42)
-            obs_space = env.observation_space
+        Examples:
+            >>> obs_space = env.observation_space
         """
         return self.env.observation_space
 
     @property
-    def action_space(self) -> gym.Space[Any]:
+    def action_space(self) -> Space[Any]:
         """Return action space.
 
-        Args:
-        Returns:
-            gym.Space[Any]: Action space.
-
-        Example:
-            env = Env("CartPole-v1", action_var="a", seed=42)
-            action_space = env.action_space
+        Examples:
+            >>> action_space = env.action_space
         """
         return self.env.action_space

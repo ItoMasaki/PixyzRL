@@ -2,93 +2,125 @@ from typing import Any
 
 import torch
 from numpy.typing import NDArray
-from tensordict import TensorDict
-from torchrl.data import LazyTensorStorage, ReplayBuffer
 
 
-class Memory:
-    """Base class for memory buffer."""
+class BaseBuffer:
+    """Base class for replay buffers.
 
-    def __init__(self, obs_shape: tuple[int, ...], action_shape: tuple[int, ...], buffer_size: int, num_envs: int = 1, device: str | torch.device = "cpu", key_mapping: dict[str, str] | None = None, **kwargs: dict[str, Any]) -> None:
-        """Initialize the memory buffer.
+    This class provides a simple interface for storing and sampling experiences.
+
+    Args:
+        buffer_size (int): Size of the replay buffer.
+        env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+        device (str): Device to store the replay buffer.
+        n_step (int): Number of steps for n-step returns.
+
+    Example:
+        >>> buffer = BaseBuffer(1000, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, "cpu", 1)
+    """
+
+    def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
+        """
+        Initialize the replay buffer with flexible env_dict settings.
 
         Args:
-            obs_shape (tuple): Shape of the observation space.
-            action_shape (tuple): Shape of the action space.
-            buffer_size (int): Size of the buffer.
-            num_envs (int, optional): Number of environments. Defaults to 1.
-            device (str | torch.device, optional): Device to run the memory on. Defaults to "cpu".
-            key_mapping (dict[str, str], optional): Key mapping for the data. Defaults to None.
-            **kwargs (dict[str, Any]): Additional keyword arguments.
-        Returns:
+            buffer_size (int): Size of the replay buffer.
+            env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+            device (str): Device to store the replay buffer.
+            n_step (int): Number of steps for n-step returns.
 
-        Examples:
-            >>> memory = Memory(obs_shape=(4,), action_shape=(2,), buffer_size=100)
+        Example:
+            >>> buffer = BaseBuffer(1000, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, "cpu", 1)
         """
+        self.buffer = {}
 
-        self.obs_shape = obs_shape
-        self.action_shape = action_shape
         self.buffer_size = buffer_size
-        self.num_envs = num_envs
+        self.env_dict = env_dict
         self.device = device
-        self.key_mapping = key_mapping if key_mapping else {"obs": "s", "action": "a", "reward": "r", "done": "d"}
-        self.storage = LazyTensorStorage(buffer_size * num_envs)
-        self.buffer = ReplayBuffer(storage=self.storage, batch_size=buffer_size * num_envs)
+        self.n_envs = n_envs
+        self.pos = 0
 
-        self.kwargs = kwargs
+        for k, v in env_dict.items():
+            self.buffer[k] = torch.empty((buffer_size, n_envs, *v["shape"]), dtype=v.get("dtype", torch.float32), device=device)
 
-    def add(self, obs: NDArray[Any], action: NDArray[Any], reward: NDArray[Any], done: NDArray[Any]) -> None:
+    def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -> None:
         """Add a new experience to the buffer.
 
         Args:
-            obs (NDArray): Observation.
-            action (NDArray): Action.
-            reward (NDArray): Reward.
-            done (NDArray): Done flag.
+            **kwargs (dict[str, Any]): Key-value pairs of experience data.
 
-        Examples:
-            >>> memory.add(obs, action, reward, done)
+        Example:
+            >>> buffer.add(obs=obs, action=action, reward=reward, done=done)
         """
+        self.pos = (self.pos + 1) % self.buffer_size
+        for k, v in kwargs.items():
+            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape)
 
-        data = TensorDict(
-            {
-                "obs": torch.tensor(obs, dtype=torch.float32, device=self.device),
-                "action": torch.tensor(action, dtype=torch.float32, device=self.device),
-                "reward": torch.tensor(reward, dtype=torch.float32, device=self.device),
-                "done": torch.tensor(done, dtype=torch.float32, device=self.device),
-            },
-            batch_size=self.num_envs,
-        )
-
-        self.buffer.add(data)
-
-    def sample(self) -> dict[str, torch.Tensor]:
+    def sample(self, batch_size: int) -> dict[str, Any]:
         """Sample a batch of experiences.
 
-        Returns:
-            dict[str, torch.Tensor]: Sampled batch of experiences.
+        Args:
+            batch_size (int): Number of samples per batch.
 
-        Examples:
-            >>> sample = memory.sample()
+        Returns:
+            dict[str, Any]: Sampled batch of experiences.
+
+        Example:
+            >>> batch = buffer.sample(32)
         """
-        sample = self.buffer.sample()
-        return {self.key_mapping[key]: value for key, value in sample.items()}
+        idx = torch.randint(0, self.buffer_size, (batch_size,))
+        return {k: v[idx].to(self.device) for k, v in self.buffer.items()}
 
     def clear(self) -> None:
         """Clear the buffer.
 
-        Examples:
-            >>> memory.clear()
+        Example
+            >>> buffer.clear()
         """
-        self.buffer = ReplayBuffer(storage=LazyTensorStorage(self.buffer_size * self.num_envs), batch_size=self.buffer_size * self.num_envs)
+        for k in self.buffer:
+            self.buffer[k].zero_()
+        self.pos = 0
 
     def __len__(self) -> int:
-        """Return the length of the buffer.
+        """Return the number of stored experiences.
 
         Returns:
-            int: Length of the buffer.
+            int: Number of stored experiences.
 
-        Examples:
-            >>> len(memory)
+        Example:
+            >>> len(buffer)
         """
-        return len(self.buffer)
+        return self.pos
+
+
+class RolloutBuffer(BaseBuffer):
+    """Rollout buffer for storing trajectories.
+
+    This class provides a simple interface for storing and sampling trajectories.
+
+    Args:
+        buffer_size (int): Size of the replay buffer.
+        env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+        device (str): Device to store the replay buffer.
+        n_step (int): Number of steps for n-step returns.
+
+    Example:
+        >>> buffer = RolloutBuffer(1000, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, "cpu", 1)
+    """
+
+    def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
+        """
+        Initialize the replay buffer with flexible env_dict settings.
+
+        Args:
+            buffer_size (int): Size of the replay buffer.
+            env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+            device (str): Device to store the replay buffer.
+            n_step (int): Number of steps for n-step returns.
+
+        Example:
+            >>> buffer = RolloutBuffer(1000, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, "cpu", 1)
+        """
+        super().__init__(buffer_size, env_dict, device, n_envs)
+
+    def 
