@@ -1,6 +1,6 @@
 # PixyzRL
 
-PixyzRL は、Pixyz ライブラリを活用した強化学習（Reinforcement Learning, RL）のためのライブラリです。本ライブラリは、Proximal Policy Optimization (PPO) などの方策勾配法を簡潔に実装し、環境とのインタラクションや学習のプロセスを管理できるように設計されています。
+PixyzRL は，Pixyz ライブラリを活用した強化学習（Reinforcement Learning, RL）のためのライブラリです．本ライブラリは，Proximal Policy Optimization (PPO) などの方策勾配法を簡潔に実装し，環境とのインタラクションや学習のプロセスを管理できるように設計されています．現在開発中．
 
 ## 特徴
 
