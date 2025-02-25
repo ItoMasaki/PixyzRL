@@ -42,11 +42,11 @@ class Critic(Deterministic):
 actor = Actor()
 critic = Critic()
 
-buffer = RolloutBuffer(100, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, {"obs": "o", "action": "a", "reward": "reward", "done": "d", "returns": "r", "advantages": "A"}, "cpu", 1)
+buffer = RolloutBuffer(2048, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, {"obs": "o", "action": "a", "reward": "reward", "done": "d", "returns": "r", "advantages": "A"}, "cpu", 1)
 
 obs, info = env.reset()
 
-for _ in range(10):
+for _ in range(20):
     while True:
         action = torch.argmax(actor.sample({"o": obs})["a"])
         next_obs, reward, trancated, terminated, _ = env.step(action)
@@ -61,4 +61,4 @@ for _ in range(10):
             returns_and_advantages_gae = buffer.compute_returns_and_advantages_gae(next_obs, 0.99, 0.95, critic)
             break
 
-print(buffer.sample(10))
+print(buffer.sample(64))
