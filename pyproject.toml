@@ -54,10 +54,6 @@ gitlab-ci = [
   "pytest>=7.4.3"
 ]
 
-[project.scripts]
-pixyzrl-train = "pixyzrl.trainer:main"
-pixyzrl-eval = "pixyzrl.evaluation:main"
-
 [tool.black]
 line-length = 88
 target-version = ['py310']

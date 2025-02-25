@@ -22,7 +22,6 @@ class Trainer:
         self.memory = memory
         self.agent = agent
         self.device = device
-        # self.value_function = value_function
         self.logger = logger
 
         if self.logger:
@@ -53,8 +52,7 @@ class Trainer:
         for iteration in range(num_iterations):
             self.collect_experiences()
             batch = self.memory.sample()
-            returns = self.monte_carlo_estimate(batch["r"], self.agent.gamma, batch["d"])
-            advantages = returns - batch["v"]
+            self.agent.train(batch)
 
             if iteration % 4 == 0:
                 self.agent.train(batch | {"A": advantages})
@@ -62,20 +60,6 @@ class Trainer:
 
             if self.logger:
                 self.logger.log(f"Iteration {iteration + 1}/{num_iterations} completed.")
-
-    def monte_carlo_estimate(self, rewards, gamma, is_terminals):
-        """Compute the Monte Carlo estimate of returns."""
-        returns = []
-        discounted_reward = 0
-
-        for reward, is_terminal in zip(reversed(rewards), reversed(is_terminals)):
-            if is_terminal:
-                discounted_reward = 0
-
-            discounted_reward = reward + (gamma * discounted_reward)
-            returns.insert(0, discounted_reward)
-
-        return torch.Tensor(returns)
 
     def save_model(self, path: str):
         """Save the trained model."""
