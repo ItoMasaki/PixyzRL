@@ -20,9 +20,7 @@ class PPO(Model):
         actor: dists.Distribution,
         critic: dists.Distribution,
         shared_net: dists.Distribution | None,
-        gamma: float,
         eps_clip: float,
-        k_epochs: int,
         lr_actor: float,
         lr_critic: float,
         device: str,
@@ -32,9 +30,7 @@ class PPO(Model):
         """Initialize the PPO agent."""
         self.mse_coef = mse_coef
         self.entropy_coef = entropy_coef
-        self.gamma = gamma
         self.eps_clip = eps_clip
-        self.K_epochs = k_epochs
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
