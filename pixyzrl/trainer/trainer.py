@@ -61,13 +61,13 @@ class Trainer:
             if self.logger:
                 self.logger.log(f"Iteration {iteration + 1}/{num_iterations} completed.")
 
-    def save_model(self, path: str):
+    def save(self, path: str):
         """Save the trained model."""
         torch.save(self.agent.state_dict(), path)
         if self.logger:
             self.logger.log(f"Model saved at {path}.")
 
-    def load_model(self, path: str):
+    def load(self, path: str):
         """Load a trained model."""
         self.agent.load_state_dict(torch.load(path, map_location=self.device))
         if self.logger:
