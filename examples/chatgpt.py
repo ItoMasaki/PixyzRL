@@ -5,7 +5,7 @@ from pixyz.distributions import Deterministic, Normal
 
 from pixyzrl.environments.env import Env
 from pixyzrl.memory import RolloutBuffer
-from pixyzrl.policy_gradient.ppo import PPO
+from pixyzrl.on_policy.ppo import PPO
 
 # 1. 環境の作成
 env = Env("CartPole-v1")

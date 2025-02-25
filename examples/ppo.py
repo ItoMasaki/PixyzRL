@@ -12,7 +12,7 @@ from torchvision.transforms import Compose, Lambda, Normalize, ToTensor
 
 from pixyzrl.environments.env import Env
 from pixyzrl.memory import Memory
-from pixyzrl.policy_gradient.ppo import PPO
+from pixyzrl.on_policy.ppo import PPO
 
 ################################## set device ##################################
 
