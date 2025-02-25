@@ -1,3 +1,4 @@
+from .a2c import A2C
 from .ppo import PPO
 
-__all__ = ["PPO"]
+__all__ = ["PPO", "A2C"]
