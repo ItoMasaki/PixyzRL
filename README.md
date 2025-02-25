@@ -10,6 +10,7 @@ PixyzRL は，Pixyz ライブラリを活用した強化学習（Reinforcement L
 - **環境の管理 (Gymnasium ラッパー)**
 - **メモリ管理 (Experience Replay, Rollout Buffer)**
 - **ロギング機能**
+- **今後の追加予定: DQN, A2C, POMDP モデルのサポート**
 
 ## インストール
 
@@ -46,9 +47,8 @@ env = Env("CartPole-v1")
 ```python
 import torch.nn as nn
 import torch.nn.functional as F
-from pixyz.distributions import Normal, Determinisic
+from pixyz.distributions import Normal, Deterministic
 from pixyzrl.policy_gradient.ppo import PPO
-
 
 class Actor(Normal):
     def __init__(self, state_dim, action_dim):
@@ -60,28 +60,12 @@ class Actor(Normal):
 
     def forward(self, s):
         h = F.relu(self.fc1(s))
-        h = F.relu(self.fc2(h))
+        h = F.relu(self.fc2(s))
         loc = self.fc_loc(h)  # 平均 (μ)
         scale = F.softplus(self.fc_scale(h)) + 1e-6  # 標準偏差 (σ), softplus で正の値に
         return {"loc": loc, "scale": scale}
 
-class Critic(Determinisic):
-    def __init__(self, state_dim):
-        super().__init__(var=["v"], cond_var=["s"], name="critic")
-        self.fc1 = nn.Linear(state_dim, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc_loc = nn.Linear(64, 1)
-        self.fc_scale = nn.Linear(64, 1)
-
-    def forward(self, s):
-        h = F.relu(self.fc1(s))
-        h = F.relu(self.fc2(h))
-        loc = self.fc_loc(h)
-        scale = F.softplus(self.fc_scale(h)) + 1e-6
-        return {"loc": loc, "scale": scale}
-
 actor = Actor(state_dim, action_dim)
-critic = Critic(state_dim)
 agent = PPO(actor, critic, shared_cnn=None, gamma=0.99, eps_clip=0.2, k_epochs=4, lr_actor=3e-4, lr_critic=1e-3, device="cpu")
 ```
 
@@ -105,13 +89,20 @@ agent.save_model("ppo_model.pth")
 agent.load_model("ppo_model.pth")
 ```
 
+## 進行中の開発
+
+- **DQN の実装中**: `dqn.py` にて開発予定
+- **POMDP モデルのサポート**: RSSM の実装
+- **A2C の統合**: PPO の拡張
+- **テストの追加**: `pytest` を利用したユニットテストの整備
+
 ## ディレクトリ構成
 
 ```
 PixyzRL
 ├── docs
-│   └── pixyz
-│       └── README.pixyz.md
+│   └── pixyz
+│       └── README.pixyz.md
 ├── examples        # サンプルコード
 ├── pixyzrl
 │   ├── environments  # 環境のラッパー
