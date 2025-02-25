@@ -94,7 +94,7 @@ class Env(BaseEnv):
         Examples:
             >>> obs, info = env.reset()
         """
-        obs, info = self.env.reset()
+        obs, info = self.env.reset(seed=self.seed)
         return torch.Tensor(obs), info
 
     def step(self, action: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
@@ -109,18 +109,11 @@ class Env(BaseEnv):
         Examples:
             >>> obs, reward, truncated, terminated, info = env.step(action)
         """
-
         if isinstance(action, dict):
             action = action[self.action_var]
 
         if isinstance(action, torch.Tensor):
             action = action.detach().cpu().numpy()
-
-        if isinstance(self.env.action_space, Discrete):
-            if isinstance(action, np.ndarray):
-                action = int(action.argmax())  # Categoricalの出力を整数アクションに変換
-            elif isinstance(action, float | np.float64):
-                action = int(action)  # 確実に整数に変換
 
         elif isinstance(self.env.action_space, Box):
             action = np.clip(action, self.env.action_space.low, self.env.action_space.high)  # 連続値を制限

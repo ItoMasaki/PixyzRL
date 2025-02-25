@@ -17,7 +17,6 @@ class A2C(Model):
         self,
         actor: dists.Distribution,
         critic: dists.Distribution,
-        gamma: float,
         lr_actor: float,
         lr_critic: float,
         device: str,
@@ -27,7 +26,6 @@ class A2C(Model):
         """Initialize the A2C agent."""
         self.mse_coef = mse_coef
         self.entropy_coef = entropy_coef
-        self.gamma = gamma
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device

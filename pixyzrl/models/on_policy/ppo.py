@@ -56,7 +56,7 @@ class PPO(Model):
         if self.shared_net is not None:  # A2C
             loss = E(self.shared_net, ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
         else:  # TRPO
-            loss = (ppo_loss - self.entropy_coef * Entropy(self.actor)).mean() + (self.mse_coef * mse_loss).mean()
+            loss = (ppo_loss - self.entropy_coef * Entropy(self.actor)).mean() + self.mse_coef * mse_loss.mean()
 
         super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []), optimizer=Adam, optimizer_params={})
 
@@ -68,9 +68,9 @@ class PPO(Model):
             ],
         )
 
-    def select_action(self, state: torch.Tensor) -> dict[str, torch.Tensor]:
+    def select_action(self, state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Select an action."""
         with torch.no_grad():
             if self.shared_net is not None:
-                state = self.shared_net.sample({self.shared_net.var[0]: state.to(self.device)})
-            return self.actor_old.sample({self.actor_old.cond_var[0]: state}) | self.critic.sample({self.critic.cond_var[0]: state})
+                state = self.shared_net.sample(state)
+            return self.actor_old.sample(state) | self.critic.sample(state)
