@@ -183,4 +183,4 @@ Masaki Ito ( l1sum [at] icloud.com )
 ## Community & Support
 
 For more details, visit:
-[PixyzRL ChatGPT Page](https://chatgpt.com/g/g-67b7c36695fc8191aca4cb7420dad17c-pixyzrl)
+[PixyzRL ChatGPT Page](https://chatgpt.com/share/67bea1bf-3638-8003-acd7-731599308d5f)
