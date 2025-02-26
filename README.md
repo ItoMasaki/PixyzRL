@@ -182,6 +182,7 @@ Masaki Ito ( l1sum [at] icloud.com )
 - [ ] Implement model-based algorithms:
   - [ ] Dreamer
 - [ ] Collaborate with ChatGPT (MyGPT) for building architectures by natural languages.
+- [ ] Collaborate with [Genesis](https://genesis-world.readthedocs.io/en/latest/user_guide/overview/what_is_genesis.html).
 
 ## Community & Support
 
