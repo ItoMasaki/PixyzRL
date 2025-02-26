@@ -138,6 +138,8 @@ for _ in range(2000):
 
 In future work, we don't neet to write traning loop.
 
+https://github.com/user-attachments/assets/d2851833-38f8-46f5-8b84-6ce1bbaeb62a
+
 ## Directory Structure
 
 ```
@@ -155,10 +157,6 @@ PixyzRL
 │   ├── logger  # Logging utilities
 └── pyproject.toml
 ```
-
-
-https://github.com/user-attachments/assets/d2851833-38f8-46f5-8b84-6ce1bbaeb62a
-
 
 
 ## License
