@@ -1,5 +1,3 @@
-from math import e
-
 import torch
 from anyio import value
 from pixyz.distributions import Categorical, Deterministic
