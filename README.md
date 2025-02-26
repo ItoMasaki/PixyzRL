@@ -179,6 +179,7 @@ Masaki Ito ( l1sum [at] icloud.com )
   - [ ] Deep Q-Network (DQN)
   - [ ] Deep Deterministic Policy Gradient (DDPG)
   - [ ] Soft Actor-Critic (SAC)
+  - [ ] Dreamer
 
 ## Community & Support
 
