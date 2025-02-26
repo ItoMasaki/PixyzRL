@@ -1,6 +1,7 @@
 import torch
 from anyio import value
 from pixyz.distributions import Categorical, Deterministic
+from pixyz.utils import print_latex
 from torch import nn
 
 from pixyzrl.environments import Env
@@ -52,6 +53,7 @@ critic = Critic()
 
 
 ppo = PPO(actor, critic, None, 0.2, 3e-4, 1e-3, "cpu", entropy_coef=0.0, mse_coef=1.0)
+print_latex(ppo)
 
 buffer = RolloutBuffer(2048, {"obs": {"shape": (4,)}, "value": {"shape": (1,)}, "action": {"shape": (2,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, {"obs": "o", "action": "a", "reward": "reward", "value": "v", "done": "d", "returns": "r", "advantages": "A"}, "cpu", 1)
 
