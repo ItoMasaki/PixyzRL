@@ -175,11 +175,13 @@ Masaki Ito ( l1sum [at] icloud.com )
 
 - [ ] Improve `Trainer` with additional optimization techniques
 - [ ] Enhance `Logger` for better tracking and visualization
-- [ ] Implement additional models:
+- [ ] Implement model free algorithms:
   - [ ] Deep Q-Network (DQN)
   - [ ] Deep Deterministic Policy Gradient (DDPG)
   - [ ] Soft Actor-Critic (SAC)
+- [ ] Implement model-based algorithms:
   - [ ] Dreamer
+- [ ] Collaborate with ChatGPT (MyGPT) for building architectures by natural languages.
 
 ## Community & Support
 
