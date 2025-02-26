@@ -156,7 +156,10 @@ PixyzRL
 └── pyproject.toml
 ```
 
-[](https://github.com/ItoMasaki/PixyzRL/blob/feature/readme/docs/result_videos/cartpole_v1_discrete.mov)
+
+https://github.com/user-attachments/assets/d2851833-38f8-46f5-8b84-6ce1bbaeb62a
+
+
 
 ## License
 
