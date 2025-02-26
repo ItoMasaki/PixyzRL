@@ -51,7 +51,7 @@ from torch import nn
 
 class Actor(Categorical):
     def __init__(self):
-        super().__init__(var=["a"], cond_var=["o"], name="actor")
+        super().__init__(var=["a"], cond_var=["o"], name="p")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -66,7 +66,7 @@ class Actor(Categorical):
 
 class Critic(Deterministic):
     def __init__(self):
-        super().__init__(var=["v"], cond_var=["o"], name="critic")
+        super().__init__(var=["v"], cond_var=["o"], name="f")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -82,12 +82,29 @@ actor = Actor()
 critic = Critic()
 ```
 
+#### 2.1 Display distributions as `latex`
+
+```
+>>> pixyzrl.utils.print_latex(actor)
+p(a|o)
+
+>>> pixyzrl.utils.print_latex(critic)
+f(v|o)
+```
+
 ### 3. Initialize PPO Agent
 
 ```python
 from pixyzrl.models import PPO
 
 ppo = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, device="cpu", entropy_coef=0.0, mse_coef=1.0)
+```
+
+##### 3.1 Display model as `latex`
+
+```
+>>> pixyzrl.utils.print_latex(ppo)
+mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
 
 ### 4. Setup Rollout Buffer
