@@ -156,6 +156,8 @@ PixyzRL
 └── pyproject.toml
 ```
 
+()[https://github.com/ItoMasaki/PixyzRL/blob/feature/readme/docs/result_videos/cartpole_v1_discrete.mov]
+
 ## License
 
 PixyzRL is released under the MIT License.
