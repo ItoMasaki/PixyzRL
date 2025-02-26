@@ -136,7 +136,7 @@ for _ in range(2000):
     ppo.actor_old.load_state_dict(ppo.actor.state_dict())
 ```
 
-In the future work, we don't neet to write traning loop explicitly.
+In the future work, we don't need to write traning loop explicitly.
 
 https://github.com/user-attachments/assets/fdf15f97-6fb9-4f12-8522-503eccb47fe5
 
