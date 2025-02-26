@@ -20,9 +20,7 @@ class PPO(Model):
         actor: dists.Distribution,
         critic: dists.Distribution,
         shared_net: dists.Distribution | None,
-        gamma: float,
         eps_clip: float,
-        k_epochs: int,
         lr_actor: float,
         lr_critic: float,
         device: str,
@@ -32,9 +30,7 @@ class PPO(Model):
         """Initialize the PPO agent."""
         self.mse_coef = mse_coef
         self.entropy_coef = entropy_coef
-        self.gamma = gamma
         self.eps_clip = eps_clip
-        self.K_epochs = k_epochs
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
@@ -60,7 +56,7 @@ class PPO(Model):
         if self.shared_net is not None:  # A2C
             loss = E(self.shared_net, ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
         else:  # TRPO
-            loss = (ppo_loss - self.entropy_coef * Entropy(self.actor)).mean() + (self.mse_coef * mse_loss).mean()
+            loss = (ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
 
         super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []), optimizer=Adam, optimizer_params={})
 
@@ -72,9 +68,9 @@ class PPO(Model):
             ],
         )
 
-    def select_action(self, state: torch.Tensor) -> dict[str, torch.Tensor]:
+    def select_action(self, state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Select an action."""
         with torch.no_grad():
             if self.shared_net is not None:
-                state = self.shared_net.sample({self.shared_net.var[0]: state.to(self.device)})
-            return self.actor_old.sample({self.actor_old.cond_var[0]: state}) | self.critic.sample({self.critic.cond_var[0]: state})
+                state = self.shared_net.sample(state)
+            return self.actor_old.sample(state) | self.critic.sample(state)

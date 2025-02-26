@@ -165,6 +165,6 @@ class MSELoss(Loss):
 
     def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass."""
-        loss = self.MSELoss(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var]).mean()
+        loss = self.MSELoss(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var].squeeze()).mean()
 
         return loss, {}

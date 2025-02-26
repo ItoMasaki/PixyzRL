@@ -80,8 +80,8 @@ class BaseBuffer:
         Example:
             >>> batch = buffer.sample(32)
         """
-        idx = torch.randint(0, self.buffer_size, (batch_size,))
-        return {self.key_mapping[k]: v[idx].to(self.device) for k, v in self.buffer.items()}
+        idx = torch.randint(0, self.pos - 1, (batch_size,))
+        return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}
 
     def clear(self) -> None:
         """Clear the buffer.
@@ -102,7 +102,7 @@ class BaseBuffer:
         Example:
             >>> len(buffer)
         """
-        return self.pos
+        return self.pos + 1
 
 
 class RolloutBuffer(BaseBuffer):
@@ -142,7 +142,7 @@ class RolloutBuffer(BaseBuffer):
         """
         super().__init__(buffer_size, env_dict, key_mapping, device, n_envs)
 
-    def compute_returns_and_advantages_gae(self, last_state: torch.Tensor, gamma: float, lmbd: float, critic: Distribution) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lmbd: float) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -158,27 +158,31 @@ class RolloutBuffer(BaseBuffer):
             >>> returns_advantages = buffer.compute_returns_and_advantages_gae(last_state, gamma, lmbd, critic)
         """
         with torch.no_grad():
-            last_value = critic.sample({"o": last_state})["v"]
-            last_gae = 0
-            last_return = last_value
-            returns = torch.empty(self.buffer_size, self.n_envs, device=self.device)
-            advantages = torch.empty(self.buffer_size, self.n_envs, device=self.device)
+            advantages = torch.zeros_like(self.buffer["reward"])
+            gae = 0.0
 
-            for i in reversed(range(self.buffer_size - 1)):
-                mask = 1 - self.buffer["done"][i]
-                cond_param = {self.key_mapping[k]: v[i + 1] for k, v in self.buffer.items()}
-                next_value = critic.sample(cond_param)["v"]
-                next_value = critic.sample({critic.cond_var[0]: self.buffer["obs"][i + 1]})["v"]
-                delta = self.buffer["reward"][i] + gamma * next_value * mask - critic.sample({critic.cond_var[0]: self.buffer["obs"][i]})["v"]
-                last_gae = delta + gamma * lmbd * mask * last_gae
-                last_return = self.buffer["reward"][i] + gamma * last_return * mask
-                returns[i] = last_return
-                advantages[i] = last_gae
+            for i in reversed(range(self.buffer_size)):
+                if i == self.buffer_size - 1:
+                    # バッチ末端の next_value は last_value（実装により異なる）
+                    next_value = last_value
+                    next_nonterminal = 1.0 - self.buffer["done"][i]
+                else:
+                    next_value = self.buffer["value"][i + 1]
+                    next_nonterminal = 1.0 - self.buffer["done"][i + 1]
 
-        self.buffer |= {"returns": returns, "advantages": advantages}
+                delta = self.buffer["reward"][i] + gamma * next_value * next_nonterminal - self.buffer["value"][i]
+                gae = delta + gamma * lmbd * next_nonterminal * gae
+                advantages[i] = gae
+
+            # 最終的にReturnを作る場合は以下
+            returns = advantages + self.buffer["value"]
+
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
 
-    def compute_returns_and_advantages_mc(self, gamma: float, critic: Distribution) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_mc(self, gamma: float) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -195,9 +199,12 @@ class RolloutBuffer(BaseBuffer):
         for i in reversed(range(self.buffer_size)):
             discounted_return = self.buffer["reward"][i] + gamma * discounted_return * (1 - self.buffer["done"][i])
             returns[i] = discounted_return
-        advantages = returns - critic.sample({"o": self.buffer["obs"]})["v"]
 
-        self.buffer |= {"returns": returns, "advantages": advantages}
+        advantages = returns - self.buffer["value"]
+
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
 
     def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int, critic: Distribution) -> dict[str, torch.Tensor]:
