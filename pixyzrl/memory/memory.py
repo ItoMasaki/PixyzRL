@@ -236,3 +236,56 @@ class RolloutBuffer(BaseBuffer):
 
         self.buffer |= {"returns": returns, "advantages": advantages}
         return {"returns": returns, "advantages": advantages}
+
+
+class ExperienceReplay(BaseBuffer):
+    """Standard Experience Replay Buffer for DQN."""
+
+    def __init__(self, state_shape: tuple, action_shape: tuple, buffer_size: int = 10000, batch_size: int = 64, device: str = "cpu"):
+        """Initialize the buffer."""
+        env_dict = {"states": {"shape": state_shape}, "actions": {"shape": action_shape}, "rewards": {"shape": (1,)}, "next_states": {"shape": state_shape}, "dones": {"shape": (1,), "dtype": torch.bool}}
+        super().__init__(buffer_size, env_dict, None, device)
+        self.batch_size = batch_size
+
+    def add(self, state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, done: bool) -> None:
+        """Add an experience to the buffer."""
+        super().add(states=state, actions=action, rewards=reward, next_states=next_state, dones=done)
+
+    def sample(self) -> dict[str, torch.Tensor]:
+        """Sample a batch of experiences."""
+        return super().sample(self.batch_size)
+
+    def clear(self) -> None:
+        """Clear the buffer."""
+        super().clear()
+
+
+class PrioritizedExperienceReplay(BaseBuffer):
+    """Prioritized Experience Replay Buffer for DQN."""
+
+    def __init__(self, state_shape: tuple, action_shape: tuple, buffer_size: int = 10000, batch_size: int = 64, device: str = "cpu", alpha: float = 0.6, beta: float = 0.4):
+        """Initialize the buffer with prioritization."""
+        env_dict = {"states": {"shape": state_shape}, "actions": {"shape": action_shape}, "rewards": {"shape": (1,)}, "next_states": {"shape": state_shape}, "dones": {"shape": (1,), "dtype": torch.bool}, "priorities": {"shape": (1,), "dtype": torch.float32}}
+        super().__init__(buffer_size, env_dict, None, device)
+        self.batch_size = batch_size
+        self.alpha = alpha
+        self.beta = beta
+
+    def add(self, state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, done: bool, priority: float = 1.0) -> None:
+        """Add an experience to the buffer with priority."""
+        super().add(states=state, actions=action, rewards=reward, next_states=next_state, dones=done, priorities=priority**self.alpha)
+
+    def sample(self) -> dict[str, torch.Tensor]:
+        """Sample a batch of experiences with prioritization."""
+        priorities = self.buffer["priorities"][: self.pos] if not self.full else self.buffer["priorities"]
+        probabilities = priorities / priorities.sum()
+        indices = np.random.choice(len(probabilities), self.batch_size, p=probabilities.numpy(), replace=False)
+        weights = (len(probabilities) * probabilities[indices]) ** (-self.beta)
+        weights /= weights.max()
+        batch = {k: v[indices] for k, v in self.buffer.items() if k != "priorities"}
+        batch["weights"] = torch.tensor(weights, dtype=torch.float32, device=self.device)
+        return batch
+
+    def clear(self) -> None:
+        """Clear the buffer."""
+        super().clear()
