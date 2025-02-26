@@ -71,7 +71,7 @@ class RatioLoss(Loss):
         self.q.requires_grad = False
 
     @property
-    def _symbol(self):
+    def _symbol(self) -> sympy.Symbol:
         return sympy.Symbol(f"\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}")
 
     def forward(self, x_dict: dict[str, Any], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[None, None]]:
@@ -120,7 +120,7 @@ class ClipLoss(LossSelfOperator):
         self.max = max
 
     @property
-    def _symbol(self):
+    def _symbol(self) -> sympy.Symbol:
         return sympy.Symbol(f"clip({self.loss1.loss_text}, {self.min}, {self.max})")
 
     def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
@@ -156,15 +156,15 @@ class MSELoss(Loss):
         self.p = p
         self.var = var
 
-        self.MSELoss = nn.MSELoss(reduction=reduction)
+        self.mse = nn.MSELoss(reduction=reduction)
 
     @property
     def _symbol(self) -> sympy.Symbol:
         """Return the symbol of the loss."""
-        return sympy.Symbol(f"MSE({self.p.prob_text}, {self.var2})")
+        return sympy.Symbol(f"MSE({self.p.prob_text}, {self.var})")
 
     def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass."""
-        loss = self.MSELoss(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var].squeeze()).mean()
+        loss = self.mse(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var].squeeze()).mean()
 
         return loss, {}

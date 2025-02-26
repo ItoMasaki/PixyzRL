@@ -50,6 +50,7 @@ class Critic(Deterministic):
 actor = Actor()
 critic = Critic()
 
+
 ppo = PPO(actor, critic, None, 0.2, 3e-4, 1e-3, "cpu", entropy_coef=0.0, mse_coef=1.0)
 
 buffer = RolloutBuffer(2048, {"obs": {"shape": (4,)}, "value": {"shape": (1,)}, "action": {"shape": (2,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, {"obs": "o", "action": "a", "reward": "reward", "value": "v", "done": "d", "returns": "r", "advantages": "A"}, "cpu", 1)
