@@ -1,14 +1,13 @@
 import torch
 from anyio import value
 from pixyz.distributions import Categorical, Deterministic
-from pixyz.utils import print_latex
 from torch import nn
 
 from pixyzrl.environments import Env
 from pixyzrl.memory import RolloutBuffer
 from pixyzrl.models import PPO
 
-env = Env("CartPole-v1")
+env = Env("CarRacing-v3")
 state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.n
 
@@ -51,12 +50,8 @@ class Critic(Deterministic):
 actor = Actor()
 critic = Critic()
 
-print(actor)
-print(critic)
 
 ppo = PPO(actor, critic, None, 0.2, 3e-4, 1e-3, "cpu", entropy_coef=0.0, mse_coef=1.0)
-
-print_latex(ppo)
 
 buffer = RolloutBuffer(2048, {"obs": {"shape": (4,)}, "value": {"shape": (1,)}, "action": {"shape": (2,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, {"obs": "o", "action": "a", "reward": "reward", "value": "v", "done": "d", "returns": "r", "advantages": "A"}, "cpu", 1)
 
