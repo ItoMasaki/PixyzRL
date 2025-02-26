@@ -136,6 +136,8 @@ for _ in range(2000):
     ppo.actor_old.load_state_dict(ppo.actor.state_dict())
 ```
 
+In future work, we don't neet to write traning loop.
+
 ## Directory Structure
 
 ```
