@@ -6,7 +6,7 @@ from pixyzrl.logger import Logger
 class Trainer:
     """Trainer class to manage training of reinforcement learning agents."""
 
-    def __init__(self, env, memory, agent, device, logger: Logger = None, off_policy: bool = False):
+    def __init__(self, env, memory, agent, device, logger: Logger = None):
         """Initialize the trainer with the environment, memory, agent, and optional logger.
 
         :param env: Environment for training.
@@ -21,7 +21,7 @@ class Trainer:
         self.agent = agent
         self.device = device
         self.logger = logger
-        self.off_policy = off_policy
+        self.on_policy = agent.on_policy
 
         if self.logger:
             self.logger.log("Trainer initialized.")
@@ -44,7 +44,7 @@ class Trainer:
 
             obs = next_obs
 
-            if self.off_policy:
+            if not self.on_policy:
                 self.train_step()  # Train during experience collection for off-policy methods
 
         if self.logger:
@@ -66,7 +66,7 @@ class Trainer:
         for iteration in range(num_iterations):
             self.collect_experiences()
 
-            if not self.off_policy:  # Train after collecting trajectories for on-policy methods
+            if self.on_policy:  # Train after collecting trajectories for on-policy methods
                 self.train_step()
                 self.memory.clear()
 
