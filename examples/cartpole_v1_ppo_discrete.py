@@ -54,7 +54,7 @@ critic = Critic()
 print_latex(actor)
 print_latex(critic)
 
-ppo = PPO(actor, critic, None, 0.2, 3e-4, 1e-3, "cpu", entropy_coef=0.0, mse_coef=1.0)
+ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
 
 print_latex(ppo)
 
