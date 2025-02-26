@@ -138,7 +138,7 @@ for _ in range(2000):
 
 In the future work, we don't neet to write traning loop explicitly.
 
-https://github.com/user-attachments/assets/d2851833-38f8-46f5-8b84-6ce1bbaeb62a
+https://github.com/user-attachments/assets/fdf15f97-6fb9-4f12-8522-503eccb47fe5
 
 ## Directory Structure
 
