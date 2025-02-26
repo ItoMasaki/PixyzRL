@@ -77,7 +77,6 @@ for _ in range(2000):
     sample = ppo.select_action({"o": next_obs.unsqueeze(0)})
     value = sample["v"].detach()
     buffer.compute_returns_and_advantages_gae(value, 0.99, 0.95)
-    # buffer.compute_returns_and_advantages_mc(0.99)
 
     for _ in range(40):
         batch = buffer.sample(128)

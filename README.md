@@ -1,26 +1,24 @@
-# PixyzRL
+# PixyzRL: Reinforcement Learning with Pixyz
 
-PixyzRL は，Pixyz ライブラリを活用した強化学習（Reinforcement Learning, RL）のためのライブラリです．本ライブラリは，Proximal Policy Optimization (PPO) などの方策勾配法を簡潔に実装し，環境とのインタラクションや学習のプロセスを管理できるように設計されています．また，自然言語を介して簡易的にモデル開発が行えることを目標に進めています．
-現在開発中．
+PixyzRL is a reinforcement learning (RL) library built upon the Pixyz library. It provides a modular implementation of Proximal Policy Optimization (PPO) and supports interactions with environments using Gymnasium.
 
-## 特徴
+## Features
 
-- **Pixyz を活用した確率的モデリング**
-- **PPO の実装**
-- **環境の管理 (Gymnasium ラッパー)**
-- **メモリ管理 (Experience Replay, Rollout Buffer)**
-- **ロギング機能**
-- **今後の追加予定: DQN, A2C, POMDP モデルのサポート**
+- **Probabilistic Modeling with Pixyz**
+- **Implementation of PPO Algorithm**
+- **Environment Wrappers for Gymnasium**
+- **Memory Management (Rollout Buffer)**
+- **Logging and Training Utilities**
 
-## インストール
+## Installation
 
-PixyzRL は、Python 3.10 以上で動作し、以下の依存関係を必要とします。
+PixyzRL requires Python 3.10 or higher. Install dependencies with:
 
 ```bash
 pip install torch torchaudio torchvision pixyz gymnasium[box2d] torchrl
 ```
 
-または、リポジトリをクローンして直接インストールできます。
+Alternatively, clone and install the repository:
 
 ```bash
 git clone https://github.com/ItoMasaki/PixyzRL.git
@@ -28,106 +26,156 @@ cd PixyzRL
 pip install -e .
 ```
 
-## 使い方
+## Getting Started
 
-### 1. 環境のセットアップ
+### 1. Setup Environment
 
-PixyzRL では、環境 (`Env` クラス) を作成し、エージェントと連携させることができます。
+Create a Gymnasium environment wrapper using `Env` class:
 
 ```python
 from pixyzrl.environments import Env
 
 env = Env("CartPole-v1")
+state_dim = env.observation_space.shape[0]
+action_dim = env.action_space.n
 ```
 
-### 2. PPO エージェントの作成
+### 2. Define Actor and Critic Networks
 
-`PPO` クラスを使用して、エージェントを作成します。
+Use Pixyz's `Categorical` and `Deterministic` distributions for the Actor and Critic networks:
 
 ```python
-import torch.nn as nn
-import torch.nn.functional as F
-from pixyz.distributions import Normal, Deterministic
-from pixyzrl.policy_gradient.ppo import PPO
+import torch
+from pixyz.distributions import Categorical, Deterministic
+from torch import nn
 
-class Actor(Normal):
-    def __init__(self, state_dim, action_dim):
-        super().__init__(var=["a"], cond_var=["s"], name="actor")
-        self.fc1 = nn.Linear(state_dim, 64)
-        self.fc2 = nn.Linear(64, 64)
-        self.fc_loc = nn.Linear(64, action_dim)  # 平均
-        self.fc_scale = nn.Linear(64, action_dim)  # 標準偏差の生の出力
+class Actor(Categorical):
+    def __init__(self):
+        super().__init__(var=["a"], cond_var=["o"], name="actor")
+        self.net = nn.Sequential(
+            nn.Linear(state_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, action_dim),
+            nn.Softmax(dim=-1)
+        )
 
-    def forward(self, s):
-        h = F.relu(self.fc1(s))
-        h = F.relu(self.fc2(s))
-        loc = self.fc_loc(h)  # 平均 (μ)
-        scale = F.softplus(self.fc_scale(h)) + 1e-6  # 標準偏差 (σ), softplus で正の値に
-        return {"loc": loc, "scale": scale}
+    def forward(self, o: torch.Tensor):
+        return {"probs": self.net(o)}
 
-actor = Actor(state_dim, action_dim)
-agent = PPO(actor, critic, shared_cnn=None, gamma=0.99, eps_clip=0.2, k_epochs=4, lr_actor=3e-4, lr_critic=1e-3, device="cpu")
+class Critic(Deterministic):
+    def __init__(self):
+        super().__init__(var=["v"], cond_var=["o"], name="critic")
+        self.net = nn.Sequential(
+            nn.Linear(state_dim, 64),
+            nn.ReLU(),
+            nn.Linear(64, 64),
+            nn.ReLU(),
+            nn.Linear(64, 1)
+        )
+
+    def forward(self, o: torch.Tensor):
+        return {"v": self.net(o)}
+
+actor = Actor()
+critic = Critic()
 ```
 
-### 3. トレーニングの実行
-
-`Trainer` クラスを使用して学習を行います。
+### 3. Initialize PPO Agent
 
 ```python
-from pixyzrl.trainer import Trainer
-from pixyzrl.memory import ExperienceReplay
+from pixyzrl.models import PPO
 
-memory = ExperienceReplay((4,), (1,), buffer_size=10000, batch_size=64)
-trainer = Trainer(env, memory, agent, device="cpu")
-trainer.train(num_iterations=1000)
+ppo = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, device="cpu", entropy_coef=0.0, mse_coef=1.0)
 ```
 
-### 4. モデルの保存とロード
+### 4. Setup Rollout Buffer
 
 ```python
-agent.save_model("ppo_model.pth")
-agent.load_model("ppo_model.pth")
+from pixyzrl.memory import RolloutBuffer
+
+buffer = RolloutBuffer(
+    2048,
+    {"obs": {"shape": (4,)}, "value": {"shape": (1,)}, "action": {"shape": (2,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}},
+    {"obs": "o", "action": "a", "reward": "reward", "value": "v", "done": "d", "returns": "r", "advantages": "A"},
+    "cpu", 1
+)
 ```
 
-## 進行中の開発
+### 5. Training Loop
 
-- **DQN の実装中**: `dqn.py` にて開発予定
-- **POMDP モデルのサポート**: RSSM の実装
-- **A2C の統合**: PPO の拡張
-- **テストの追加**: `pytest` を利用したユニットテストの整備
+```python
+obs, info = env.reset()
 
-## ディレクトリ構成
+for _ in range(2000):
+    obs, info = env.reset()
+    total_reward = 0
+    while len(buffer) < 2048:
+        sample = ppo.select_action({"o": obs.unsqueeze(0)})
+        action, value = sample["a"].detach(), sample["v"].detach()
+        next_obs, reward, done, _, _ = env.step(torch.argmax(action))
+        total_reward += reward
+        buffer.add(obs=obs.detach(), action=action.detach(), value=value.detach(), reward=reward.detach(), done=done.detach())
+        obs = next_obs
+
+        if done:
+            obs, info = env.reset()
+            total_reward = 0
+
+    sample = ppo.select_action({"o": next_obs.unsqueeze(0)})
+    value = sample["v"].detach()
+    buffer.compute_returns_and_advantages_gae(value, 0.99, 0.95)
+
+    for _ in range(40):
+        batch = buffer.sample(128)
+        loss = ppo.train(batch)
+        print(f"loss: {loss}")
+
+    buffer.clear()
+    ppo.actor_old.load_state_dict(ppo.actor.state_dict())
+```
+
+## Directory Structure
 
 ```
 PixyzRL
 ├── docs
 │   └── pixyz
 │       └── README.pixyz.md
-├── examples        # サンプルコード
+├── examples  # Example scripts
 ├── pixyzrl
-│   ├── environments  # 環境のラッパー
-│   ├── policy_gradient  # 強化学習アルゴリズム (PPO など)
-│   ├── memory  # 経験リプレイ、ロールアウトバッファ
-│   ├── trainer  # トレーニング管理
-│   ├── losses  # 損失関数の定義
-│   ├── logger  # ロギング機能
+│   ├── environments  # Environment wrappers
+│   ├── models  # PPO and A2C implementations
+│   ├── memory  # Experience replay & rollout buffer
+│   ├── trainer  # Training management
+│   ├── losses  # Loss function definitions
+│   ├── logger  # Logging utilities
 └── pyproject.toml
 ```
 
-## ライセンス
+## License
 
-このプロジェクトは MIT ライセンスのもとで公開されています。
+PixyzRL is released under the MIT License.
 
-## 著者
+## Author
 
 Masaki Ito (ito.masaki@em.ci.ritsumei.ac.jp)
 
-## リポジトリ
+## Repository
 
 [GitHub - ItoMasaki/PixyzRL](https://github.com/ItoMasaki/PixyzRL)
 
-## コミュニティ・サポート
+## Future Work
 
-PixyzRL の詳細については、以下のリンクをご覧ください。
+[ ] Improve `Trainer` with additional optimization techniques
+[ ] Enhance `Logger` for better tracking and visualization
+[ ] Implement additional models:
+[ ] Deep Q-Network (DQN)
+[ ] Deep Deterministic Policy Gradient (DDPG)
+[ ] Soft Actor-Critic (SAC)
 
+## Community & Support
+
+For more details, visit:
 [PixyzRL ChatGPT Page](https://chatgpt.com/g/g-67b7c36695fc8191aca4cb7420dad17c-pixyzrl)
