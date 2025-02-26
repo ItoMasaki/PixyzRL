@@ -173,12 +173,12 @@ Masaki Ito (ito.masaki@em.ci.ritsumei.ac.jp)
 
 ## Future Work
 
-[ ] Improve `Trainer` with additional optimization techniques
-[ ] Enhance `Logger` for better tracking and visualization
-[ ] Implement additional models:
-[ ] Deep Q-Network (DQN)
-[ ] Deep Deterministic Policy Gradient (DDPG)
-[ ] Soft Actor-Critic (SAC)
+- [ ] Improve `Trainer` with additional optimization techniques
+- [ ] Enhance `Logger` for better tracking and visualization
+- [ ] Implement additional models:
+  - [ ] Deep Q-Network (DQN)
+  - [ ] Deep Deterministic Policy Gradient (DDPG)
+  - [ ] Soft Actor-Critic (SAC)
 
 ## Community & Support
 
