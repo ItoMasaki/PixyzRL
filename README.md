@@ -1,6 +1,6 @@
 # PixyzRL: Reinforcement Learning with Pixyz
 
-PixyzRL is a reinforcement learning (RL) library built upon the Pixyz library. It provides a modular implementation of Proximal Policy Optimization (PPO) and supports interactions with environments using Gymnasium.
+PixyzRL is a reinforcement learning (RL) library built upon the [Pixyz](https://github.com/masa-su/pixyz/tree/main) library. It provides a modular implementation of Proximal Policy Optimization (PPO) and supports interactions with environments using Gymnasium.
 
 ## Features
 
