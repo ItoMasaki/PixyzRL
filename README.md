@@ -185,7 +185,8 @@ PixyzRL is released under the MIT License.
 
 ## Author
 
-Masaki Ito ( l1sum [at] icloud.com )
+- Masaki Ito ( l1sum [at] icloud.com )
+- Daisuke Nakahara
 
 ## Repository
 
