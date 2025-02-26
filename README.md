@@ -167,11 +167,14 @@ PixyzRL
 ├── examples  # Example scripts
 ├── pixyzrl
 │   ├── environments  # Environment wrappers
-│   ├── models  # PPO and A2C implementations
+│   ├── models
+│   │   ├ on_policy  # On Policy models implementations
+│   │   └ off_policy  # Off Policy models implementations
 │   ├── memory  # Experience replay & rollout buffer
 │   ├── trainer  # Training management
 │   ├── losses  # Loss function definitions
 │   ├── logger  # Logging utilities
+│   └── utils.py
 └── pyproject.toml
 ```
 
