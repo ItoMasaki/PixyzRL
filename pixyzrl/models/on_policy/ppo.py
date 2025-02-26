@@ -56,7 +56,7 @@ class PPO(Model):
         if self.shared_net is not None:  # A2C
             loss = E(self.shared_net, ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
         else:  # TRPO
-            loss = (ppo_loss - self.entropy_coef * Entropy(self.actor)).mean() + self.mse_coef * mse_loss.mean()
+            loss = (ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
 
         super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []), optimizer=Adam, optimizer_params={})
 

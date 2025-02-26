@@ -80,7 +80,7 @@ class BaseBuffer:
         Example:
             >>> batch = buffer.sample(32)
         """
-        idx = torch.randint(0, self.pos, (batch_size,))
+        idx = torch.randint(0, self.pos - 1, (batch_size,))
         return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}
 
     def clear(self) -> None:
@@ -177,10 +177,9 @@ class RolloutBuffer(BaseBuffer):
             # 最終的にReturnを作る場合は以下
             returns = advantages + self.buffer["value"]
 
-            returns = (returns - returns.mean()) / (returns.std() + 1e-8)
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        self.buffer |= {"returns": returns, "advantages": advantages}
+        self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
 
     def compute_returns_and_advantages_mc(self, gamma: float) -> dict[str, torch.Tensor]:
@@ -203,10 +202,9 @@ class RolloutBuffer(BaseBuffer):
 
         advantages = returns - self.buffer["value"]
 
-        returns = (returns - returns.mean()) / (returns.std() + 1e-8)
         advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
-        self.buffer |= {"returns": returns, "advantages": advantages}
+        self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
 
     def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int, critic: Distribution) -> dict[str, torch.Tensor]:
