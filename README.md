@@ -208,5 +208,3 @@ PixyzRL is released under the MIT License.
 
 For more details, visit:
 [PixyzRL ChatGPT Page](https://chatgpt.com/g/g-67b7c36695fc8191aca4cb7420dad17c-pixyzrl)
-
-this is test
