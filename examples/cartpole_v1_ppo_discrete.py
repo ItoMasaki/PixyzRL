@@ -51,12 +51,7 @@ class Critic(Deterministic):
 actor = Actor()
 critic = Critic()
 
-print_latex(actor)
-print_latex(critic)
-
 ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
-
-print_latex(ppo)
 
 buffer = RolloutBuffer(2048, {"obs": {"shape": (4,)}, "value": {"shape": (1,)}, "action": {"shape": (2,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, {"obs": "o", "action": "a", "reward": "reward", "value": "v", "done": "d", "returns": "r", "advantages": "A"}, "cpu", 1)
 
