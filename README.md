@@ -1,4 +1,11 @@
 # PixyzRL: Reinforcement Learning with Pixyz
+<div style="grid">
+  <a href="./LICENSE">
+    <img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat" />
+  </a>
+  <img src="https://img.shields.io/badge/pytorch-2.5.1-pytorch.svg?logo=pytorch&style=flat" />
+  <img src="https://img.shields.io/badge/python-3.10 | 3.11 | 3.12-pytorch.svg?style=flat" />
+</div>
 
 PixyzRL is a reinforcement learning (RL) library built upon the [Pixyz](https://github.com/masa-su/pixyz/tree/main) library. It provides a modular implementation of Proximal Policy Optimization (PPO) and supports interactions with environments using Gymnasium.
 
@@ -51,7 +58,7 @@ from torch import nn
 
 class Actor(Categorical):
     def __init__(self):
-        super().__init__(var=["a"], cond_var=["o"], name="actor")
+        super().__init__(var=["a"], cond_var=["o"], name="p")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -66,7 +73,7 @@ class Actor(Categorical):
 
 class Critic(Deterministic):
     def __init__(self):
-        super().__init__(var=["v"], cond_var=["o"], name="critic")
+        super().__init__(var=["v"], cond_var=["o"], name="f")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -82,12 +89,29 @@ actor = Actor()
 critic = Critic()
 ```
 
+#### 2.1 Display distributions as `latex`
+
+```
+>>> pixyzrl.utils.print_latex(actor)
+p(a|o)
+
+>>> pixyzrl.utils.print_latex(critic)
+f(v|o)
+```
+
 ### 3. Initialize PPO Agent
 
 ```python
 from pixyzrl.models import PPO
 
 ppo = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, device="cpu", entropy_coef=0.0, mse_coef=1.0)
+```
+
+##### 3.1 Display model as `latex`
+
+```
+>>> pixyzrl.utils.print_latex(ppo)
+mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
 
 ### 4. Setup Rollout Buffer
@@ -150,14 +174,16 @@ PixyzRL
 ├── examples  # Example scripts
 ├── pixyzrl
 │   ├── environments  # Environment wrappers
-│   ├── models  # PPO and A2C implementations
+│   ├── models
+│   │   ├ on_policy  # On Policy models implementations
+│   │   └ off_policy  # Off Policy models implementations
 │   ├── memory  # Experience replay & rollout buffer
 │   ├── trainer  # Training management
 │   ├── losses  # Loss function definitions
 │   ├── logger  # Logging utilities
+│   └── utils.py
 └── pyproject.toml
 ```
-
 
 ## License
 
@@ -165,7 +191,8 @@ PixyzRL is released under the MIT License.
 
 ## Author
 
-Masaki Ito ( l1sum [at] icloud.com )
+- Masaki Ito ( l1sum [at] icloud.com )
+- Daisuke Nakahara
 
 ## Repository
 

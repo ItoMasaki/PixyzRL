@@ -19,11 +19,11 @@ class PPO(Model):
         self,
         actor: dists.Distribution,
         critic: dists.Distribution,
-        shared_net: dists.Distribution | None,
-        eps_clip: float,
-        lr_actor: float,
-        lr_critic: float,
-        device: str,
+        shared_net: dists.Distribution | None = None,
+        eps_clip: float = 0.2,
+        lr_actor: float = 3e-4,
+        lr_critic: float = 1e-3,
+        device: str = "cpu",
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
     ) -> None:
@@ -34,6 +34,7 @@ class PPO(Model):
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
+        self.on_policy = True
 
         # Shared CNN layers (optional)
         self.shared_net = shared_net
