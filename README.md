@@ -1,4 +1,7 @@
 # PixyzRL: Bayesian RL Framework with Probabilistic Generative Models
+
+![Untitled 001](https://github.com/user-attachments/assets/577b9d4b-30d0-493d-95fc-b83a2f292c28)
+
 <div style="grid">
   <a href="./LICENSE">
     <img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat">
