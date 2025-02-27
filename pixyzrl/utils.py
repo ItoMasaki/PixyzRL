@@ -10,7 +10,7 @@ def is_env_notebook() -> bool:
     if "get_ipython" not in globals():
         # Python shell
         return False
-    env_name = get_ipython().__class__.__name__
+    env_name = get_ipython().__class__.__name__  # type: ignore # noqa: F821
     # Return the negated condition directly
     return env_name != "TerminalInteractiveShell"
 
