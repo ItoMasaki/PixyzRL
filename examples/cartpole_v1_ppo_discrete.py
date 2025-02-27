@@ -6,7 +6,6 @@ from torch import nn
 from pixyzrl.environments import Env
 from pixyzrl.memory import RolloutBuffer
 from pixyzrl.models import PPO
-from pixyzrl.utils import print_latex
 
 env = Env("CartPole-v1")
 state_dim = env.observation_space.shape[0]
