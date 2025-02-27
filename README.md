@@ -114,6 +114,8 @@ ppo = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, devi
 mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
 
+![TeXclip Feb 27 2025](https://github.com/user-attachments/assets/2669eacf-bbfa-4a88-a60a-bb0d8196d704)
+
 ### 4. Setup Rollout Buffer
 
 ```python
