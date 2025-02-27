@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.5">
+<title>pixyzrl.memory API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pixyzrl.memory</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="pixyzrl.memory.memory" href="memory.html">pixyzrl.memory.memory</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pixyzrl.memory.BaseBuffer"><code class="flex name class">
+<span>class <span class="ident">BaseBuffer</span></span>
+<span>(</span><span>buffer_size: int,<br>env_dict: dict[str, typing.Any],<br>key_mapping: dict[str, str] | None,<br>device: str,<br>n_envs: int = 1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BaseBuffer:
+    &#34;&#34;&#34;Base class for replay buffers.
+
+    This class provides a simple interface for storing and sampling experiences.
+
+    Args:
+        buffer_size (int): Size of the replay buffer.
+        env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+        device (str): Device to store the replay buffer.
+        n_step (int): Number of steps for n-step returns.
+
+    Example:
+        &gt;&gt;&gt; buffer_size = 1000
+        &gt;&gt;&gt; env_dict = {&#34;obs&#34;: {&#34;shape&#34;: (4,)}, &#34;action&#34;: {&#34;shape&#34;: (1,)}, &#34;reward&#34;: {&#34;shape&#34;: (1,)}, &#34;done&#34;: {&#34;shape&#34;: (1,)}}
+        &gt;&gt;&gt; key_mapping = {&#34;obs&#34;: &#34;obs&#34;, &#34;action&#34;: &#34;action&#34;, &#34;reward&#34;: &#34;reward&#34;, &#34;done&#34;: &#34;done&#34;, &#34;returns&#34;: &#34;returns&#34;, &#34;advantages&#34;: &#34;advantages&#34;}
+        &gt;&gt;&gt; device = &#34;cpu&#34;
+        &gt;&gt;&gt; n_step = 1
+        &gt;&gt;&gt; buffer = BaseBuffer(buffer_size, env_dict, key_mapping, device, n_step)
+    &#34;&#34;&#34;
+
+    def __init__(self, buffer_size: int, env_dict: dict[str, Any], key_mapping: dict[str, str] | None, device: str, n_envs: int = 1) -&gt; None:
+        &#34;&#34;&#34;
+        Initialize the replay buffer with flexible env_dict settings.
+
+        Args:
+            buffer_size (int): Size of the replay buffer.
+            env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+            key_mapping (Dict[str, str]): Key mapping for the replay buffer.
+            device (str): Device to store the replay buffer.
+            n_step (int): Number of steps for n-step returns.
+
+        Example:
+            &gt;&gt;&gt; buffer = BaseBuffer(1000, {&#34;obs&#34;: {&#34;shape&#34;: (4,)}, &#34;action&#34;: {&#34;shape&#34;: (1,)}, &#34;reward&#34;: {&#34;shape&#34;: (1,)}, &#34;done&#34;: {&#34;shape&#34;: (1,)}}, &#34;cpu&#34;, 1)
+        &#34;&#34;&#34;
+        self.buffer = {}
+
+        self.buffer_size = buffer_size
+        self.env_dict = env_dict
+        self.key_mapping = key_mapping if key_mapping is not None else {&#34;obs&#34;: &#34;obs&#34;, &#34;action&#34;: &#34;action&#34;, &#34;reward&#34;: &#34;reward&#34;, &#34;done&#34;: &#34;done&#34;, &#34;returns&#34;: &#34;returns&#34;, &#34;advantages&#34;: &#34;advantages&#34;}
+        self.device = device
+        self.n_envs = n_envs
+        self.pos = 0
+
+        for k, v in env_dict.items():
+            self.buffer[k] = torch.empty((buffer_size, n_envs, *v[&#34;shape&#34;]), dtype=v.get(&#34;dtype&#34;, torch.float32), device=device)
+
+    def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -&gt; None:
+        &#34;&#34;&#34;Add a new experience to the buffer.
+
+        Args:
+            **kwargs (dict[str, Any]): Key-value pairs of experience data.
+
+        Example:
+            &gt;&gt;&gt; buffer.add(obs=obs, action=action, reward=reward, done=done)
+        &#34;&#34;&#34;
+        self.pos = (self.pos + 1) % self.buffer_size
+        for k, v in kwargs.items():
+            if isinstance(v, np.ndarray):
+                v = torch.from_numpy(v).to(self.device)
+
+            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape)
+
+    def sample(self, batch_size: int) -&gt; dict[str, Any]:
+        &#34;&#34;&#34;Sample a batch of experiences.
+
+        Args:
+            batch_size (int): Number of samples per batch.
+
+        Returns:
+            dict[str, Any]: Sampled batch of experiences.
+
+        Example:
+            &gt;&gt;&gt; batch = buffer.sample(32)
+        &#34;&#34;&#34;
+        idx = torch.randint(0, self.pos - 1, (batch_size,))
+        return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}
+
+    def clear(self) -&gt; None:
+        &#34;&#34;&#34;Clear the buffer.
+
+        Example
+            &gt;&gt;&gt; buffer.clear()
+        &#34;&#34;&#34;
+        for k in self.buffer:
+            self.buffer[k].zero_()
+        self.pos = 0
+
+    def __len__(self) -&gt; int:
+        &#34;&#34;&#34;Return the number of stored experiences.
+
+        Returns:
+            int: Number of stored experiences.
+
+        Example:
+            &gt;&gt;&gt; len(buffer)
+        &#34;&#34;&#34;
+        return self.pos + 1</code></pre>
+</details>
+<div class="desc"><p>Base class for replay buffers.</p>
+<p>This class provides a simple interface for storing and sampling experiences.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>buffer_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Size of the replay buffer.</dd>
+<dt><strong><code>env_dict</code></strong> :&ensp;<code>Dict[str, Any]</code></dt>
+<dd>Environment dictionary for replay buffer.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>str</code></dt>
+<dd>Device to store the replay buffer.</dd>
+<dt><strong><code>n_step</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of steps for n-step returns.</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer_size = 1000
+&gt;&gt;&gt; env_dict = {&quot;obs&quot;: {&quot;shape&quot;: (4,)}, &quot;action&quot;: {&quot;shape&quot;: (1,)}, &quot;reward&quot;: {&quot;shape&quot;: (1,)}, &quot;done&quot;: {&quot;shape&quot;: (1,)}}
+&gt;&gt;&gt; key_mapping = {&quot;obs&quot;: &quot;obs&quot;, &quot;action&quot;: &quot;action&quot;, &quot;reward&quot;: &quot;reward&quot;, &quot;done&quot;: &quot;done&quot;, &quot;returns&quot;: &quot;returns&quot;, &quot;advantages&quot;: &quot;advantages&quot;}
+&gt;&gt;&gt; device = &quot;cpu&quot;
+&gt;&gt;&gt; n_step = 1
+&gt;&gt;&gt; buffer = BaseBuffer(buffer_size, env_dict, key_mapping, device, n_step)
+</code></pre>
+<p>Initialize the replay buffer with flexible env_dict settings.</p>
+<h2 id="args_1">Args</h2>
+<dl>
+<dt><strong><code>buffer_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Size of the replay buffer.</dd>
+<dt><strong><code>env_dict</code></strong> :&ensp;<code>Dict[str, Any]</code></dt>
+<dd>Environment dictionary for replay buffer.</dd>
+<dt><strong><code>key_mapping</code></strong> :&ensp;<code>Dict[str, str]</code></dt>
+<dd>Key mapping for the replay buffer.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>str</code></dt>
+<dd>Device to store the replay buffer.</dd>
+<dt><strong><code>n_step</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of steps for n-step returns.</dd>
+</dl>
+<h2 id="example_1">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer = BaseBuffer(1000, {&quot;obs&quot;: {&quot;shape&quot;: (4,)}, &quot;action&quot;: {&quot;shape&quot;: (1,)}, &quot;reward&quot;: {&quot;shape&quot;: (1,)}, &quot;done&quot;: {&quot;shape&quot;: (1,)}}, &quot;cpu&quot;, 1)
+</code></pre></div>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="pixyzrl.memory.memory.ExperienceReplay" href="memory.html#pixyzrl.memory.memory.ExperienceReplay">ExperienceReplay</a></li>
+<li><a title="pixyzrl.memory.memory.PrioritizedExperienceReplay" href="memory.html#pixyzrl.memory.memory.PrioritizedExperienceReplay">PrioritizedExperienceReplay</a></li>
+<li><a title="pixyzrl.memory.memory.RolloutBuffer" href="memory.html#pixyzrl.memory.memory.RolloutBuffer">RolloutBuffer</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.memory.BaseBuffer.add"><code class="name flex">
+<span>def <span class="ident">add</span></span>(<span>self,<br>**kwargs: dict[str, torch.Tensor | numpy.ndarray[typing.Any, numpy.dtype[typing.Any]]]) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -&gt; None:
+    &#34;&#34;&#34;Add a new experience to the buffer.
+
+    Args:
+        **kwargs (dict[str, Any]): Key-value pairs of experience data.
+
+    Example:
+        &gt;&gt;&gt; buffer.add(obs=obs, action=action, reward=reward, done=done)
+    &#34;&#34;&#34;
+    self.pos = (self.pos + 1) % self.buffer_size
+    for k, v in kwargs.items():
+        if isinstance(v, np.ndarray):
+            v = torch.from_numpy(v).to(self.device)
+
+        self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape)</code></pre>
+</details>
+<div class="desc"><p>Add a new experience to the buffer.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>**kwargs</code></strong> :&ensp;<code>dict[str, Any]</code></dt>
+<dd>Key-value pairs of experience data.</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer.add(obs=obs, action=action, reward=reward, done=done)
+</code></pre></div>
+</dd>
+<dt id="pixyzrl.memory.BaseBuffer.clear"><code class="name flex">
+<span>def <span class="ident">clear</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear(self) -&gt; None:
+    &#34;&#34;&#34;Clear the buffer.
+
+    Example
+        &gt;&gt;&gt; buffer.clear()
+    &#34;&#34;&#34;
+    for k in self.buffer:
+        self.buffer[k].zero_()
+    self.pos = 0</code></pre>
+</details>
+<div class="desc"><p>Clear the buffer.</p>
+<p>Example
+&gt;&gt;&gt; buffer.clear()</p></div>
+</dd>
+<dt id="pixyzrl.memory.BaseBuffer.sample"><code class="name flex">
+<span>def <span class="ident">sample</span></span>(<span>self, batch_size: int) ‑> dict[str, typing.Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sample(self, batch_size: int) -&gt; dict[str, Any]:
+    &#34;&#34;&#34;Sample a batch of experiences.
+
+    Args:
+        batch_size (int): Number of samples per batch.
+
+    Returns:
+        dict[str, Any]: Sampled batch of experiences.
+
+    Example:
+        &gt;&gt;&gt; batch = buffer.sample(32)
+    &#34;&#34;&#34;
+    idx = torch.randint(0, self.pos - 1, (batch_size,))
+    return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}</code></pre>
+</details>
+<div class="desc"><p>Sample a batch of experiences.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of samples per batch.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict[str, Any]</code></dt>
+<dd>Sampled batch of experiences.</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; batch = buffer.sample(32)
+</code></pre></div>
+</dd>
+</dl>
+</dd>
+<dt id="pixyzrl.memory.RolloutBuffer"><code class="flex name class">
+<span>class <span class="ident">RolloutBuffer</span></span>
+<span>(</span><span>buffer_size: int,<br>env_dict: dict[str, typing.Any],<br>key_mapping: dict[str, str] | None,<br>device: str,<br>n_envs: int = 1)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RolloutBuffer(BaseBuffer):
+    &#34;&#34;&#34;Rollout buffer for storing trajectories.
+
+    This class provides a simple interface for storing and sampling trajectories.
+
+    Args:
+        buffer_size (int): Size of the replay buffer.
+        env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+        key_mapping (Dict[str, str]): Key mapping for the replay buffer.
+        device (str): Device to store the replay buffer.
+        n_step (int): Number of steps for n-step returns.
+
+    Example:
+        &gt;&gt;&gt; buffer_size = 1000
+        &gt;&gt;&gt; env_dict = {&#34;obs&#34;: {&#34;shape&#34;: (4,)}, &#34;action&#34;: {&#34;shape&#34;: (1,)}, &#34;reward&#34;: {&#34;shape&#34;: (1,)}, &#34;done&#34;: {&#34;shape&#34;: (1,)}}
+        &gt;&gt;&gt; key_mapping = {&#34;obs&#34;: &#34;obs&#34;, &#34;action&#34;: &#34;action&#34;, &#34;reward&#34;: &#34;reward&#34;, &#34;done&#34;: &#34;done&#34;, &#34;returns&#34;: &#34;returns&#34;, &#34;advantages&#34;: &#34;advantages&#34;}
+        &gt;&gt;&gt; device = &#34;cpu&#34;
+        &gt;&gt;&gt; n_step = 1
+        &gt;&gt;&gt; buffer = RolloutBuffer(buffer_size, env_dict, key_mapping, device, n_step)
+    &#34;&#34;&#34;
+
+    def __init__(self, buffer_size: int, env_dict: dict[str, Any], key_mapping: dict[str, str] | None, device: str, n_envs: int = 1) -&gt; None:
+        &#34;&#34;&#34;
+        Initialize the replay buffer with flexible env_dict settings.
+
+        Args:
+            buffer_size (int): Size of the replay buffer.
+            env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
+            key_mapping (Dict[str, str]): Key mapping for the replay buffer.
+            device (str): Device to store the replay buffer.
+            n_step (int): Number of steps for n-step returns.
+
+        Example:
+            &gt;&gt;&gt; buffer = RolloutBuffer(1000, {&#34;obs&#34;: {&#34;shape&#34;: (4,)}, &#34;action&#34;: {&#34;shape&#34;: (1,)}, &#34;reward&#34;: {&#34;shape&#34;: (1,)}, &#34;done&#34;: {&#34;shape&#34;: (1,)}}, &#34;cpu&#34;, 1)
+        &#34;&#34;&#34;
+        super().__init__(buffer_size, env_dict, key_mapping, device, n_envs)
+
+    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lmbd: float) -&gt; dict[str, torch.Tensor]:
+        &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
+
+        Args:
+            last_state (torch.Tensor): Last state of the trajectory.
+            gamma (float): Discount factor.
+            lmbd (float): Lambda factor for GAE.
+            critic (Distribution): Critic distribution.
+
+        Returns:
+            dict[str, torch.Tensor]: Returns and advantages.
+
+        Example:
+            &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_gae(last_state, gamma, lmbd, critic)
+        &#34;&#34;&#34;
+        with torch.no_grad():
+            advantages = torch.zeros_like(self.buffer[&#34;reward&#34;])
+            gae = 0.0
+
+            for i in reversed(range(self.buffer_size)):
+                if i == self.buffer_size - 1:
+                    # バッチ末端の next_value は last_value（実装により異なる）
+                    next_value = last_value
+                    next_nonterminal = 1.0 - self.buffer[&#34;done&#34;][i]
+                else:
+                    next_value = self.buffer[&#34;value&#34;][i + 1]
+                    next_nonterminal = 1.0 - self.buffer[&#34;done&#34;][i + 1]
+
+                delta = self.buffer[&#34;reward&#34;][i] + gamma * next_value * next_nonterminal - self.buffer[&#34;value&#34;][i]
+                gae = delta + gamma * lmbd * next_nonterminal * gae
+                advantages[i] = gae
+
+            # 最終的にReturnを作る場合は以下
+            returns = advantages + self.buffer[&#34;value&#34;]
+
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        self.buffer |= {&#34;returns&#34;: returns.detach(), &#34;advantages&#34;: advantages.detach()}
+        return {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}
+
+    def compute_returns_and_advantages_mc(self, gamma: float) -&gt; dict[str, torch.Tensor]:
+        &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
+
+        Args:
+            gamma (float): Discount factor.
+
+        Returns:
+            dict[str, torch.Tensor]: Returns and advantages.
+
+        Example:
+            &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)
+        &#34;&#34;&#34;
+        returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
+        discounted_return = torch.zeros(self.n_envs, device=self.device)
+        for i in reversed(range(self.buffer_size)):
+            discounted_return = self.buffer[&#34;reward&#34;][i] + gamma * discounted_return * (1 - self.buffer[&#34;done&#34;][i])
+            returns[i] = discounted_return
+
+        advantages = returns - self.buffer[&#34;value&#34;]
+
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        self.buffer |= {&#34;returns&#34;: returns.detach(), &#34;advantages&#34;: advantages.detach()}
+        return {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}
+
+    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int, critic: Distribution) -&gt; dict[str, torch.Tensor]:
+        &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
+
+        Args:
+            gamma (float): Discount factor.
+            n_step (int): Number of steps for n-step returns.
+
+        Returns:
+            dict[str, torch.Tensor]: Returns and advantages.
+
+        Example:
+            &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)
+        &#34;&#34;&#34;
+        returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
+        for i in reversed(range(self.buffer_size)):
+            discounted_return = torch.zeros(self.n_envs, device=self.device)
+            for step in range(n_step):
+                idx = min(i + step, self.buffer_size - 1)
+                discounted_return += (gamma**step) * self.buffer[&#34;reward&#34;][idx].squeeze(-1)
+                if self.buffer[&#34;done&#34;][idx]:
+                    break
+            next_idx = min(i + n_step, self.buffer_size - 1)
+            if not self.buffer[&#34;done&#34;][next_idx]:
+                discounted_return += (gamma**n_step) * critic.sample({&#34;o&#34;: self.buffer[&#34;obs&#34;][next_idx]})[&#34;v&#34;].squeeze(-1)
+            returns[i] = discounted_return
+        advantages = returns - critic.sample({&#34;o&#34;: self.buffer[&#34;obs&#34;]})[&#34;v&#34;]
+
+        self.buffer |= {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}
+        return {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}</code></pre>
+</details>
+<div class="desc"><p>Rollout buffer for storing trajectories.</p>
+<p>This class provides a simple interface for storing and sampling trajectories.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>buffer_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Size of the replay buffer.</dd>
+<dt><strong><code>env_dict</code></strong> :&ensp;<code>Dict[str, Any]</code></dt>
+<dd>Environment dictionary for replay buffer.</dd>
+<dt><strong><code>key_mapping</code></strong> :&ensp;<code>Dict[str, str]</code></dt>
+<dd>Key mapping for the replay buffer.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>str</code></dt>
+<dd>Device to store the replay buffer.</dd>
+<dt><strong><code>n_step</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of steps for n-step returns.</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer_size = 1000
+&gt;&gt;&gt; env_dict = {&quot;obs&quot;: {&quot;shape&quot;: (4,)}, &quot;action&quot;: {&quot;shape&quot;: (1,)}, &quot;reward&quot;: {&quot;shape&quot;: (1,)}, &quot;done&quot;: {&quot;shape&quot;: (1,)}}
+&gt;&gt;&gt; key_mapping = {&quot;obs&quot;: &quot;obs&quot;, &quot;action&quot;: &quot;action&quot;, &quot;reward&quot;: &quot;reward&quot;, &quot;done&quot;: &quot;done&quot;, &quot;returns&quot;: &quot;returns&quot;, &quot;advantages&quot;: &quot;advantages&quot;}
+&gt;&gt;&gt; device = &quot;cpu&quot;
+&gt;&gt;&gt; n_step = 1
+&gt;&gt;&gt; buffer = RolloutBuffer(buffer_size, env_dict, key_mapping, device, n_step)
+</code></pre>
+<p>Initialize the replay buffer with flexible env_dict settings.</p>
+<h2 id="args_1">Args</h2>
+<dl>
+<dt><strong><code>buffer_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Size of the replay buffer.</dd>
+<dt><strong><code>env_dict</code></strong> :&ensp;<code>Dict[str, Any]</code></dt>
+<dd>Environment dictionary for replay buffer.</dd>
+<dt><strong><code>key_mapping</code></strong> :&ensp;<code>Dict[str, str]</code></dt>
+<dd>Key mapping for the replay buffer.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>str</code></dt>
+<dd>Device to store the replay buffer.</dd>
+<dt><strong><code>n_step</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of steps for n-step returns.</dd>
+</dl>
+<h2 id="example_1">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer = RolloutBuffer(1000, {&quot;obs&quot;: {&quot;shape&quot;: (4,)}, &quot;action&quot;: {&quot;shape&quot;: (1,)}, &quot;reward&quot;: {&quot;shape&quot;: (1,)}, &quot;done&quot;: {&quot;shape&quot;: (1,)}}, &quot;cpu&quot;, 1)
+</code></pre></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="pixyzrl.memory.memory.BaseBuffer" href="memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_gae"><code class="name flex">
+<span>def <span class="ident">compute_returns_and_advantages_gae</span></span>(<span>self, last_value: torch.Tensor, gamma: float, lmbd: float) ‑> dict[str, torch.Tensor]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lmbd: float) -&gt; dict[str, torch.Tensor]:
+    &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
+
+    Args:
+        last_state (torch.Tensor): Last state of the trajectory.
+        gamma (float): Discount factor.
+        lmbd (float): Lambda factor for GAE.
+        critic (Distribution): Critic distribution.
+
+    Returns:
+        dict[str, torch.Tensor]: Returns and advantages.
+
+    Example:
+        &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_gae(last_state, gamma, lmbd, critic)
+    &#34;&#34;&#34;
+    with torch.no_grad():
+        advantages = torch.zeros_like(self.buffer[&#34;reward&#34;])
+        gae = 0.0
+
+        for i in reversed(range(self.buffer_size)):
+            if i == self.buffer_size - 1:
+                # バッチ末端の next_value は last_value（実装により異なる）
+                next_value = last_value
+                next_nonterminal = 1.0 - self.buffer[&#34;done&#34;][i]
+            else:
+                next_value = self.buffer[&#34;value&#34;][i + 1]
+                next_nonterminal = 1.0 - self.buffer[&#34;done&#34;][i + 1]
+
+            delta = self.buffer[&#34;reward&#34;][i] + gamma * next_value * next_nonterminal - self.buffer[&#34;value&#34;][i]
+            gae = delta + gamma * lmbd * next_nonterminal * gae
+            advantages[i] = gae
+
+        # 最終的にReturnを作る場合は以下
+        returns = advantages + self.buffer[&#34;value&#34;]
+
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+    self.buffer |= {&#34;returns&#34;: returns.detach(), &#34;advantages&#34;: advantages.detach()}
+    return {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}</code></pre>
+</details>
+<div class="desc"><p>Compute returns and advantages for the stored trajectories.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>last_state</code></strong> :&ensp;<code>torch.Tensor</code></dt>
+<dd>Last state of the trajectory.</dd>
+<dt><strong><code>gamma</code></strong> :&ensp;<code>float</code></dt>
+<dd>Discount factor.</dd>
+<dt><strong><code>lmbd</code></strong> :&ensp;<code>float</code></dt>
+<dd>Lambda factor for GAE.</dd>
+<dt><strong><code>critic</code></strong> :&ensp;<code>Distribution</code></dt>
+<dd>Critic distribution.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict[str, torch.Tensor]</code></dt>
+<dd>Returns and advantages.</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_gae(last_state, gamma, lmbd, critic)
+</code></pre></div>
+</dd>
+<dt id="pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_mc"><code class="name flex">
+<span>def <span class="ident">compute_returns_and_advantages_mc</span></span>(<span>self, gamma: float) ‑> dict[str, torch.Tensor]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_returns_and_advantages_mc(self, gamma: float) -&gt; dict[str, torch.Tensor]:
+    &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
+
+    Args:
+        gamma (float): Discount factor.
+
+    Returns:
+        dict[str, torch.Tensor]: Returns and advantages.
+
+    Example:
+        &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)
+    &#34;&#34;&#34;
+    returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
+    discounted_return = torch.zeros(self.n_envs, device=self.device)
+    for i in reversed(range(self.buffer_size)):
+        discounted_return = self.buffer[&#34;reward&#34;][i] + gamma * discounted_return * (1 - self.buffer[&#34;done&#34;][i])
+        returns[i] = discounted_return
+
+    advantages = returns - self.buffer[&#34;value&#34;]
+
+    advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+    self.buffer |= {&#34;returns&#34;: returns.detach(), &#34;advantages&#34;: advantages.detach()}
+    return {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}</code></pre>
+</details>
+<div class="desc"><p>Compute returns and advantages for the stored trajectories.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gamma</code></strong> :&ensp;<code>float</code></dt>
+<dd>Discount factor.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict[str, torch.Tensor]</code></dt>
+<dd>Returns and advantages.</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)
+</code></pre></div>
+</dd>
+<dt id="pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_n_step"><code class="name flex">
+<span>def <span class="ident">compute_returns_and_advantages_n_step</span></span>(<span>self,<br>gamma: float,<br>n_step: int,<br>critic: pixyz.distributions.distributions.Distribution) ‑> dict[str, torch.Tensor]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int, critic: Distribution) -&gt; dict[str, torch.Tensor]:
+    &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
+
+    Args:
+        gamma (float): Discount factor.
+        n_step (int): Number of steps for n-step returns.
+
+    Returns:
+        dict[str, torch.Tensor]: Returns and advantages.
+
+    Example:
+        &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)
+    &#34;&#34;&#34;
+    returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
+    for i in reversed(range(self.buffer_size)):
+        discounted_return = torch.zeros(self.n_envs, device=self.device)
+        for step in range(n_step):
+            idx = min(i + step, self.buffer_size - 1)
+            discounted_return += (gamma**step) * self.buffer[&#34;reward&#34;][idx].squeeze(-1)
+            if self.buffer[&#34;done&#34;][idx]:
+                break
+        next_idx = min(i + n_step, self.buffer_size - 1)
+        if not self.buffer[&#34;done&#34;][next_idx]:
+            discounted_return += (gamma**n_step) * critic.sample({&#34;o&#34;: self.buffer[&#34;obs&#34;][next_idx]})[&#34;v&#34;].squeeze(-1)
+        returns[i] = discounted_return
+    advantages = returns - critic.sample({&#34;o&#34;: self.buffer[&#34;obs&#34;]})[&#34;v&#34;]
+
+    self.buffer |= {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}
+    return {&#34;returns&#34;: returns, &#34;advantages&#34;: advantages}</code></pre>
+</details>
+<div class="desc"><p>Compute returns and advantages for the stored trajectories.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>gamma</code></strong> :&ensp;<code>float</code></dt>
+<dd>Discount factor.</dd>
+<dt><strong><code>n_step</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of steps for n-step returns.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict[str, torch.Tensor]</code></dt>
+<dd>Returns and advantages.</dd>
+</dl>
+<h2 id="example">Example</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)
+</code></pre></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="pixyzrl.memory.memory.BaseBuffer" href="memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a></b></code>:
+<ul class="hlist">
+<li><code><a title="pixyzrl.memory.memory.BaseBuffer.add" href="memory.html#pixyzrl.memory.memory.BaseBuffer.add">add</a></code></li>
+<li><code><a title="pixyzrl.memory.memory.BaseBuffer.clear" href="memory.html#pixyzrl.memory.memory.BaseBuffer.clear">clear</a></code></li>
+<li><code><a title="pixyzrl.memory.memory.BaseBuffer.sample" href="memory.html#pixyzrl.memory.memory.BaseBuffer.sample">sample</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pixyzrl" href="../index.html">pixyzrl</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="pixyzrl.memory.memory" href="memory.html">pixyzrl.memory.memory</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pixyzrl.memory.BaseBuffer" href="#pixyzrl.memory.BaseBuffer">BaseBuffer</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.memory.BaseBuffer.add" href="#pixyzrl.memory.BaseBuffer.add">add</a></code></li>
+<li><code><a title="pixyzrl.memory.BaseBuffer.clear" href="#pixyzrl.memory.BaseBuffer.clear">clear</a></code></li>
+<li><code><a title="pixyzrl.memory.BaseBuffer.sample" href="#pixyzrl.memory.BaseBuffer.sample">sample</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pixyzrl.memory.RolloutBuffer" href="#pixyzrl.memory.RolloutBuffer">RolloutBuffer</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_gae" href="#pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_gae">compute_returns_and_advantages_gae</a></code></li>
+<li><code><a title="pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_mc" href="#pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_mc">compute_returns_and_advantages_mc</a></code></li>
+<li><code><a title="pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_n_step" href="#pixyzrl.memory.RolloutBuffer.compute_returns_and_advantages_n_step">compute_returns_and_advantages_n_step</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+</footer>
+</body>
+</html>

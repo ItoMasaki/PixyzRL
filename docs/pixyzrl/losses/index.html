@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.5">
+<title>pixyzrl.losses API documentation</title>
+<meta name="description" content="">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pixyzrl.losses</code></h1>
+</header>
+<section id="section-intro">
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="pixyzrl.losses.losses" href="losses.html">pixyzrl.losses.losses</a></code></dt>
+<dd>
+<div class="desc"><p>Losses for training models.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="pixyzrl.losses.ppo"><code class="name flex">
+<span>def <span class="ident">ppo</span></span>(<span>actor: pixyz.distributions.distributions.Distribution,<br>actor_old: pixyz.distributions.distributions.Distribution,<br>clip_param: float = 0.2) ‑> pixyz.losses.losses.NegLoss</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ppo(actor: Distribution, actor_old: Distribution, clip_param: float = 0.2) -&gt; NegLoss:
+    &#34;&#34;&#34;Proximal Policy Optimization.&#34;&#34;&#34;
+    surr1 = RatioLoss(actor, actor_old) * Parameter(&#34;A&#34;)
+    surr2 = ClipLoss(RatioLoss(actor, actor_old), 1 - clip_param, 1 + clip_param) * Parameter(&#34;A&#34;)
+    return -MinLoss(surr1, surr2)</code></pre>
+</details>
+<div class="desc"><p>Proximal Policy Optimization.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pixyzrl.losses.ClipLoss"><code class="flex name class">
+<span>class <span class="ident">ClipLoss</span></span>
+<span>(</span><span>loss1: pixyz.losses.losses.Loss | pixyz.losses.losses.LossSelfOperator,<br>min: float,<br>max: float)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ClipLoss(LossSelfOperator):
+    &#34;&#34;&#34;Cut out the error within a certain range.
+
+    Examples
+    --------
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from torch.nn import functional as F
+    &gt;&gt;&gt; from pixyz.distributions import Normal
+    ...
+    &gt;&gt;&gt; # Set distributions
+    &gt;&gt;&gt; class P(Normal):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;p&#34;)
+    ...         self.model_loc = torch.nn.Linear(128, 64)
+    ...         self.model_scale = torch.nn.Linear(128, 64)
+    ...     def forward(self, x):
+    ...         return {&#34;loc&#34;: self.model_loc(x), &#34;scale&#34;: F.softplus(self.model_scale(x))}
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; p = P()
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; clip_loss = ClipLoss(LogProb(p), 0.9, 1.1)
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; x = torch.zeros(1, 128)
+    &gt;&gt;&gt; z = torch.zeros(1, 64)
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; clip_loss.eval({&#34;z&#34;: z, &#34;x&#34;: x})
+    tensor([1.], grad_fn=&lt;ClampBackward1&gt;)
+
+    &#34;&#34;&#34;
+
+    def __init__(self, loss1: Loss | LossSelfOperator, min: float, max: float) -&gt; None:
+        super().__init__(loss1)
+
+        self.min = min
+        self.max = max
+
+    @property
+    def _symbol(self) -&gt; sympy.Symbol:
+        return sympy.Symbol(f&#34;clip({self.loss1.loss_text}, {self.min}, {self.max})&#34;)
+
+    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+        loss, x_dict = self.loss1(x_dict, **kwargs)
+        loss = torch.clamp(loss, self.min, self.max)
+
+        return loss, x_dict</code></pre>
+</details>
+<div class="desc"><p>Cut out the error within a certain range.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from torch.nn import functional as F
+&gt;&gt;&gt; from pixyz.distributions import Normal
+...
+&gt;&gt;&gt; # Set distributions
+&gt;&gt;&gt; class P(Normal):
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;p&quot;)
+...         self.model_loc = torch.nn.Linear(128, 64)
+...         self.model_scale = torch.nn.Linear(128, 64)
+...     def forward(self, x):
+...         return {&quot;loc&quot;: self.model_loc(x), &quot;scale&quot;: F.softplus(self.model_scale(x))}
+&gt;&gt;&gt;
+&gt;&gt;&gt; p = P()
+&gt;&gt;&gt;
+&gt;&gt;&gt; clip_loss = ClipLoss(LogProb(p), 0.9, 1.1)
+&gt;&gt;&gt;
+&gt;&gt;&gt; x = torch.zeros(1, 128)
+&gt;&gt;&gt; z = torch.zeros(1, 64)
+&gt;&gt;&gt;
+&gt;&gt;&gt; clip_loss.eval({&quot;z&quot;: z, &quot;x&quot;: x})
+tensor([1.], grad_fn=&lt;ClampBackward1&gt;)
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>input_var</code></strong> :&ensp;<code>:obj:</code>list<code><code>of &lt;/code&gt;:obj:&lt;code&gt;str&lt;/code&gt;, defaults to None</code></dt>
+<dd>Input variables of this loss function.
+In general, users do not need to set them explicitly
+because these depend on the given distributions and each loss function.</dd>
+</dl></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pixyz.losses.losses.LossSelfOperator</li>
+<li>pixyz.losses.losses.Loss</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.losses.ClipLoss.forward"><code class="name flex">
+<span>def <span class="ident">forward</span></span>(<span>self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, typing.Any]) ‑> tuple[torch.Tensor, dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+    loss, x_dict = self.loss1(x_dict, **kwargs)
+    loss = torch.clamp(loss, self.min, self.max)
+
+    return loss, x_dict</code></pre>
+</details>
+<div class="desc"><h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Input variables.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>a tuple of :class:<code>pixyz.losses.Loss</code> and dict
+deterministically calcurated loss and updated all samples.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="pixyzrl.losses.MSELoss"><code class="flex name class">
+<span>class <span class="ident">MSELoss</span></span>
+<span>(</span><span>p: pixyz.distributions.distributions.Distribution,<br>var: str,<br>reduction: str = 'mean')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MSELoss(Loss):
+    &#34;&#34;&#34;Mean Square Error.
+
+    Examples
+    --------
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from torch.nn import functional as F
+    &gt;&gt;&gt; from pixyz.distributions import Normal
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; mse_loss = MSELoss(&#34;x&#34;, &#34;y&#34;)
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; x = torch.rand(1, 128)
+    &gt;&gt;&gt; y = torch.rand(1, 128)
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; mse_loss.eval({&#34;x&#34;: x, &#34;y&#34;: y})
+    tensor(0.1752)
+
+    &#34;&#34;&#34;
+
+    def __init__(self, p: Distribution, var: str, reduction: str = &#34;mean&#34;) -&gt; None:
+        &#34;&#34;&#34;Initialize the loss.&#34;&#34;&#34;
+        super().__init__([*p.cond_var, var])
+
+        self.p = p
+        self.var = var
+
+        self.mse = nn.MSELoss(reduction=reduction)
+
+    @property
+    def _symbol(self) -&gt; sympy.Symbol:
+        &#34;&#34;&#34;Return the symbol of the loss.&#34;&#34;&#34;
+        return sympy.Symbol(f&#34;MSE({self.p.prob_text}, {self.var})&#34;)
+
+    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+        &#34;&#34;&#34;Forward pass.&#34;&#34;&#34;
+        loss = self.mse(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var].squeeze()).mean()
+
+        return loss, {}</code></pre>
+</details>
+<div class="desc"><p>Mean Square Error.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from torch.nn import functional as F
+&gt;&gt;&gt; from pixyz.distributions import Normal
+&gt;&gt;&gt;
+&gt;&gt;&gt; mse_loss = MSELoss(&quot;x&quot;, &quot;y&quot;)
+&gt;&gt;&gt;
+&gt;&gt;&gt; x = torch.rand(1, 128)
+&gt;&gt;&gt; y = torch.rand(1, 128)
+&gt;&gt;&gt;
+&gt;&gt;&gt; mse_loss.eval({&quot;x&quot;: x, &quot;y&quot;: y})
+tensor(0.1752)
+</code></pre>
+<p>Initialize the loss.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pixyz.losses.losses.Loss</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.losses.MSELoss.forward"><code class="name flex">
+<span>def <span class="ident">forward</span></span>(<span>self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) ‑> tuple[torch.Tensor, dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+    &#34;&#34;&#34;Forward pass.&#34;&#34;&#34;
+    loss = self.mse(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var].squeeze()).mean()
+
+    return loss, {}</code></pre>
+</details>
+<div class="desc"><p>Forward pass.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="pixyzrl.losses.RatioLoss"><code class="flex name class">
+<span>class <span class="ident">RatioLoss</span></span>
+<span>(</span><span>p: pixyz.distributions.distributions.Distribution,<br>q: pixyz.distributions.distributions.Distribution,<br>sum_features: bool = False,<br>feature_dims: int | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class RatioLoss(Loss):
+    &#34;&#34;&#34;Compute the ratio of two distributions of the same type.
+
+    Examples
+    --------
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from torch.nn import functional as F
+    &gt;&gt;&gt; from pixyz.distributions import Normal
+    ...
+    &gt;&gt;&gt; # Set distributions
+    &gt;&gt;&gt; class P(Normal):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;p&#34;)
+    ...         self.model_loc = torch.nn.Linear(128, 64)
+    ...         self.model_scale = torch.nn.Linear(128, 64)
+    ...     def forward(self, x):
+    ...         return {&#34;loc&#34;: self.model_loc(x), &#34;scale&#34;: F.softplus(self.model_scale(x))}
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; class Q(Normal):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;q&#34;)
+    ...         self.model_loc = torch.nn.Linear(128, 64)
+    ...         self.model_scale = torch.nn.Linear(128, 64)
+    ...     def forward(self, x):
+    ...         return {&#34;loc&#34;: self.model_loc(x), &#34;scale&#34;: F.softplus(self.model_scale(x))}
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; p = P()
+    &gt;&gt;&gt; q = Q()
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; ratio_loss = RatioLoss(p, q).mean()
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; x = torch.zeros(1, 128)
+    &gt;&gt;&gt; z = torch.zeros(1, 64)
+    &gt;&gt;&gt;
+    &gt;&gt;&gt; ratio_loss.eval({&#34;z&#34;: z, &#34;x&#34;: x})
+    tensor(0.9940, grad_fn=&lt;MeanBackward0&gt;)
+
+    &#34;&#34;&#34;
+
+    def __init__(self, p: Distribution, q: Distribution, sum_features: bool = False, feature_dims: int | None = None) -&gt; None:
+        super().__init__(p.var + p.input_var + q.var + q.input_var)
+
+        self.sum_features = sum_features
+        self.feature_dims = feature_dims
+
+        if p.name == q.name:
+            msg = &#34;The two distributions are of different types. Make the two distributions of the same type.&#34;
+            raise ValueError(msg)
+
+        self.p = p
+        self.q = q
+
+        self.q.requires_grad = False
+
+    @property
+    def _symbol(self) -&gt; sympy.Symbol:
+        return sympy.Symbol(f&#34;\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}&#34;)
+
+    def forward(self, x_dict: dict[str, Any], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[None, None]]:
+        p_log_prob = self.p.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+        q_log_prob = self.q.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+
+        ratio = torch.exp(p_log_prob - q_log_prob.detach())
+
+        return ratio, {}</code></pre>
+</details>
+<div class="desc"><p>Compute the ratio of two distributions of the same type.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from torch.nn import functional as F
+&gt;&gt;&gt; from pixyz.distributions import Normal
+...
+&gt;&gt;&gt; # Set distributions
+&gt;&gt;&gt; class P(Normal):
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;p&quot;)
+...         self.model_loc = torch.nn.Linear(128, 64)
+...         self.model_scale = torch.nn.Linear(128, 64)
+...     def forward(self, x):
+...         return {&quot;loc&quot;: self.model_loc(x), &quot;scale&quot;: F.softplus(self.model_scale(x))}
+&gt;&gt;&gt;
+&gt;&gt;&gt; class Q(Normal):
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;q&quot;)
+...         self.model_loc = torch.nn.Linear(128, 64)
+...         self.model_scale = torch.nn.Linear(128, 64)
+...     def forward(self, x):
+...         return {&quot;loc&quot;: self.model_loc(x), &quot;scale&quot;: F.softplus(self.model_scale(x))}
+&gt;&gt;&gt;
+&gt;&gt;&gt; p = P()
+&gt;&gt;&gt; q = Q()
+&gt;&gt;&gt;
+&gt;&gt;&gt; ratio_loss = RatioLoss(p, q).mean()
+&gt;&gt;&gt;
+&gt;&gt;&gt; x = torch.zeros(1, 128)
+&gt;&gt;&gt; z = torch.zeros(1, 64)
+&gt;&gt;&gt;
+&gt;&gt;&gt; ratio_loss.eval({&quot;z&quot;: z, &quot;x&quot;: x})
+tensor(0.9940, grad_fn=&lt;MeanBackward0&gt;)
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>input_var</code></strong> :&ensp;<code>:obj:</code>list<code><code>of &lt;/code&gt;:obj:&lt;code&gt;str&lt;/code&gt;, defaults to None</code></dt>
+<dd>Input variables of this loss function.
+In general, users do not need to set them explicitly
+because these depend on the given distributions and each loss function.</dd>
+</dl></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pixyz.losses.losses.Loss</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.losses.RatioLoss.forward"><code class="name flex">
+<span>def <span class="ident">forward</span></span>(<span>self, x_dict: dict[str, typing.Any], **kwargs: dict[str, typing.Any]) ‑> tuple[torch.Tensor, dict[None, None]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def forward(self, x_dict: dict[str, Any], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[None, None]]:
+    p_log_prob = self.p.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+    q_log_prob = self.q.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+
+    ratio = torch.exp(p_log_prob - q_log_prob.detach())
+
+    return ratio, {}</code></pre>
+</details>
+<div class="desc"><h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Input variables.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>a tuple of :class:<code>pixyz.losses.Loss</code> and dict
+deterministically calcurated loss and updated all samples.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pixyzrl" href="../index.html">pixyzrl</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="pixyzrl.losses.losses" href="losses.html">pixyzrl.losses.losses</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="pixyzrl.losses.ppo" href="#pixyzrl.losses.ppo">ppo</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pixyzrl.losses.ClipLoss" href="#pixyzrl.losses.ClipLoss">ClipLoss</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.losses.ClipLoss.forward" href="#pixyzrl.losses.ClipLoss.forward">forward</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pixyzrl.losses.MSELoss" href="#pixyzrl.losses.MSELoss">MSELoss</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.losses.MSELoss.forward" href="#pixyzrl.losses.MSELoss.forward">forward</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pixyzrl.losses.RatioLoss" href="#pixyzrl.losses.RatioLoss">RatioLoss</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.losses.RatioLoss.forward" href="#pixyzrl.losses.RatioLoss.forward">forward</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+</footer>
+</body>
+</html>
