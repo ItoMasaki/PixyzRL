@@ -1,13 +1,14 @@
 """Single Gym environment wrapper."""
 
+import re
 from abc import ABC, abstractmethod
+from re import S
 from typing import Any
 
 import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium.spaces import Box, Discrete, Space
-from numpy.typing import NDArray
 
 
 class BaseEnv(ABC):
@@ -24,8 +25,12 @@ class BaseEnv(ABC):
         :param seed: Random seed for reproducibility.
         """
         self.env_name = env_name
-        self.num_envs = num_envs
         self.seed = seed
+
+        self._observation_space = Space()
+        self._action_space = Space()
+        self._is_discrete = False
+        self._num_envs = num_envs
 
     @abstractmethod
     def reset(self) -> tuple[torch.Tensor, dict[str, Any]]:
@@ -47,27 +52,31 @@ class BaseEnv(ABC):
         """Render the environment."""
         ...
 
-    def get_num_envs(self) -> int:
+    @property
+    def num_envs(self) -> int:
         """Return the number of environments."""
-        return self.num_envs
+        return self._num_envs
 
     @property
-    @abstractmethod
     def observation_space(self) -> Space[Any]:
         """Return observation space."""
-        ...
+        return self._observation_space
 
     @property
-    @abstractmethod
     def action_space(self) -> Space[Any]:
         """Return action space."""
-        ...
+        return self._action_space
+
+    @property
+    def is_discrete(self) -> bool:
+        """Return whether the action space is discrete."""
+        return self._is_discrete
 
 
 class Env(BaseEnv):
     """Standard single Gym environment wrapper."""
 
-    def __init__(self, env_name: str, action_var: str = "a", seed: int = 42, render_mode: str = "human") -> None:
+    def __init__(self, env_name: str, env_num: int = 1, action_var: str = "a", seed: int = 42, render_mode: str = "human") -> None:
         """
         Initialize the environment.
 
@@ -81,9 +90,14 @@ class Env(BaseEnv):
             >>> env = Env("CartPole-v1")
         """
         super().__init__(env_name, num_envs=1, seed=seed)
-        self.env = gym.make(env_name, render_mode=render_mode)
+        self._env = gym.make(env_name, render_mode=render_mode)
         self.action_var = action_var
-        self.env.reset(seed=seed)
+        self._env.reset(seed=seed)
+
+        self._env_num = env_num
+        self._observation_space = self._env.observation_space
+        self._action_space = self._env.action_space
+        self._is_discrete = isinstance(self._env.action_space, Discrete)
 
     def reset(self) -> tuple[torch.Tensor, dict[str, Any]]:
         """Reset the environment.
@@ -94,7 +108,7 @@ class Env(BaseEnv):
         Examples:
             >>> obs, info = env.reset()
         """
-        obs, info = self.env.reset(seed=self.seed)
+        obs, info = self._env.reset(seed=self.seed)
         return torch.Tensor(obs), info
 
     def step(self, action: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
@@ -115,10 +129,10 @@ class Env(BaseEnv):
         if isinstance(action, torch.Tensor):
             action = action.detach().cpu().numpy()
 
-        elif isinstance(self.env.action_space, Box):
-            action = np.clip(action, self.env.action_space.low, self.env.action_space.high)  # 連続値を制限
+        elif isinstance(self._env.action_space, Box):
+            action = np.clip(action, self._env.action_space.low, self._env.action_space.high)  # 連続値を制限
 
-        obs, reward, truncated, terminated, info = self.env.step(action)
+        obs, reward, truncated, terminated, info = self._env.step(action)
         return torch.Tensor(obs), torch.Tensor([reward]), torch.Tensor([truncated]), torch.Tensor([terminated]), info
 
     def close(self) -> None:
@@ -127,7 +141,7 @@ class Env(BaseEnv):
         Examples:
             >>> env.close()
         """
-        self.env.close()
+        self._env.close()
 
     def render(self) -> None:
         """Render the environment.
@@ -135,22 +149,4 @@ class Env(BaseEnv):
         Examples:
             >>> env.render()
         """
-        self.env.render()
-
-    @property
-    def observation_space(self) -> Space[Any]:
-        """Return observation space.
-
-        Examples:
-            >>> obs_space = env.observation_space
-        """
-        return self.env.observation_space
-
-    @property
-    def action_space(self) -> Space[Any]:
-        """Return action space.
-
-        Examples:
-            >>> action_space = env.action_space
-        """
-        return self.env.action_space
+        self._env.render()
