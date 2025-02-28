@@ -20,31 +20,34 @@ class BaseBuffer:
     Example:
         >>> buffer_size = 1000
         >>> env_dict = {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}
-        >>> key_mapping = {"obs": "obs", "action": "action", "reward": "reward", "done": "done", "returns": "returns", "advantages": "advantages"}
         >>> device = "cpu"
         >>> n_step = 1
-        >>> buffer = BaseBuffer(buffer_size, env_dict, key_mapping, device, n_step)
+        >>> buffer = BaseBuffer(buffer_size, env_dict, device, n_step)
     """
 
-    def __init__(self, buffer_size: int, env_dict: dict[str, Any], key_mapping: dict[str, str] | None, device: str, n_envs: int = 1) -> None:
+    def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
         """
         Initialize the replay buffer with flexible env_dict settings.
 
         Args:
             buffer_size (int): Size of the replay buffer.
             env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
-            key_mapping (Dict[str, str]): Key mapping for the replay buffer.
             device (str): Device to store the replay buffer.
             n_step (int): Number of steps for n-step returns.
 
         Example:
-            >>> buffer = BaseBuffer(1000, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, "cpu", 1)
+            >>> buffer = BaseBuffer(1000, {
+                    "obs": {"shape": (4,), "map": "o"},
+                    "action": {"shape": (1,), "map": "a"},
+                    "reward": {"shape": (1,), "map": "r"},
+                    "done": {"shape": (1,), "map": "d"}
+                }, "cpu", 1)
         """
         self.buffer = {}
 
         self.buffer_size = buffer_size
         self.env_dict = env_dict
-        self.key_mapping = key_mapping if key_mapping is not None else {"obs": "obs", "action": "action", "reward": "reward", "done": "done", "returns": "returns", "advantages": "advantages"}
+        self.key_mapping = {k: v.get("map", k) for k, v in env_dict.items()}
         self.device = device
         self.n_envs = n_envs
         self.pos = 0
@@ -113,34 +116,31 @@ class RolloutBuffer(BaseBuffer):
     Args:
         buffer_size (int): Size of the replay buffer.
         env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
-        key_mapping (Dict[str, str]): Key mapping for the replay buffer.
         device (str): Device to store the replay buffer.
         n_step (int): Number of steps for n-step returns.
 
     Example:
         >>> buffer_size = 1000
         >>> env_dict = {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}
-        >>> key_mapping = {"obs": "obs", "action": "action", "reward": "reward", "done": "done", "returns": "returns", "advantages": "advantages"}
         >>> device = "cpu"
         >>> n_step = 1
         >>> buffer = RolloutBuffer(buffer_size, env_dict, key_mapping, device, n_step)
     """
 
-    def __init__(self, buffer_size: int, env_dict: dict[str, Any], key_mapping: dict[str, str] | None, device: str, n_envs: int = 1) -> None:
+    def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
         """
         Initialize the replay buffer with flexible env_dict settings.
 
         Args:
             buffer_size (int): Size of the replay buffer.
             env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
-            key_mapping (Dict[str, str]): Key mapping for the replay buffer.
             device (str): Device to store the replay buffer.
             n_step (int): Number of steps for n-step returns.
 
         Example:
-            >>> buffer = RolloutBuffer(1000, {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}, "cpu", 1)
+            >>> buffer = RolloutBuffer(1000, {"obs": {"shape": (4,), "map": "o"}, "action": {"shape": (1,), "map": "a"}, "reward": {"shape": (1,), "map": "r"}, "done": {"shape": (1,), "map": "d"}}, "cpu", 1)
         """
-        super().__init__(buffer_size, env_dict, key_mapping, device, n_envs)
+        super().__init__(buffer_size, env_dict, device, n_envs)
 
     def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lmbd: float) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
