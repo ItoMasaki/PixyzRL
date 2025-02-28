@@ -134,3 +134,11 @@ class OffPolicyTrainer(BaseTrainer):
             self.collect_experiences()
             if self.logger:
                 self.logger.log(f"Off-policy Iteration {iteration + 1}/{num_iterations} completed.")
+
+
+def create_trainer(env: BaseEnv, memory: BaseBuffer, agent: Model, device: torch.device | str = "cpu", logger: Logger | None = None) -> BaseTrainer:
+    """Create a trainer based on the type of agent."""
+    if agent.is_on_policy:
+        return OnPolicyTrainer(env, memory, agent, device, logger)
+
+    return OffPolicyTrainer(env, memory, agent, device, logger)

@@ -29,7 +29,7 @@ class A2C(Model):
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
-        self.on_policy = True
+        self.is_on_policy = True
 
         # Actor network
         self.actor = actor

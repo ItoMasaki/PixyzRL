@@ -34,7 +34,7 @@ class PPO(Model):
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
-        self.on_policy = True
+        self.is_on_policy = True
 
         # Shared CNN layers (optional)
         self.shared_net = shared_net
