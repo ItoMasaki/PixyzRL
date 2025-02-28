@@ -107,13 +107,14 @@ f(v|o)
 ```python
 from pixyzrl.models import PPO
 
-ppo = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, device="cpu", entropy_coef=0.0, mse_coef=1.0)
+agent = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, device="cpu", entropy_coef=0.0, mse_coef=1.0)
 ```
 
 ##### 3.1 Display model as `latex`
 
 ```
->>> pixyzrl.utils.print_latex(ppo)
+>>> from pixyzrl.utils import print_latex
+>>> print_latex(agent)
 mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
 
