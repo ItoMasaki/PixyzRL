@@ -47,6 +47,8 @@ class BaseEnv(ABC):
         """Render the environment."""
         ...
 
+    @property
+    @abstractmethod
     def get_num_envs(self) -> int:
         """Return the number of environments."""
         return self.num_envs
@@ -62,6 +64,11 @@ class BaseEnv(ABC):
     def action_space(self) -> Space[Any]:
         """Return action space."""
         ...
+
+    @property
+    def is_discrete(self) -> bool:
+        """Return whether the action space is discrete."""
+        return isinstance(self.action_space, Discrete)
 
 
 class Env(BaseEnv):
