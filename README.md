@@ -5,6 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![PyTorch Version](https://img.shields.io/badge/pytorch-2.5.1-pytorch.svg?logo=pytorch&style=flat)](https://pytorch.org/)
 [![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
+![workflow](https://github.com/ItoMasaki/PixyzRL/actions/workflows/ci.yml/badge.svg)
 
 [Documentation](https://docs.pixyz.io) | [Examples](https://github.com/ItoMasaki/PixyzRL/tree/main/examples) | [GitHub](https://github.com/ItoMasaki/PixyzRL)
 
