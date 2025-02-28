@@ -1,5 +1,6 @@
 """Proximal Policy Optimization (PPO) agent using Pixyz."""
 
+import re
 from copy import deepcopy
 
 import torch
@@ -9,6 +10,7 @@ from pixyz.losses import Expectation as E  # noqa: N817
 from torch.optim import Adam
 
 from pixyzrl.losses import ClipLoss, MSELoss, RatioLoss
+from pixyzrl.memory import BaseBuffer
 from pixyzrl.models.base_model import RLModel
 
 
@@ -77,3 +79,17 @@ class PPO(RLModel):
             if self.shared_net is not None:
                 state = self.shared_net.sample(state)
             return self.actor_old.sample(state) | self.critic.sample(state)
+
+    def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -> float:
+        """Perform a single training step."""
+        total_loss = 0
+
+        for _ in range(num_epochs):
+            batch = memory.sample(batch_size)
+            loss = self.train(batch)
+            total_loss += loss
+
+        self.actor_old.load_state_dict(self.actor.state_dict())
+        memory.clear()
+
+        return total_loss
