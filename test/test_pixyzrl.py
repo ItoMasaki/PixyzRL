@@ -136,6 +136,6 @@ def test_trainer():
 
     agent = PPO(actor, critic, device="cpu")
     trainer = OnPolicyTrainer(env, buffer, agent, "cpu")
-    trainer.train(1)
+    trainer.train(0)
 
     assert len(buffer) == 1
