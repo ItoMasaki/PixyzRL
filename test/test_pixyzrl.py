@@ -105,7 +105,14 @@ def test_trainer():
     class Actor(Categorical):
         def __init__(self):
             super().__init__(var=["a"], cond_var=["o"], name="p")
-            self.net = nn.Sequential(nn.Linear(state_dim, 64), nn.ReLU(), nn.Linear(64, action_dim), nn.Softmax(dim=-1))
+            self.net = nn.Sequential(
+                nn.LazyLinear(64),
+                nn.ReLU(),
+                nn.LazyLinear(64),
+                nn.ReLU(),
+                nn.LazyLinear(action_dim),
+                nn.Softmax(dim=-1),
+            )
 
         def forward(self, o: torch.Tensor):
             return {"probs": self.net(o)}
@@ -113,7 +120,13 @@ def test_trainer():
     class Critic(Deterministic):
         def __init__(self):
             super().__init__(var=["v"], cond_var=["o"], name="f")
-            self.net = nn.Sequential(nn.Linear(state_dim, 64), nn.ReLU(), nn.Linear(64, 1))
+            self.net = nn.Sequential(
+                nn.LazyLinear(64),
+                nn.ReLU(),
+                nn.LazyLinear(64),
+                nn.ReLU(),
+                nn.LazyLinear(1),
+            )
 
         def forward(self, o: torch.Tensor):
             return {"v": self.net(o)}
