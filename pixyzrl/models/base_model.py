@@ -3,6 +3,8 @@ from typing import Any
 
 from pixyz.models import Model
 
+from pixyzrl.memory import BaseBuffer
+
 
 class RLModel(Model, ABC):
     """Base class for reinforcement learning models."""
@@ -18,6 +20,11 @@ class RLModel(Model, ABC):
     @abstractmethod
     def select_action(self, state: Any) -> Any:
         """Select an action."""
+        ...
+
+    @abstractmethod
+    def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -> float:
+        """Perform a single training step."""
         ...
 
     @property
