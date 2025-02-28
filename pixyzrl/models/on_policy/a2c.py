@@ -22,6 +22,7 @@ class A2C(RLModel):
         device: str,
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
+        action_var: str = "a",
     ) -> None:
         """Initialize the A2C agent."""
         self.mse_coef = mse_coef
@@ -29,7 +30,8 @@ class A2C(RLModel):
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
-        self.is_on_policy = True
+        self._is_on_policy = True
+        self._action_var = action_var
 
         # Actor network
         self.actor = actor

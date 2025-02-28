@@ -8,16 +8,24 @@ class RLModel(Model, ABC):
     """Base class for reinforcement learning models."""
 
     @abstractmethod
-    def __init__(self, **kwargs: dict[str, Any]) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         """Initialize the model."""
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
+
+        self._is_on_policy = False
+        self._action_var = "a"
 
     @abstractmethod
     def select_action(self, state: Any) -> Any:
         """Select an action."""
         ...
 
-    @abstractmethod
+    @property
     def is_on_policy(self) -> bool:
-        """Check if the model is on-policy."""
-        ...
+        """Return whether the model is on-policy."""
+        return self._is_on_policy
+
+    @property
+    def action_var(self) -> str:
+        """Return the action variable."""
+        return self._action_var

@@ -1,3 +1,4 @@
+from abc import abstractmethod
 from typing import Any
 
 import numpy as np
@@ -107,6 +108,55 @@ class BaseBuffer:
         """
         return self.pos + 1
 
+    @abstractmethod
+    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lam: float) -> dict[str, torch.Tensor]:
+        """Compute returns and advantages for the stored trajectories.
+
+        Args:
+            last_state (torch.Tensor): Last state of the trajectory.
+            gamma (float): Discount factor.
+            lam (float): Lambda factor for GAE.
+            critic (Distribution): Critic distribution.
+
+        Returns:
+            dict[str, torch.Tensor]: Returns and advantages.
+
+        Example:
+            >>> returns_advantages = buffer.compute_returns_and_advantages_gae(last_value, gamma, lam)
+        """
+        ...
+
+    @abstractmethod
+    def compute_returns_and_advantages_mc(self, gamma: float) -> dict[str, torch.Tensor]:
+        """Compute returns and advantages for the stored trajectories.
+
+        Args:
+            gamma (float): Discount factor.
+
+        Returns:
+            dict[str, torch.Tensor]: Returns and advantages.
+
+        Example:
+            >>> returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)
+        """
+        ...
+
+    @abstractmethod
+    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int, critic: Distribution) -> dict[str, torch.Tensor]:
+        """Compute returns and advantages for the stored trajectories.
+
+        Args:
+            gamma (float): Discount factor.
+            n_step (int): Number of steps for n-step returns.
+
+        Returns:
+            dict[str, torch.Tensor]: Returns and advantages.
+
+        Example:
+            >>> returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)
+        """
+        ...
+
 
 class RolloutBuffer(BaseBuffer):
     """Rollout buffer for storing trajectories.
@@ -142,7 +192,7 @@ class RolloutBuffer(BaseBuffer):
         """
         super().__init__(buffer_size, env_dict, device, n_envs)
 
-    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lmbd: float) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lam: float) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -171,7 +221,7 @@ class RolloutBuffer(BaseBuffer):
                     next_nonterminal = 1.0 - self.buffer["done"][i + 1]
 
                 delta = self.buffer["reward"][i] + gamma * next_value * next_nonterminal - self.buffer["value"][i]
-                gae = delta + gamma * lmbd * next_nonterminal * gae
+                gae = delta + gamma * lam * next_nonterminal * gae
                 advantages[i] = gae
 
             # 最終的にReturnを作る場合は以下

@@ -26,6 +26,7 @@ class PPO(RLModel):
         device: str = "cpu",
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
+        action_var: str = "a",
     ) -> None:
         """Initialize the PPO agent."""
         self.mse_coef = mse_coef
@@ -34,7 +35,8 @@ class PPO(RLModel):
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
-        self.is_on_policy = True
+        self._is_on_policy = True
+        self._action_var = action_var
 
         # Shared CNN layers (optional)
         self.shared_net = shared_net
