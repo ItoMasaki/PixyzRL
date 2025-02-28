@@ -140,40 +140,12 @@ buffer = RolloutBuffer(
 )
 ```
 
-### 5. Training Loop
+### 5. Training Models
 
 ```python
-obs, info = env.reset()
-
-for _ in range(2000):
-    obs, info = env.reset()
-    total_reward = 0
-    while len(buffer) < 2048:
-        sample = ppo.select_action({"o": obs.unsqueeze(0)})
-        action, value = sample["a"].detach(), sample["v"].detach()
-        next_obs, reward, done, _, _ = env.step(torch.argmax(action))
-        total_reward += reward
-        buffer.add(obs=obs.detach(), action=action.detach(), value=value.detach(), reward=reward.detach(), done=done.detach())
-        obs = next_obs
-
-        if done:
-            obs, info = env.reset()
-            total_reward = 0
-
-    sample = ppo.select_action({"o": next_obs.unsqueeze(0)})
-    value = sample["v"].detach()
-    buffer.compute_returns_and_advantages_gae(value, 0.99, 0.95)
-
-    for _ in range(40):
-        batch = buffer.sample(128)
-        loss = ppo.train(batch)
-        print(f"loss: {loss}")
-
-    buffer.clear()
-    ppo.actor_old.load_state_dict(ppo.actor.state_dict())
+trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
+trainer.train(1000)
 ```
-
-In the future work, we don't need to write traning loop explicitly.
 
 https://github.com/user-attachments/assets/fdf15f97-6fb9-4f12-8522-503eccb47fe5
 
