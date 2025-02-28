@@ -6,13 +6,13 @@ import torch
 from pixyz import distributions as dists
 from pixyz.losses import Entropy, MinLoss, Parameter
 from pixyz.losses import Expectation as E  # noqa: N817
-from pixyz.models import Model
 from torch.optim import Adam
 
 from pixyzrl.losses import ClipLoss, MSELoss, RatioLoss
+from pixyzrl.models.base_model import RLModel
 
 
-class PPO(Model):
+class PPO(RLModel):
     """PPO agent using Pixyz."""
 
     def __init__(
