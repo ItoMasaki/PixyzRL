@@ -126,9 +126,17 @@ from pixyzrl.memory import RolloutBuffer
 
 buffer = RolloutBuffer(
     2048,
-    {"obs": {"shape": (4,)}, "value": {"shape": (1,)}, "action": {"shape": (2,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}},
-    {"obs": "o", "action": "a", "reward": "reward", "value": "v", "done": "d", "returns": "r", "advantages": "A"},
-    "cpu", 1
+    {
+        "obs": {"shape": (4,), "map": "o"},
+        "value": {"shape": (1,), "map": "v"},
+        "action": {"shape": (2,), "map": "a"},
+        "reward": {"shape": (1,)},
+        "done": {"shape": (1,)},
+        "returns": {"shape": (1,), "map": "r"},
+        "advantages": {"shape": (1,), "map": "A"},
+    },
+    "cpu",
+    1,
 )
 ```
 
