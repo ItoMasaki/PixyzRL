@@ -128,7 +128,9 @@ buffer = RolloutBuffer(
     1,
 )
 
-trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
+
+```python
+trainer = OnPolicyTrainer(env, buffer, agent, "cpu")
 trainer.train(1000)
 ```
 
