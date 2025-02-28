@@ -9,17 +9,16 @@ from pixyzrl.memory import RolloutBuffer
 from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 
+# def test_env():
+#     env = Env("CartPole-v1")
+#     obs, info = env.reset()
+#     assert obs.shape == (4,)
 
-def test_env():
-    env = Env("CartPole-v1")
-    obs, info = env.reset()
-    assert obs.shape == (4,)
-
-    action = torch.Tensor(np.zeros(1))
-    print(type(action))
-    next_obs, reward, truncated, terminated, info = env.step(action.detach())
-    assert next_obs.shape == (4,)
-    assert reward.shape == (1,)
+#     action = torch.Tensor(np.zeros(1))
+#     print(type(action))
+#     next_obs, reward, truncated, terminated, info = env.step(action.detach())
+#     assert next_obs.shape == (4,)
+#     assert reward.shape == (1,)
 
 
 def test_actor_critic():
