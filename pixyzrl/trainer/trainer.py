@@ -87,12 +87,10 @@ class OnPolicyTrainer(BaseTrainer):
         if len(self.memory) < self.memory.buffer_size:
             return
 
-        print("Training...")
         total_loss = 0
         for _ in range(num_epochs):
             batch = self.memory.sample(batch_size)
             loss = self.agent.train(batch)
-            print(loss)
             total_loss += loss
 
         self.memory.clear()
