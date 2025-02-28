@@ -1,5 +1,4 @@
 import torch
-from anyio import value
 from pixyz.distributions import Categorical, Deterministic
 from torch import nn
 
