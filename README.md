@@ -1,6 +1,16 @@
-# PixyzRL: Reinforcement Learning with Pixyz
+# PixyzRL: Bayesian RL Framework with Probabilistic Generative Models
 
-PixyzRL is a reinforcement learning (RL) library built upon the Pixyz library. It provides a modular implementation of Proximal Policy Optimization (PPO) and supports interactions with environments using Gymnasium.
+![Untitled 001](https://github.com/user-attachments/assets/577b9d4b-30d0-493d-95fc-b83a2f292c28)
+
+<div style="grid">
+  <a href="./LICENSE">
+    <img src="http://img.shields.io/badge/license-MIT-blue.svg?style=flat">
+  </a>
+  <img src="https://img.shields.io/badge/pytorch-2.5.1-pytorch.svg?logo=pytorch&style=flat">
+  <img src="https://img.shields.io/badge/python-3.10 | 3.11 | 3.12-pytorch.svg?style=flat">
+</div>
+
+PixyzRL is a reinforcement learning (RL) library based on probabilistic generative models and Bayesian theory. Built on top of the [Pixyz](https://github.com/masa-su/pixyz/tree/main) library, it adopts a flexible modular design that enables uncertainty-aware decision-making and improves sample efficiency. By leveraging probabilistic distribution-based representation learning, PixyzRL provides a more principled approach to policy optimization in reinforcement learning. Additionally, it supports interactions with environments via Gymnasium, allowing for applications across a wide range of tasks.
 
 ## Features
 
@@ -51,7 +61,7 @@ from torch import nn
 
 class Actor(Categorical):
     def __init__(self):
-        super().__init__(var=["a"], cond_var=["o"], name="actor")
+        super().__init__(var=["a"], cond_var=["o"], name="p")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -66,7 +76,7 @@ class Actor(Categorical):
 
 class Critic(Deterministic):
     def __init__(self):
-        super().__init__(var=["v"], cond_var=["o"], name="critic")
+        super().__init__(var=["v"], cond_var=["o"], name="f")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -82,6 +92,16 @@ actor = Actor()
 critic = Critic()
 ```
 
+#### 2.1 Display distributions as `latex`
+
+```
+>>> pixyzrl.utils.print_latex(actor)
+p(a|o)
+
+>>> pixyzrl.utils.print_latex(critic)
+f(v|o)
+```
+
 ### 3. Initialize PPO Agent
 
 ```python
@@ -89,6 +109,15 @@ from pixyzrl.models import PPO
 
 ppo = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, device="cpu", entropy_coef=0.0, mse_coef=1.0)
 ```
+
+##### 3.1 Display model as `latex`
+
+```
+>>> pixyzrl.utils.print_latex(ppo)
+mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
+```
+
+![TeXclip Feb 27 2025](https://github.com/user-attachments/assets/2669eacf-bbfa-4a88-a60a-bb0d8196d704)
 
 ### 4. Setup Rollout Buffer
 
@@ -136,9 +165,9 @@ for _ in range(2000):
     ppo.actor_old.load_state_dict(ppo.actor.state_dict())
 ```
 
-In future work, we don't neet to write traning loop.
+In the future work, we don't need to write traning loop explicitly.
 
-https://github.com/user-attachments/assets/d2851833-38f8-46f5-8b84-6ce1bbaeb62a
+https://github.com/user-attachments/assets/fdf15f97-6fb9-4f12-8522-503eccb47fe5
 
 ## Directory Structure
 
@@ -150,14 +179,16 @@ PixyzRL
 ├── examples  # Example scripts
 ├── pixyzrl
 │   ├── environments  # Environment wrappers
-│   ├── models  # PPO and A2C implementations
+│   ├── models
+│   │   ├ on_policy  # On Policy models implementations
+│   │   └ off_policy  # Off Policy models implementations
 │   ├── memory  # Experience replay & rollout buffer
 │   ├── trainer  # Training management
 │   ├── losses  # Loss function definitions
 │   ├── logger  # Logging utilities
+│   └── utils.py
 └── pyproject.toml
 ```
-
 
 ## License
 
@@ -165,7 +196,8 @@ PixyzRL is released under the MIT License.
 
 ## Author
 
-Masaki Ito (ito.masaki@em.ci.ritsumei.ac.jp)
+- Masaki Ito ( l1sum [at] icloud.com )
+- Daisuke Nakahara
 
 ## Repository
 
@@ -175,10 +207,14 @@ Masaki Ito (ito.masaki@em.ci.ritsumei.ac.jp)
 
 - [ ] Improve `Trainer` with additional optimization techniques
 - [ ] Enhance `Logger` for better tracking and visualization
-- [ ] Implement additional models:
+- [ ] Implement model free algorithms:
   - [ ] Deep Q-Network (DQN)
   - [ ] Deep Deterministic Policy Gradient (DDPG)
   - [ ] Soft Actor-Critic (SAC)
+- [ ] Implement model-based algorithms:
+  - [ ] Dreamer
+- [ ] Collaborate with ChatGPT (MyGPT) for building architectures by natural languages.
+- [ ] Collaborate with [Genesis](https://genesis-world.readthedocs.io/en/latest/user_guide/overview/what_is_genesis.html).
 
 ## Community & Support
 
