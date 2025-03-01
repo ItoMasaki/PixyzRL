@@ -19,6 +19,7 @@ jobs:
       - name: Build
         run: |
           pip install pdoc3
+          pip install -e .
           pdoc --html --output-dir tmp --force pixyzrl
 
       - name: Deploy
