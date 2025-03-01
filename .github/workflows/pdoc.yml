@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: write
+
 jobs:
   generate_pdoc:
     name: generating pdoc
@@ -26,25 +29,26 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pdoc3  # pdoc を直接インストール
-          pip install -e .
+          pip install pdoc
+          pip install -r requirements.txt
 
       # pdoc を実行してドキュメントを生成
       - name: Generate Documentation with pdoc
-        run: pdoc --html --output-dir docs --force pixyzrl
+        run: pdoc --html -o docs --force main.py
 
       # 変更があれば push する
       - name: Push new docs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
           git config --global user.name "${{ github.actor }}"
           git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+
           if git diff --quiet; then
             echo "No changes to commit"
           else
             git add docs/
             git commit -m "Generating docs via GitHub Actions"
-            git push origin HEAD:${{ github.ref }}
+            git push origin main  # ✅ プルリクの refs/pull/... ではなく main に push
           fi
