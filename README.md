@@ -113,7 +113,7 @@ from pixyzrl.models import PPO
 from pixyzrl.memory import RolloutBuffer
 from pixyzrl.trainer import OnPolicyTrainer
 
-ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+agent = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
 
 buffer = RolloutBuffer(
     2048,
@@ -129,6 +129,13 @@ buffer = RolloutBuffer(
     "cpu",
     1,
 )
+```
+
+#### 3.1 Display model as `latex`
+
+```python
+>>> print_latex(agent)
+mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
 
 ```python
