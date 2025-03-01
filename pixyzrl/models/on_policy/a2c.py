@@ -4,13 +4,13 @@ import torch
 from pixyz import distributions as dists
 from pixyz.losses import Entropy, Parameter
 from pixyz.losses import Expectation as E  # noqa: N817
-from pixyz.models import Model
 from torch.optim import Adam
 
 from pixyzrl.losses import MSELoss
+from pixyzrl.models.base_model import RLModel
 
 
-class A2C(Model):
+class A2C(RLModel):
     """A2C agent using Pixyz."""
 
     def __init__(
@@ -22,6 +22,7 @@ class A2C(Model):
         device: str,
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
+        action_var: str = "a",
     ) -> None:
         """Initialize the A2C agent."""
         self.mse_coef = mse_coef
@@ -29,7 +30,8 @@ class A2C(Model):
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
-        self.on_policy = True
+        self._is_on_policy = True
+        self._action_var = action_var
 
         # Actor network
         self.actor = actor

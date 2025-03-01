@@ -1,3 +1,3 @@
-from .trainer import Trainer
+from .trainer import BaseBuffer, OffPolicyTrainer, OnPolicyTrainer
 
-__all__ = ["Trainer"]
+__all__ = ["BaseBuffer", "OffPolicyTrainer", "OnPolicyTrainer"]

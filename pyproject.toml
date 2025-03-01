@@ -15,7 +15,6 @@ dependencies = [
   "pixyz",
   "gymnasium[box2d]",
   "torchrl",
-  "cpprb",
 ]
 requires-python = ">=3.10"
 authors = [
