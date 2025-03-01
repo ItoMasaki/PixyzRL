@@ -8,23 +8,7 @@ from pixyz.distributions import Distribution
 
 
 class BaseBuffer:
-    """Base class for replay buffers.
-
-    This class provides a simple interface for storing and sampling experiences.
-
-    Args:
-        buffer_size (int): Size of the replay buffer.
-        env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
-        device (str): Device to store the replay buffer.
-        n_step (int): Number of steps for n-step returns.
-
-    Example:
-        >>> buffer_size = 1000
-        >>> env_dict = {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}
-        >>> device = "cpu"
-        >>> n_step = 1
-        >>> buffer = BaseBuffer(buffer_size, env_dict, device, n_step)
-    """
+    """Base class for replay buffers."""
 
     def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
         """
@@ -38,11 +22,11 @@ class BaseBuffer:
 
         Example:
             >>> buffer = BaseBuffer(1000, {
-                    "obs": {"shape": (4,), "map": "o"},
-                    "action": {"shape": (1,), "map": "a"},
-                    "reward": {"shape": (1,), "map": "r"},
-                    "done": {"shape": (1,), "map": "d"}
-                }, "cpu", 1)
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
         """
         self.buffer = {}
 
@@ -63,6 +47,16 @@ class BaseBuffer:
             **kwargs (dict[str, Any]): Key-value pairs of experience data.
 
         Example:
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>> obs = np.random.rand(4)
+            >>> action = np.random.rand(1)
+            >>> reward = np.random.rand(1)
+            >>> done = np.random.rand(1)
             >>> buffer.add(obs=obs, action=action, reward=reward, done=done)
         """
         self.pos = (self.pos + 1) % self.buffer_size
@@ -82,7 +76,19 @@ class BaseBuffer:
             dict[str, Any]: Sampled batch of experiences.
 
         Example:
-            >>> batch = buffer.sample(32)
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>>
+            >>> batch = buffer.sample(1)
+            >>> len(batch["o"])
+            1
         """
         idx = torch.randint(0, self.pos - 1, (batch_size,))
         return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}
@@ -91,6 +97,13 @@ class BaseBuffer:
         """Clear the buffer.
 
         Example
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
             >>> buffer.clear()
         """
         for k in self.buffer:
@@ -104,9 +117,20 @@ class BaseBuffer:
             int: Number of stored experiences.
 
         Example:
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>>
             >>> len(buffer)
+            2
         """
-        return self.pos + 1
+        return self.pos
 
     @abstractmethod
     def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lam: float) -> dict[str, torch.Tensor]:
@@ -122,7 +146,16 @@ class BaseBuffer:
             dict[str, torch.Tensor]: Returns and advantages.
 
         Example:
-            >>> returns_advantages = buffer.compute_returns_and_advantages_gae(last_value, gamma, lam)
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
+            >>> last_value = torch.zeros(1)
+            >>> buffer.compute_returns_and_advantages_gae(last_value, 0.99, 0.95)
         """
         ...
 
@@ -137,12 +170,22 @@ class BaseBuffer:
             dict[str, torch.Tensor]: Returns and advantages.
 
         Example:
-            >>> returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
+            >>> last_value = torch.zeros(1)
+            >>>
+            >>> buffer.compute_returns_and_advantages_mc(0.99)
         """
         ...
 
     @abstractmethod
-    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int, critic: Distribution) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -153,29 +196,23 @@ class BaseBuffer:
             dict[str, torch.Tensor]: Returns and advantages.
 
         Example:
-            >>> returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
+            >>> last_value = torch.zeros(1)
+            >>>
+            >>> returns_advantages = buffer.compute_returns_and_advantages_n_step(0.99, 2)
         """
         ...
 
 
 class RolloutBuffer(BaseBuffer):
-    """Rollout buffer for storing trajectories.
-
-    This class provides a simple interface for storing and sampling trajectories.
-
-    Args:
-        buffer_size (int): Size of the replay buffer.
-        env_dict (Dict[str, Any]): Environment dictionary for replay buffer.
-        device (str): Device to store the replay buffer.
-        n_step (int): Number of steps for n-step returns.
-
-    Example:
-        >>> buffer_size = 1000
-        >>> env_dict = {"obs": {"shape": (4,)}, "action": {"shape": (1,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}}
-        >>> device = "cpu"
-        >>> n_step = 1
-        >>> buffer = RolloutBuffer(buffer_size, env_dict, key_mapping, device, n_step)
-    """
+    """Rollout buffer for storing trajectories."""
 
     def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
         """
@@ -188,7 +225,12 @@ class RolloutBuffer(BaseBuffer):
             n_step (int): Number of steps for n-step returns.
 
         Example:
-            >>> buffer = RolloutBuffer(1000, {"obs": {"shape": (4,), "map": "o"}, "action": {"shape": (1,), "map": "a"}, "reward": {"shape": (1,), "map": "r"}, "done": {"shape": (1,), "map": "d"}}, "cpu", 1)
+            >>> buffer = RolloutBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
         """
         super().__init__(buffer_size, env_dict, device, n_envs)
 
@@ -205,7 +247,22 @@ class RolloutBuffer(BaseBuffer):
             dict[str, torch.Tensor]: Returns and advantages.
 
         Example:
-            >>> returns_advantages = buffer.compute_returns_and_advantages_gae(last_state, gamma, lmbd, critic)
+            >>> buffer = RolloutBuffer(3, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"},
+            ...     "value": {"shape": (1,), "map": "v"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>>
+            >>> last_value = torch.zeros(1)
+            >>> return_advantage = buffer.compute_returns_and_advantages_gae(last_value, 0.99, 0.95)
+            >>> "returns" in return_advantage and "advantages" in return_advantage
+            True
         """
         with torch.no_grad():
             advantages = torch.zeros_like(self.buffer["reward"])
@@ -242,7 +299,22 @@ class RolloutBuffer(BaseBuffer):
             dict[str, torch.Tensor]: Returns and advantages.
 
         Example:
-            >>> returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)
+            >>> buffer = RolloutBuffer(3, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"},
+            ...     "value": {"shape": (1,), "map": "v"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>>
+            >>> last_value = torch.zeros(1)
+            >>> return_advantage = buffer.compute_returns_and_advantages_mc(0.99)
+            >>> "returns" in return_advantage and "advantages" in return_advantage
+            True
         """
         returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
         discounted_return = torch.zeros(self.n_envs, device=self.device)
@@ -257,7 +329,7 @@ class RolloutBuffer(BaseBuffer):
         self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
 
-    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int, critic: Distribution) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -268,7 +340,20 @@ class RolloutBuffer(BaseBuffer):
             dict[str, torch.Tensor]: Returns and advantages.
 
         Example:
-            >>> returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)
+            >>> buffer = RolloutBuffer(3, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"},
+            ...     "value": {"shape": (1,), "map": "v"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>>
+            >>> last_value = torch.zeros(1)
+            >>> returns_advantages = buffer.compute_returns_and_advantages_n_step(0.99, 2)
         """
         returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
         for i in reversed(range(self.buffer_size)):
@@ -280,9 +365,9 @@ class RolloutBuffer(BaseBuffer):
                     break
             next_idx = min(i + n_step, self.buffer_size - 1)
             if not self.buffer["done"][next_idx]:
-                discounted_return += (gamma**n_step) * critic.sample({"o": self.buffer["obs"][next_idx]})["v"].squeeze(-1)
+                discounted_return += (gamma**n_step) * self.buffer["value"][next_idx].squeeze(-1)
             returns[i] = discounted_return
-        advantages = returns - critic.sample({"o": self.buffer["obs"]})["v"]
+        advantages = returns - self.buffer["value"]
 
         self.buffer |= {"returns": returns, "advantages": advantages}
         return {"returns": returns, "advantages": advantages}
