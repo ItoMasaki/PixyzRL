@@ -106,7 +106,7 @@ p(a|o)
 f(v|o)
 ```
 
-### 3. Train Using PPO
+### 3. Prepare PPO and Buffer
 
 ```python
 from pixyzrl.models import PPO
@@ -137,6 +137,8 @@ buffer = RolloutBuffer(
 >>> print_latex(agent)
 mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
+
+### 4. Training with Trainer
 
 ```python
 trainer = OnPolicyTrainer(env, buffer, agent, "cpu")
