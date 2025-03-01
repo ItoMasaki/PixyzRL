@@ -34,7 +34,7 @@ jobs:
 
       # pdoc を実行してドキュメントを生成
       - name: Generate Documentation with pdoc
-        run: pdoc --html -o docs --force main.py
+        run: pdoc --html -o docs --force pixyzrl
 
       # 変更があれば push する
       - name: Push new docs
