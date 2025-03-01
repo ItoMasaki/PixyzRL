@@ -159,7 +159,6 @@ PixyzRL
 ## Future Work
 
 - [ ] Implement **Deep Q-Network (DQN)**
-- [ ] Improve **Trainer** with better optimization techniques
 - [ ] Implement **Dreamer** (model-based RL)
 - [ ] Integrate with **ChatGPT for automatic architecture generation**
 
