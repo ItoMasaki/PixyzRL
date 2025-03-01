@@ -50,5 +50,5 @@ jobs:
           else
             git add docs/
             git commit -m "Generating docs via GitHub Actions"
-            git push origin main  # ✅ プルリクの refs/pull/... ではなく main に push
+            git push origin HEAD:${GITHUB_REF#refs/heads/}
           fi
