@@ -15,6 +15,7 @@ dependencies = [
   "pixyz",
   "gymnasium[box2d]",
   "torchrl",
+  "tensorboardX>=2.6.0"
 ]
 requires-python = ">=3.10"
 authors = [
