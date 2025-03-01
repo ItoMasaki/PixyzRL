@@ -13,42 +13,33 @@ permissions:
 
 jobs:
   generate_pdoc:
-    name: generating pdoc
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v2
 
-      # Python をセットアップ
-      - name: Setting up Python
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: "3.x"
 
-      # 必要な依存関係をインストール
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install pdoc3
           pip install -e .
 
-      # pdoc を実行してドキュメントを生成
-      - name: Generate Documentation with pdoc
-        run: pdoc --html -o docs --force pixyzrl
+      - name: Generate documentation
+        run: |
+          pdoc --html --output-dir docs pixyzrl
 
-      # 変更があれば push する
-      - name: Push new docs
+      - name: Pull latest changes
+        run: git pull origin feature/pages
+
+      - name: Commit and push changes
+        run: |
+          git add docs/
+          git commit -m "Update documentation"
+          git push origin feature/pages
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
-
-          if git diff --quiet; then
-            echo "No changes to commit"
-          else
-            git add docs/
-            git commit -m "Generating docs via GitHub Actions"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
