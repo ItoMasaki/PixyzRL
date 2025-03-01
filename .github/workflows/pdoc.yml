@@ -34,7 +34,9 @@ jobs:
           pdoc --html --output-dir docs --force pixyzrl
 
       - name: Pull latest changes
-        run: git pull origin feature/pages
+        run: |
+          git config pull.rebase false
+          git pull origin feature/pages
 
       - name: Commit and push changes
         run: |
