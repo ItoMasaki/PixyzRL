@@ -106,6 +106,7 @@ class Env(BaseEnv):
             tuple[NDArray[Any], dict[str, Any]]: Observation
 
         Examples:
+            >>> env = Env("CartPole-v1")
             >>> obs, info = env.reset()
         """
         obs, info = self._env.reset(seed=self.seed)
@@ -121,8 +122,13 @@ class Env(BaseEnv):
             tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]: Observation, reward, truncated, terminated, info
 
         Examples:
-            >>> obs, reward, truncated, terminated, info = env.step(action)
+            >>> import torch
+            >>> env = Env("CartPole-v1")
+            >>> obs, info = env.reset()
+            >>> action = torch.Tensor(1)
+            >>> obs, reward, truncated, terminated, info = env.step({"a": torch.argmax(action).item()})
         """
+
         if isinstance(action, dict):
             action = action[self.action_var]
 
@@ -132,13 +138,14 @@ class Env(BaseEnv):
         elif isinstance(self._env.action_space, Box):
             action = np.clip(action, self._env.action_space.low, self._env.action_space.high)  # 連続値を制限
 
-        obs, reward, truncated, terminated, info = self._env.step(action)
-        return torch.Tensor(obs), torch.Tensor([reward]), torch.Tensor([truncated]), torch.Tensor([terminated]), info
+        obs, reward, terminated, truncated, info = self._env.step(action)
+        return torch.Tensor(obs), torch.Tensor([reward]), torch.Tensor([terminated]), torch.Tensor([truncated]), info
 
     def close(self) -> None:
         """Close the environment.
 
         Examples:
+            >>> env = Env("CartPole-v1")
             >>> env.close()
         """
         self._env.close()
@@ -147,6 +154,7 @@ class Env(BaseEnv):
         """Render the environment.
 
         Examples:
+            >>> env = Env("CartPole-v1")
             >>> env.render()
         """
         self._env.render()
