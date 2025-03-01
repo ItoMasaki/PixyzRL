@@ -20,7 +20,7 @@ jobs:
       - name: Setting up python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.12" # バージョン指定を修正
+          python-version: "3.12" # バージョン指定をシンプルに
 
       # install poetry
       - name: Install Poetry
@@ -31,7 +31,7 @@ jobs:
         run: echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Install Dependencies
-        run: poetry install --no-interaction --no-dev
+        run: poetry install --no-interaction --without dev
 
       - name: Pdoc
         run: poetry run pdoc --html -o docs --force main.py
