@@ -354,17 +354,18 @@ def train_model(self) -&gt; None:
             total_reward += reward
 
             if self.logger:
-                self.logger.log(&#34;Collected on-policy experiences. Total reward: {total_reward}&#34;)
+                self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
 
             if done:
                 obs, info = self.env.reset()
                 done = False
+                total_reward = 0
 
         action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
         self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
-        if len(self.memory) &lt; self.memory.buffer_size:
+        if len(self.memory) &lt; self.memory.buffer_size - 1:
             return
 
         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)

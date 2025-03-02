@@ -69,16 +69,24 @@ el.replaceWith(d);
         global_step (int): Step counter for logging.
     &#34;&#34;&#34;
 
-    def __init__(self, log_dir: str = &#34;logs&#34;, log_level: int = logging.INFO, log_types: list[str] | None = None, log_format: str = &#34;%(asctime)s - %(levelname)s - %(message)s&#34;, max_log_size: int = 5 * 1024 * 1024, backup_count: int = 3) -&gt; None:
+    def __init__(
+        self,
+        log_dir: str = &#34;logs&#34;,
+        log_level: int = logging.INFO,
+        log_types: list[str] | None = None,
+        log_format: str = &#34;%(asctime)s - %(levelname)s - %(message)s&#34;,
+        max_log_size: int = 5 * 1024 * 1024,
+        backup_count: int = 3,
+    ) -&gt; None:
         &#34;&#34;&#34;Initializes the logger, TensorBoard writer, and log types.
 
         Args:
-            log_dir (str): Directory where logs will be stored.
-            log_level (int): Logging level (e.g., logging.INFO, logging.DEBUG).
-            log_types (list, optional): List of logging types to enable. Defaults to all types.
-            log_format (str): Format for log messages.
-            max_log_size (int): Maximum size of log files before rotating.
-            backup_count (int): Number of backup log files to keep.
+            log_dir (str, optional): Directory where logs will be stored. Defaults to &#34;logs&#34;.
+            log_level (int, optional): Logging level (e.g., logging.INFO, logging.DEBUG). Defaults to logging.INFO.
+            log_types (list[str] | None, optional): List of logging types to enable. Defaults to all types.
+            log_format (str, optional): Format for log messages. Defaults to &#34;%(asctime)s - %(levelname)s - %(message)s&#34;.
+            max_log_size (int, optional): Maximum size of log files before rotating. Defaults to 5MB.
+            backup_count (int, optional): Number of backup log files to keep. Defaults to 3.
 
         Examples:
             &gt;&gt;&gt; logger = Logger(log_dir=&#34;logs&#34;, log_types=[&#34;print&#34;, &#34;file&#34;])
@@ -87,77 +95,99 @@ el.replaceWith(d);
         Path(log_dir).mkdir(parents=True, exist_ok=True)
 
         if log_types is None:
-            log_types = [&#34;file&#34;, &#34;print&#34;, &#34;tensorboard&#34;, &#34;json&#34;, &#34;csv&#34;]  # Default to all types
+            log_types = [&#34;file&#34;, &#34;print&#34;, &#34;tensorboard&#34;, &#34;json&#34;, &#34;csv&#34;]
         self.log_types = set(log_types)
         self.lock = threading.Lock()
 
         log_file = Path(log_dir) / &#34;training.log&#34;
-        json_file = Path(log_dir) / &#34;training.json&#34;
-        csv_file = Path(log_dir) / &#34;training.csv&#34;
+        self.json_file = Path(log_dir) / &#34;training.json&#34;
+        self.csv_file = Path(log_dir) / &#34;training.csv&#34;
 
-        self.json_file = json_file
-        self.csv_file = csv_file
-
-        logging.basicConfig(level=log_level, format=log_format, handlers=[RotatingFileHandler(log_file, maxBytes=max_log_size, backupCount=backup_count), logging.StreamHandler()])
+        logging.basicConfig(
+            level=log_level,
+            format=log_format,
+            handlers=[
+                RotatingFileHandler(log_file, maxBytes=max_log_size, backupCount=backup_count),
+                logging.StreamHandler(),
+            ],
+        )
 
         self.logger = logging.getLogger(&#34;PixyzRLLogger&#34;)
         self.writer = SummaryWriter(log_dir) if &#34;tensorboard&#34; in self.log_types else None
         self.global_step = 0
 
-    def log(self, message: str, level: int = logging.INFO) -&gt; None:
-        &#34;&#34;&#34;Logs a message based on selected log types.
+    def log(self, message: str | dict[str, Any], level: int = logging.INFO, step: int | None = None) -&gt; None:
+        &#34;&#34;&#34;Logs a message or a dictionary of values based on selected log types.
 
         Args:
-            message (str): The message to log.
-            level (int): Logging level (e.g., logging.INFO, logging.ERROR).
+            message (str | dict[str, Any]): The message to log or a dictionary of values to log.
+            level (int, optional): Logging level (e.g., logging.INFO, logging.ERROR). Defaults to logging.INFO.
+            step (int | None, optional): Step index for logging. Defaults to internal counter.
 
         Examples:
             &gt;&gt;&gt; logger = Logger(log_types=[&#34;print&#34;])
             &gt;&gt;&gt; logger.log(&#34;Training started&#34;)
             Training started
+
+            &gt;&gt;&gt; logger.log({&#34;loss&#34;: 0.01, &#34;accuracy&#34;: 99.0})
+            loss: 0.01 (step 1)
+            accuracy: 99.0 (step 1)
         &#34;&#34;&#34;
         with self.lock:
-            if &#34;file&#34; in self.log_types or &#34;print&#34; in self.log_types:
-                self.logger.log(level, message)
-            if &#34;print&#34; in self.log_types:
-                print(message)
+            if step is None:
+                step = self.global_step
 
-    def log_dict(self, log_data: dict[str, Any], step: int | None = None) -&gt; None:
-        &#34;&#34;&#34;Logs a dictionary of values based on selected log types.
+            if isinstance(message, str):
+                self._log_message(message, level)
+            else:
+                self._log_dict(message, step)
 
-        Args:
-            log_data (dict): Dictionary containing log names as keys and values as numeric data.
-            step (int, optional): Step index for logging. Defaults to internal counter.
+            self.global_step += 1
 
-        Examples:
-            &gt;&gt;&gt; logger = Logger(log_types=[&#34;print&#34;])
-            &gt;&gt;&gt; logger.log_dict({&#34;loss&#34;: 0.01, &#34;accuracy&#34;: 99.0})
-            loss: 0.01 (step 0)
-            accuracy: 99.0 (step 0)
-        &#34;&#34;&#34;
-        if step is None:
-            step = self.global_step
+    def _log_message(self, message: str, level: int) -&gt; None:
+        &#34;&#34;&#34;Logs a string message.&#34;&#34;&#34;
+        if &#34;file&#34; in self.log_types or &#34;print&#34; in self.log_types:
+            self.logger.log(level, message)
 
-        with self.lock:
-            for key, value in log_data.items():
-                if isinstance(value, int | float):
-                    if &#34;tensorboard&#34; in self.log_types and self.writer:
-                        self.writer.add_scalar(key, value, step)
-                    if &#34;file&#34; in self.log_types or &#34;print&#34; in self.log_types:
-                        log_message = f&#34;{key}: {value} (step {step})&#34;
-                        self.logger.info(log_message)
-                        if &#34;print&#34; in self.log_types:
-                            print(log_message)
-                    if &#34;json&#34; in self.log_types:
-                        with open(self.json_file, &#34;a&#34;) as f:
-                            json.dump({&#34;step&#34;: step, key: value}, f)
-                            f.write(&#34;\n&#34;)
-                    if &#34;csv&#34; in self.log_types:
-                        with open(self.csv_file, &#34;a&#34;, newline=&#34;&#34;) as f:
-                            writer = csv.writer(f)
-                            writer.writerow([step, key, value])
+    def _log_dict(self, message: dict[str, Any], step: int) -&gt; None:
+        &#34;&#34;&#34;Logs a dictionary of values.&#34;&#34;&#34;
+        for key, value in message.items():
+            if isinstance(value, int | float):
+                self._log_tensorboard(key, value, step)
+                self._log_file(key, value, step)
+                self._log_print(key, value, step)
+                self._log_json(key, value, step)
+                self._log_csv(key, value, step)
 
-        self.global_step += 1
+    def _log_tensorboard(self, key: str, value: float, step: int) -&gt; None:
+        &#34;&#34;&#34;Logs a value to TensorBoard.&#34;&#34;&#34;
+        if &#34;tensorboard&#34; in self.log_types and self.writer:
+            self.writer.add_scalar(key, value, step)
+
+    def _log_file(self, key: str, value: float, step: int) -&gt; None:
+        &#34;&#34;&#34;Logs a value to file and print.&#34;&#34;&#34;
+        log_message = f&#34;{key}: {value} (step {step})&#34;
+        if &#34;file&#34; in self.log_types:
+            self.logger.info(log_message)
+
+    def _log_print(self, key: str, value: float, step: int) -&gt; None:
+        &#34;&#34;&#34;Logs a value to the console.&#34;&#34;&#34;
+        if &#34;print&#34; in self.log_types:
+            self.logger.info(&#34;%s: %s (step %d)&#34;, key, value, step)
+
+    def _log_json(self, key: str, value: float, step: int) -&gt; None:
+        &#34;&#34;&#34;Logs a value to a JSON file.&#34;&#34;&#34;
+        if &#34;json&#34; in self.log_types:
+            with open(self.json_file, &#34;a&#34;) as f:
+                json.dump({&#34;step&#34;: step, key: value}, f)
+                f.write(&#34;\n&#34;)
+
+    def _log_csv(self, key: str, value: float, step: int) -&gt; None:
+        &#34;&#34;&#34;Logs a value to a CSV file.&#34;&#34;&#34;
+        if &#34;csv&#34; in self.log_types:
+            with open(self.csv_file, &#34;a&#34;, newline=&#34;&#34;) as f:
+                writer = csv.writer(f)
+                writer.writerow([step, key, value])
 
     def set_log_level(self, level: int) -&gt; None:
         &#34;&#34;&#34;Dynamically changes the logging level.
@@ -232,18 +262,18 @@ el.replaceWith(d);
 <p>Initializes the logger, TensorBoard writer, and log types.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>log_dir</code></strong> :&ensp;<code>str</code></dt>
-<dd>Directory where logs will be stored.</dd>
-<dt><strong><code>log_level</code></strong> :&ensp;<code>int</code></dt>
-<dd>Logging level (e.g., logging.INFO, logging.DEBUG).</dd>
-<dt><strong><code>log_types</code></strong> :&ensp;<code>list</code>, optional</dt>
+<dt><strong><code>log_dir</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Directory where logs will be stored. Defaults to "logs".</dd>
+<dt><strong><code>log_level</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Logging level (e.g., logging.INFO, logging.DEBUG). Defaults to logging.INFO.</dd>
+<dt><strong><code>log_types</code></strong> :&ensp;<code>list[str] | None</code>, optional</dt>
 <dd>List of logging types to enable. Defaults to all types.</dd>
-<dt><strong><code>log_format</code></strong> :&ensp;<code>str</code></dt>
-<dd>Format for log messages.</dd>
-<dt><strong><code>max_log_size</code></strong> :&ensp;<code>int</code></dt>
-<dd>Maximum size of log files before rotating.</dd>
-<dt><strong><code>backup_count</code></strong> :&ensp;<code>int</code></dt>
-<dd>Number of backup log files to keep.</dd>
+<dt><strong><code>log_format</code></strong> :&ensp;<code>str</code>, optional</dt>
+<dd>Format for log messages. Defaults to "%(asctime)s - %(levelname)s - %(message)s".</dd>
+<dt><strong><code>max_log_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Maximum size of log files before rotating. Defaults to 5MB.</dd>
+<dt><strong><code>backup_count</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of backup log files to keep. Defaults to 3.</dd>
 </dl>
 <h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; logger = Logger(log_dir=&quot;logs&quot;, log_types=[&quot;print&quot;, &quot;file&quot;])
@@ -309,103 +339,59 @@ Ending epoch 1
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.logger.logger.Logger.log"><code class="name flex">
-<span>def <span class="ident">log</span></span>(<span>self, message: str, level: int = 20) ‑> None</span>
+<span>def <span class="ident">log</span></span>(<span>self,<br>message: str | dict[str, typing.Any],<br>level: int = 20,<br>step: int | None = None) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def log(self, message: str, level: int = logging.INFO) -&gt; None:
-    &#34;&#34;&#34;Logs a message based on selected log types.
+<pre><code class="python">def log(self, message: str | dict[str, Any], level: int = logging.INFO, step: int | None = None) -&gt; None:
+    &#34;&#34;&#34;Logs a message or a dictionary of values based on selected log types.
 
     Args:
-        message (str): The message to log.
-        level (int): Logging level (e.g., logging.INFO, logging.ERROR).
+        message (str | dict[str, Any]): The message to log or a dictionary of values to log.
+        level (int, optional): Logging level (e.g., logging.INFO, logging.ERROR). Defaults to logging.INFO.
+        step (int | None, optional): Step index for logging. Defaults to internal counter.
 
     Examples:
         &gt;&gt;&gt; logger = Logger(log_types=[&#34;print&#34;])
         &gt;&gt;&gt; logger.log(&#34;Training started&#34;)
         Training started
+
+        &gt;&gt;&gt; logger.log({&#34;loss&#34;: 0.01, &#34;accuracy&#34;: 99.0})
+        loss: 0.01 (step 1)
+        accuracy: 99.0 (step 1)
     &#34;&#34;&#34;
     with self.lock:
-        if &#34;file&#34; in self.log_types or &#34;print&#34; in self.log_types:
-            self.logger.log(level, message)
-        if &#34;print&#34; in self.log_types:
-            print(message)</code></pre>
+        if step is None:
+            step = self.global_step
+
+        if isinstance(message, str):
+            self._log_message(message, level)
+        else:
+            self._log_dict(message, step)
+
+        self.global_step += 1</code></pre>
 </details>
-<div class="desc"><p>Logs a message based on selected log types.</p>
+<div class="desc"><p>Logs a message or a dictionary of values based on selected log types.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>message</code></strong> :&ensp;<code>str</code></dt>
-<dd>The message to log.</dd>
-<dt><strong><code>level</code></strong> :&ensp;<code>int</code></dt>
-<dd>Logging level (e.g., logging.INFO, logging.ERROR).</dd>
+<dt><strong><code>message</code></strong> :&ensp;<code>str | dict[str, Any]</code></dt>
+<dd>The message to log or a dictionary of values to log.</dd>
+<dt><strong><code>level</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Logging level (e.g., logging.INFO, logging.ERROR). Defaults to logging.INFO.</dd>
+<dt><strong><code>step</code></strong> :&ensp;<code>int | None</code>, optional</dt>
+<dd>Step index for logging. Defaults to internal counter.</dd>
 </dl>
 <h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; logger = Logger(log_types=[&quot;print&quot;])
 &gt;&gt;&gt; logger.log(&quot;Training started&quot;)
 Training started
-</code></pre></div>
-</dd>
-<dt id="pixyzrl.logger.logger.Logger.log_dict"><code class="name flex">
-<span>def <span class="ident">log_dict</span></span>(<span>self, log_data: dict[str, typing.Any], step: int | None = None) ‑> None</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def log_dict(self, log_data: dict[str, Any], step: int | None = None) -&gt; None:
-    &#34;&#34;&#34;Logs a dictionary of values based on selected log types.
-
-    Args:
-        log_data (dict): Dictionary containing log names as keys and values as numeric data.
-        step (int, optional): Step index for logging. Defaults to internal counter.
-
-    Examples:
-        &gt;&gt;&gt; logger = Logger(log_types=[&#34;print&#34;])
-        &gt;&gt;&gt; logger.log_dict({&#34;loss&#34;: 0.01, &#34;accuracy&#34;: 99.0})
-        loss: 0.01 (step 0)
-        accuracy: 99.0 (step 0)
-    &#34;&#34;&#34;
-    if step is None:
-        step = self.global_step
-
-    with self.lock:
-        for key, value in log_data.items():
-            if isinstance(value, int | float):
-                if &#34;tensorboard&#34; in self.log_types and self.writer:
-                    self.writer.add_scalar(key, value, step)
-                if &#34;file&#34; in self.log_types or &#34;print&#34; in self.log_types:
-                    log_message = f&#34;{key}: {value} (step {step})&#34;
-                    self.logger.info(log_message)
-                    if &#34;print&#34; in self.log_types:
-                        print(log_message)
-                if &#34;json&#34; in self.log_types:
-                    with open(self.json_file, &#34;a&#34;) as f:
-                        json.dump({&#34;step&#34;: step, key: value}, f)
-                        f.write(&#34;\n&#34;)
-                if &#34;csv&#34; in self.log_types:
-                    with open(self.csv_file, &#34;a&#34;, newline=&#34;&#34;) as f:
-                        writer = csv.writer(f)
-                        writer.writerow([step, key, value])
-
-    self.global_step += 1</code></pre>
-</details>
-<div class="desc"><p>Logs a dictionary of values based on selected log types.</p>
-<h2 id="args">Args</h2>
-<dl>
-<dt><strong><code>log_data</code></strong> :&ensp;<code>dict</code></dt>
-<dd>Dictionary containing log names as keys and values as numeric data.</dd>
-<dt><strong><code>step</code></strong> :&ensp;<code>int</code>, optional</dt>
-<dd>Step index for logging. Defaults to internal counter.</dd>
-</dl>
-<h2 id="examples">Examples</h2>
-<pre><code class="language-python-repl">&gt;&gt;&gt; logger = Logger(log_types=[&quot;print&quot;])
-&gt;&gt;&gt; logger.log_dict({&quot;loss&quot;: 0.01, &quot;accuracy&quot;: 99.0})
-loss: 0.01 (step 0)
-accuracy: 99.0 (step 0)
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; logger.log({&quot;loss&quot;: 0.01, &quot;accuracy&quot;: 99.0})
+loss: 0.01 (step 1)
+accuracy: 99.0 (step 1)
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.logger.logger.Logger.set_log_level"><code class="name flex">
@@ -492,11 +478,10 @@ Starting epoch 1
 <ul>
 <li>
 <h4><code><a title="pixyzrl.logger.logger.Logger" href="#pixyzrl.logger.logger.Logger">Logger</a></code></h4>
-<ul class="two-column">
+<ul class="">
 <li><code><a title="pixyzrl.logger.logger.Logger.close" href="#pixyzrl.logger.logger.Logger.close">close</a></code></li>
 <li><code><a title="pixyzrl.logger.logger.Logger.end_epoch" href="#pixyzrl.logger.logger.Logger.end_epoch">end_epoch</a></code></li>
 <li><code><a title="pixyzrl.logger.logger.Logger.log" href="#pixyzrl.logger.logger.Logger.log">log</a></code></li>
-<li><code><a title="pixyzrl.logger.logger.Logger.log_dict" href="#pixyzrl.logger.logger.Logger.log_dict">log_dict</a></code></li>
 <li><code><a title="pixyzrl.logger.logger.Logger.set_log_level" href="#pixyzrl.logger.logger.Logger.set_log_level">set_log_level</a></code></li>
 <li><code><a title="pixyzrl.logger.logger.Logger.start_epoch" href="#pixyzrl.logger.logger.Logger.start_epoch">start_epoch</a></code></li>
 </ul>
