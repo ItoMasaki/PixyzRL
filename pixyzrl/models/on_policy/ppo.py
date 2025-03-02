@@ -30,7 +30,47 @@ class PPO(RLModel):
         entropy_coef: float = 0.01,
         action_var: str = "a",
     ) -> None:
-        """Initialize the PPO agent."""
+        """Initialize the PPO agent.
+
+        Args:
+            actor (dists.Distribution): Actor network.
+            critic (dists.Distribution): Critic network.
+            shared_net (dists.Distribution): Shared network (optional).
+            eps_clip (float): PPO clip parameter.
+            lr_actor (float): Actor learning rate.
+            lr_critic (float): Critic learning rate.
+            device (str): Device to use.
+            mse_coef (float): Coefficient for the MSE loss.
+            entropy_coef (float): Coefficient for the entropy loss.
+            action_var (str): Action variable
+
+        Examples:
+            >>> import torch
+            >>> from torch.nn import functional as F
+            >>> from pixyz.distributions import Bernoulli, Normal
+            >>> from pixyz.models import Model
+            >>> from pixyzrl.models import PPO
+            >>>
+            >>> class P(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=["z"],cond_var=["x"],name="p")
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {"loc": h, "scale": F.softplus(h)}
+            >>>
+            >>> class Q(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=["z"],cond_var=["x"],name="q")
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {"loc": h, "scale": F.softplus(h)}
+            >>>
+            >>> actor = P()
+            >>> critic = P()
+            >>> ppo = PPO(actor, critic)
+        """
         self.mse_coef = mse_coef
         self.entropy_coef = entropy_coef
         self.eps_clip = eps_clip
@@ -74,14 +114,60 @@ class PPO(RLModel):
         )
 
     def select_action(self, state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
-        """Select an action."""
+        """Select an action.
+
+        Args:
+            state (dict[str, torch.Tensor]): State.
+
+        Returns:
+            dict[str, torch.Tensor]: Action.
+
+        Examples:
+            >>> import torch
+            >>> from torch.nn import functional as F
+            >>> from pixyz.distributions import Bernoulli, Normal
+            >>> from pixyz.models import Model
+            >>> from pixyzrl.models import PPO
+            >>>
+            >>> class P(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=["z"],cond_var=["x"],name="p")
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {"loc": h, "scale": F.softplus(h)}
+            >>>
+            >>> class Q(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=["z"],cond_var=["x"],name="q")
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {"loc": h, "scale": F.softplus(h)}
+            >>>
+            >>> actor = P()
+            >>> critic = P()
+            >>> ppo = PPO(actor, critic)
+            >>> state = {"x": torch.zeros(1, 128)}
+            >>> ppo.select_action(state)["z"].shape
+            torch.Size([1, 128])
+        """
         with torch.no_grad():
             if self.shared_net is not None:
                 state = self.shared_net.sample(state)
             return self.actor_old.sample(state) | self.critic.sample(state)
 
     def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -> float:
-        """Perform a single training step."""
+        """Perform a single training step.
+
+        Args:
+            memory (BaseBuffer): Replay buffer.
+            batch_size (int): Batch size.
+            num_epochs (int): Number of epochs.
+
+        Returns:
+            float: Total loss.
+        """
         total_loss = 0
 
         for _ in range(num_epochs):
