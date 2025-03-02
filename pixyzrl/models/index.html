@@ -165,7 +165,47 @@ el.replaceWith(d);
         entropy_coef: float = 0.01,
         action_var: str = &#34;a&#34;,
     ) -&gt; None:
-        &#34;&#34;&#34;Initialize the PPO agent.&#34;&#34;&#34;
+        &#34;&#34;&#34;Initialize the PPO agent.
+
+        Args:
+            actor (dists.Distribution): Actor network.
+            critic (dists.Distribution): Critic network.
+            shared_net (dists.Distribution): Shared network (optional).
+            eps_clip (float): PPO clip parameter.
+            lr_actor (float): Actor learning rate.
+            lr_critic (float): Critic learning rate.
+            device (str): Device to use.
+            mse_coef (float): Coefficient for the MSE loss.
+            entropy_coef (float): Coefficient for the entropy loss.
+            action_var (str): Action variable
+
+        Examples:
+            &gt;&gt;&gt; import torch
+            &gt;&gt;&gt; from torch.nn import functional as F
+            &gt;&gt;&gt; from pixyz.distributions import Bernoulli, Normal
+            &gt;&gt;&gt; from pixyz.models import Model
+            &gt;&gt;&gt; from pixyzrl.models import PPO
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; class P(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;p&#34;)
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {&#34;loc&#34;: h, &#34;scale&#34;: F.softplus(h)}
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; class Q(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;q&#34;)
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {&#34;loc&#34;: h, &#34;scale&#34;: F.softplus(h)}
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; actor = P()
+            &gt;&gt;&gt; critic = P()
+            &gt;&gt;&gt; ppo = PPO(actor, critic)
+        &#34;&#34;&#34;
         self.mse_coef = mse_coef
         self.entropy_coef = entropy_coef
         self.eps_clip = eps_clip
@@ -209,14 +249,60 @@ el.replaceWith(d);
         )
 
     def select_action(self, state: dict[str, torch.Tensor]) -&gt; dict[str, torch.Tensor]:
-        &#34;&#34;&#34;Select an action.&#34;&#34;&#34;
+        &#34;&#34;&#34;Select an action.
+
+        Args:
+            state (dict[str, torch.Tensor]): State.
+
+        Returns:
+            dict[str, torch.Tensor]: Action.
+
+        Examples:
+            &gt;&gt;&gt; import torch
+            &gt;&gt;&gt; from torch.nn import functional as F
+            &gt;&gt;&gt; from pixyz.distributions import Bernoulli, Normal
+            &gt;&gt;&gt; from pixyz.models import Model
+            &gt;&gt;&gt; from pixyzrl.models import PPO
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; class P(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;p&#34;)
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {&#34;loc&#34;: h, &#34;scale&#34;: F.softplus(h)}
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; class Q(Normal):
+            ...     def __init__(self):
+            ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;q&#34;)
+            ...         self.fc1 = torch.nn.Linear(128, 128)
+            ...     def forward(self, x):
+            ...         h = F.relu(self.fc1(x))
+            ...         return {&#34;loc&#34;: h, &#34;scale&#34;: F.softplus(h)}
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; actor = P()
+            &gt;&gt;&gt; critic = P()
+            &gt;&gt;&gt; ppo = PPO(actor, critic)
+            &gt;&gt;&gt; state = {&#34;x&#34;: torch.zeros(1, 128)}
+            &gt;&gt;&gt; ppo.select_action(state)[&#34;z&#34;].shape
+            torch.Size([1, 128])
+        &#34;&#34;&#34;
         with torch.no_grad():
             if self.shared_net is not None:
                 state = self.shared_net.sample(state)
             return self.actor_old.sample(state) | self.critic.sample(state)
 
     def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float:
-        &#34;&#34;&#34;Perform a single training step.&#34;&#34;&#34;
+        &#34;&#34;&#34;Perform a single training step.
+
+        Args:
+            memory (BaseBuffer): Replay buffer.
+            batch_size (int): Batch size.
+            num_epochs (int): Number of epochs.
+
+        Returns:
+            float: Total loss.
+        &#34;&#34;&#34;
         total_loss = 0
 
         for _ in range(num_epochs):
@@ -230,21 +316,213 @@ el.replaceWith(d);
         return total_loss</code></pre>
 </details>
 <div class="desc"><p>PPO agent using Pixyz.</p>
-<p>Initialize the PPO agent.</p></div>
+<p>Initialize the PPO agent.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>actor</code></strong> :&ensp;<code>dists.Distribution</code></dt>
+<dd>Actor network.</dd>
+<dt><strong><code>critic</code></strong> :&ensp;<code>dists.Distribution</code></dt>
+<dd>Critic network.</dd>
+<dt><strong><code>shared_net</code></strong> :&ensp;<code>dists.Distribution</code></dt>
+<dd>Shared network (optional).</dd>
+<dt><strong><code>eps_clip</code></strong> :&ensp;<code>float</code></dt>
+<dd>PPO clip parameter.</dd>
+<dt><strong><code>lr_actor</code></strong> :&ensp;<code>float</code></dt>
+<dd>Actor learning rate.</dd>
+<dt><strong><code>lr_critic</code></strong> :&ensp;<code>float</code></dt>
+<dd>Critic learning rate.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>str</code></dt>
+<dd>Device to use.</dd>
+<dt><strong><code>mse_coef</code></strong> :&ensp;<code>float</code></dt>
+<dd>Coefficient for the MSE loss.</dd>
+<dt><strong><code>entropy_coef</code></strong> :&ensp;<code>float</code></dt>
+<dd>Coefficient for the entropy loss.</dd>
+<dt><strong><code>action_var</code></strong> :&ensp;<code>str</code></dt>
+<dd>Action variable</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from torch.nn import functional as F
+&gt;&gt;&gt; from pixyz.distributions import Bernoulli, Normal
+&gt;&gt;&gt; from pixyz.models import Model
+&gt;&gt;&gt; from pixyzrl.models import PPO
+&gt;&gt;&gt;
+&gt;&gt;&gt; class P(Normal):
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;p&quot;)
+...         self.fc1 = torch.nn.Linear(128, 128)
+...     def forward(self, x):
+...         h = F.relu(self.fc1(x))
+...         return {&quot;loc&quot;: h, &quot;scale&quot;: F.softplus(h)}
+&gt;&gt;&gt;
+&gt;&gt;&gt; class Q(Normal):
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;q&quot;)
+...         self.fc1 = torch.nn.Linear(128, 128)
+...     def forward(self, x):
+...         h = F.relu(self.fc1(x))
+...         return {&quot;loc&quot;: h, &quot;scale&quot;: F.softplus(h)}
+&gt;&gt;&gt;
+&gt;&gt;&gt; actor = P()
+&gt;&gt;&gt; critic = P()
+&gt;&gt;&gt; ppo = PPO(actor, critic)
+</code></pre></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="pixyzrl.models.base_model.RLModel" href="base_model.html#pixyzrl.models.base_model.RLModel">RLModel</a></li>
 <li>pixyz.models.model.Model</li>
 <li>abc.ABC</li>
 </ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.models.PPO.select_action"><code class="name flex">
+<span>def <span class="ident">select_action</span></span>(<span>self, state: dict[str, torch.Tensor]) ‑> dict[str, torch.Tensor]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def select_action(self, state: dict[str, torch.Tensor]) -&gt; dict[str, torch.Tensor]:
+    &#34;&#34;&#34;Select an action.
+
+    Args:
+        state (dict[str, torch.Tensor]): State.
+
+    Returns:
+        dict[str, torch.Tensor]: Action.
+
+    Examples:
+        &gt;&gt;&gt; import torch
+        &gt;&gt;&gt; from torch.nn import functional as F
+        &gt;&gt;&gt; from pixyz.distributions import Bernoulli, Normal
+        &gt;&gt;&gt; from pixyz.models import Model
+        &gt;&gt;&gt; from pixyzrl.models import PPO
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; class P(Normal):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;p&#34;)
+        ...         self.fc1 = torch.nn.Linear(128, 128)
+        ...     def forward(self, x):
+        ...         h = F.relu(self.fc1(x))
+        ...         return {&#34;loc&#34;: h, &#34;scale&#34;: F.softplus(h)}
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; class Q(Normal):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;z&#34;],cond_var=[&#34;x&#34;],name=&#34;q&#34;)
+        ...         self.fc1 = torch.nn.Linear(128, 128)
+        ...     def forward(self, x):
+        ...         h = F.relu(self.fc1(x))
+        ...         return {&#34;loc&#34;: h, &#34;scale&#34;: F.softplus(h)}
+        &gt;&gt;&gt;
+        &gt;&gt;&gt; actor = P()
+        &gt;&gt;&gt; critic = P()
+        &gt;&gt;&gt; ppo = PPO(actor, critic)
+        &gt;&gt;&gt; state = {&#34;x&#34;: torch.zeros(1, 128)}
+        &gt;&gt;&gt; ppo.select_action(state)[&#34;z&#34;].shape
+        torch.Size([1, 128])
+    &#34;&#34;&#34;
+    with torch.no_grad():
+        if self.shared_net is not None:
+            state = self.shared_net.sample(state)
+        return self.actor_old.sample(state) | self.critic.sample(state)</code></pre>
+</details>
+<div class="desc"><p>Select an action.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>state</code></strong> :&ensp;<code>dict[str, torch.Tensor]</code></dt>
+<dd>State.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>dict[str, torch.Tensor]</code></dt>
+<dd>Action.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from torch.nn import functional as F
+&gt;&gt;&gt; from pixyz.distributions import Bernoulli, Normal
+&gt;&gt;&gt; from pixyz.models import Model
+&gt;&gt;&gt; from pixyzrl.models import PPO
+&gt;&gt;&gt;
+&gt;&gt;&gt; class P(Normal):
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;p&quot;)
+...         self.fc1 = torch.nn.Linear(128, 128)
+...     def forward(self, x):
+...         h = F.relu(self.fc1(x))
+...         return {&quot;loc&quot;: h, &quot;scale&quot;: F.softplus(h)}
+&gt;&gt;&gt;
+&gt;&gt;&gt; class Q(Normal):
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;q&quot;)
+...         self.fc1 = torch.nn.Linear(128, 128)
+...     def forward(self, x):
+...         h = F.relu(self.fc1(x))
+...         return {&quot;loc&quot;: h, &quot;scale&quot;: F.softplus(h)}
+&gt;&gt;&gt;
+&gt;&gt;&gt; actor = P()
+&gt;&gt;&gt; critic = P()
+&gt;&gt;&gt; ppo = PPO(actor, critic)
+&gt;&gt;&gt; state = {&quot;x&quot;: torch.zeros(1, 128)}
+&gt;&gt;&gt; ppo.select_action(state)[&quot;z&quot;].shape
+torch.Size([1, 128])
+</code></pre></div>
+</dd>
+<dt id="pixyzrl.models.PPO.train_step"><code class="name flex">
+<span>def <span class="ident">train_step</span></span>(<span>self,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>batch_size: int = 128,<br>num_epochs: int = 4) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float:
+    &#34;&#34;&#34;Perform a single training step.
+
+    Args:
+        memory (BaseBuffer): Replay buffer.
+        batch_size (int): Batch size.
+        num_epochs (int): Number of epochs.
+
+    Returns:
+        float: Total loss.
+    &#34;&#34;&#34;
+    total_loss = 0
+
+    for _ in range(num_epochs):
+        batch = memory.sample(batch_size)
+        loss = self.train(batch)
+        total_loss += loss
+
+    self.actor_old.load_state_dict(self.actor.state_dict())
+    memory.clear()
+
+    return total_loss</code></pre>
+</details>
+<div class="desc"><p>Perform a single training step.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>memory</code></strong> :&ensp;<code>BaseBuffer</code></dt>
+<dd>Replay buffer.</dd>
+<dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code></dt>
+<dd>Batch size.</dd>
+<dt><strong><code>num_epochs</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of epochs.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>float</code></dt>
+<dd>Total loss.</dd>
+</dl></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="pixyzrl.models.base_model.RLModel" href="base_model.html#pixyzrl.models.base_model.RLModel">RLModel</a></b></code>:
 <ul class="hlist">
 <li><code><a title="pixyzrl.models.base_model.RLModel.action_var" href="base_model.html#pixyzrl.models.base_model.RLModel.action_var">action_var</a></code></li>
 <li><code><a title="pixyzrl.models.base_model.RLModel.is_on_policy" href="base_model.html#pixyzrl.models.base_model.RLModel.is_on_policy">is_on_policy</a></code></li>
-<li><code><a title="pixyzrl.models.base_model.RLModel.select_action" href="base_model.html#pixyzrl.models.base_model.RLModel.select_action">select_action</a></code></li>
-<li><code><a title="pixyzrl.models.base_model.RLModel.train_step" href="base_model.html#pixyzrl.models.base_model.RLModel.train_step">train_step</a></code></li>
 </ul>
 </li>
 </ul>
@@ -276,6 +554,10 @@ el.replaceWith(d);
 </li>
 <li>
 <h4><code><a title="pixyzrl.models.PPO" href="#pixyzrl.models.PPO">PPO</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.models.PPO.select_action" href="#pixyzrl.models.PPO.select_action">select_action</a></code></li>
+<li><code><a title="pixyzrl.models.PPO.train_step" href="#pixyzrl.models.PPO.train_step">train_step</a></code></li>
+</ul>
 </li>
 </ul>
 </li>

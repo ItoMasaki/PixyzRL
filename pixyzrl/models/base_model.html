@@ -60,7 +60,12 @@ el.replaceWith(d);
 
     @abstractmethod
     def __init__(self, *args: Any, **kwargs: Any) -&gt; None:
-        &#34;&#34;&#34;Initialize the model.&#34;&#34;&#34;
+        &#34;&#34;&#34;Initialize the model.
+
+        Args:
+            *args (Any): Positional arguments.
+            **kwargs (Any): Keyword arguments.
+        &#34;&#34;&#34;
         super().__init__(*args, **kwargs)
 
         self._is_on_policy = False
@@ -87,7 +92,14 @@ el.replaceWith(d);
         return self._action_var</code></pre>
 </details>
 <div class="desc"><p>Base class for reinforcement learning models.</p>
-<p>Initialize the model.</p></div>
+<p>Initialize the model.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>*args</code></strong> :&ensp;<code>Any</code></dt>
+<dd>Positional arguments.</dd>
+<dt><strong><code>**kwargs</code></strong> :&ensp;<code>Any</code></dt>
+<dd>Keyword arguments.</dd>
+</dl></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>pixyz.models.model.Model</li>

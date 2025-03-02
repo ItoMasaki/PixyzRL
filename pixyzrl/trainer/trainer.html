@@ -81,11 +81,12 @@ el.replaceWith(d);
     def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None) -&gt; None:
         &#34;&#34;&#34;Initialize the trainer.
 
-        :param env: Environment for training.
-        :param memory: Memory buffer.
-        :param agent: RL agent.
-        :param device: Device to run training on.
-        :param logger: Optional logger.
+        Args:
+            env (BaseEnv): Environment.
+            memory (BaseBuffer): Replay buffer.
+            agent (RLModel): Reinforcement learning agent.
+            device (torch.device | str): Device to use.
+            logger (Logger | None): Logger to use.
         &#34;&#34;&#34;
         self.env = env
         self.memory = memory
@@ -120,11 +121,19 @@ el.replaceWith(d);
 </details>
 <div class="desc"><p>Base class for reinforcement learning trainers.</p>
 <p>Initialize the trainer.</p>
-<p>:param env: Environment for training.
-:param memory: Memory buffer.
-:param agent: RL agent.
-:param device: Device to run training on.
-:param logger: Optional logger.</p></div>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>env</code></strong> :&ensp;<code>BaseEnv</code></dt>
+<dd>Environment.</dd>
+<dt><strong><code>memory</code></strong> :&ensp;<code>BaseBuffer</code></dt>
+<dd>Replay buffer.</dd>
+<dt><strong><code>agent</code></strong> :&ensp;<code>RLModel</code></dt>
+<dd>Reinforcement learning agent.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device | str</code></dt>
+<dd>Device to use.</dd>
+<dt><strong><code>logger</code></strong> :&ensp;<code>Logger | None</code></dt>
+<dd>Logger to use.</dd>
+</dl></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li>abc.ABC</li>
@@ -251,11 +260,19 @@ def train_model(self) -&gt; None:
 </details>
 <div class="desc"><p>Trainer class for off-policy reinforcement learning methods (e.g., DQN, DDPG).</p>
 <p>Initialize the trainer.</p>
-<p>:param env: Environment for training.
-:param memory: Memory buffer.
-:param agent: RL agent.
-:param device: Device to run training on.
-:param logger: Optional logger.</p></div>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>env</code></strong> :&ensp;<code>BaseEnv</code></dt>
+<dd>Environment.</dd>
+<dt><strong><code>memory</code></strong> :&ensp;<code>BaseBuffer</code></dt>
+<dd>Replay buffer.</dd>
+<dt><strong><code>agent</code></strong> :&ensp;<code>RLModel</code></dt>
+<dd>Reinforcement learning agent.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device | str</code></dt>
+<dd>Device to use.</dd>
+<dt><strong><code>logger</code></strong> :&ensp;<code>Logger | None</code></dt>
+<dd>Logger to use.</dd>
+</dl></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="pixyzrl.trainer.trainer.BaseTrainer" href="#pixyzrl.trainer.trainer.BaseTrainer">BaseTrainer</a></li>
@@ -306,6 +323,15 @@ def train_model(self) -&gt; None:
     &#34;&#34;&#34;Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C).&#34;&#34;&#34;
 
     def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None) -&gt; None:
+        &#34;&#34;&#34;Initialize the on-policy trainer.
+
+        Args:
+            env (BaseEnv): Environment.
+            memory (BaseBuffer): Replay buffer.
+            agent (RLModel): Reinforcement learning agent.
+            device (torch.device | str): Device to use.
+            logger (Logger | None): Logger to use.
+        &#34;&#34;&#34;
         super().__init__(env, memory, agent, device, logger)
 
     def collect_experiences(self) -&gt; None:
@@ -354,12 +380,20 @@ def train_model(self) -&gt; None:
                 self.logger.log(f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)</code></pre>
 </details>
 <div class="desc"><p>Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C).</p>
-<p>Initialize the trainer.</p>
-<p>:param env: Environment for training.
-:param memory: Memory buffer.
-:param agent: RL agent.
-:param device: Device to run training on.
-:param logger: Optional logger.</p></div>
+<p>Initialize the on-policy trainer.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>env</code></strong> :&ensp;<code>BaseEnv</code></dt>
+<dd>Environment.</dd>
+<dt><strong><code>memory</code></strong> :&ensp;<code>BaseBuffer</code></dt>
+<dd>Replay buffer.</dd>
+<dt><strong><code>agent</code></strong> :&ensp;<code>RLModel</code></dt>
+<dd>Reinforcement learning agent.</dd>
+<dt><strong><code>device</code></strong> :&ensp;<code>torch.device | str</code></dt>
+<dd>Device to use.</dd>
+<dt><strong><code>logger</code></strong> :&ensp;<code>Logger | None</code></dt>
+<dd>Logger to use.</dd>
+</dl></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="pixyzrl.trainer.trainer.BaseTrainer" href="#pixyzrl.trainer.trainer.BaseTrainer">BaseTrainer</a></li>
