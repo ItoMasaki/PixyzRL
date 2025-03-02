@@ -68,7 +68,7 @@ buffer = RolloutBuffer(
     1,
 )
 
-logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["tensorboard"])
+logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
 
 trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger=logger)
 trainer.train(1000)

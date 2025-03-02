@@ -92,31 +92,56 @@ class Logger:
                 step = self.global_step
 
             if isinstance(message, str):
-                if "file" in self.log_types or "print" in self.log_types:
-                    self.logger.log(level, message)
-                if "print" in self.log_types:
-                    print(message)
-
-            elif isinstance(message, dict):
-                for key, value in message.items():
-                    if isinstance(value, (int, float)):
-                        if "tensorboard" in self.log_types and self.writer:
-                            self.writer.add_scalar(key, value, step)
-                        if "file" in self.log_types or "print" in self.log_types:
-                            log_message = f"{key}: {value} (step {step})"
-                            self.logger.info(log_message)
-                            if "print" in self.log_types:
-                                print(log_message)
-                        if "json" in self.log_types:
-                            with open(self.json_file, "a") as f:
-                                json.dump({"step": step, key: value}, f)
-                                f.write("\n")
-                        if "csv" in self.log_types:
-                            with open(self.csv_file, "a", newline="") as f:
-                                writer = csv.writer(f)
-                                writer.writerow([step, key, value])
+                self._log_message(message, level)
+            else:
+                self._log_dict(message, step)
 
             self.global_step += 1
+
+    def _log_message(self, message: str, level: int) -> None:
+        """Logs a string message."""
+        if "file" in self.log_types or "print" in self.log_types:
+            self.logger.log(level, message)
+
+    def _log_dict(self, message: dict[str, Any], step: int) -> None:
+        """Logs a dictionary of values."""
+        for key, value in message.items():
+            if isinstance(value, int | float):
+                self._log_tensorboard(key, value, step)
+                self._log_file(key, value, step)
+                self._log_print(key, value, step)
+                self._log_json(key, value, step)
+                self._log_csv(key, value, step)
+
+    def _log_tensorboard(self, key: str, value: float, step: int) -> None:
+        """Logs a value to TensorBoard."""
+        if "tensorboard" in self.log_types and self.writer:
+            self.writer.add_scalar(key, value, step)
+
+    def _log_file(self, key: str, value: float, step: int) -> None:
+        """Logs a value to file and print."""
+        log_message = f"{key}: {value} (step {step})"
+        if "file" in self.log_types:
+            self.logger.info(log_message)
+
+    def _log_print(self, key: str, value: float, step: int) -> None:
+        """Logs a value to the console."""
+        if "print" in self.log_types:
+            self.logger.info("%s: %s (step %d)", key, value, step)
+
+    def _log_json(self, key: str, value: float, step: int) -> None:
+        """Logs a value to a JSON file."""
+        if "json" in self.log_types:
+            with open(self.json_file, "a") as f:
+                json.dump({"step": step, key: value}, f)
+                f.write("\n")
+
+    def _log_csv(self, key: str, value: float, step: int) -> None:
+        """Logs a value to a CSV file."""
+        if "csv" in self.log_types:
+            with open(self.csv_file, "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([step, key, value])
 
     def set_log_level(self, level: int) -> None:
         """Dynamically changes the logging level.
