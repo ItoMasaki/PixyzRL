@@ -64,14 +64,14 @@ el.replaceWith(d);
 <div class="desc"><p>Determine wheather is the environment Jupyter Notebook</p></div>
 </dd>
 <dt id="pixyzrl.utils.print_latex"><code class="name flex">
-<span>def <span class="ident">print_latex</span></span>(<span>obj: Any) ‑> IPython.core.display.Math | str</span>
+<span>def <span class="ident">print_latex</span></span>(<span>obj: Any) ‑> IPython.core.display.Math | str | None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def print_latex(obj: Any) -&gt; Math | str:
+<pre><code class="python">def print_latex(obj: Any) -&gt; Math | str | None:
     &#34;&#34;&#34;Print formulas in latex format.
 
     Parameters
@@ -91,7 +91,7 @@ el.replaceWith(d);
         return Math(latex_text)
 
     print(latex_text)  # noqa: T201
-    return latex_text</code></pre>
+    return None</code></pre>
 </details>
 <div class="desc"><p>Print formulas in latex format.</p>
 <h2 id="parameters">Parameters</h2>
