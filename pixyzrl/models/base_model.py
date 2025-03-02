@@ -11,7 +11,12 @@ class RLModel(Model, ABC):
 
     @abstractmethod
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        """Initialize the model."""
+        """Initialize the model.
+
+        Args:
+            *args (Any): Positional arguments.
+            **kwargs (Any): Keyword arguments.
+        """
         super().__init__(*args, **kwargs)
 
         self._is_on_policy = False

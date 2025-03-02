@@ -14,11 +14,12 @@ class BaseTrainer(ABC):
     def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
         """Initialize the trainer.
 
-        :param env: Environment for training.
-        :param memory: Memory buffer.
-        :param agent: RL agent.
-        :param device: Device to run training on.
-        :param logger: Optional logger.
+        Args:
+            env (BaseEnv): Environment.
+            memory (BaseBuffer): Replay buffer.
+            agent (RLModel): Reinforcement learning agent.
+            device (torch.device | str): Device to use.
+            logger (Logger | None): Logger to use.
         """
         self.env = env
         self.memory = memory
@@ -56,6 +57,15 @@ class OnPolicyTrainer(BaseTrainer):
     """Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C)."""
 
     def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
+        """Initialize the on-policy trainer.
+
+        Args:
+            env (BaseEnv): Environment.
+            memory (BaseBuffer): Replay buffer.
+            agent (RLModel): Reinforcement learning agent.
+            device (torch.device | str): Device to use.
+            logger (Logger | None): Logger to use.
+        """
         super().__init__(env, memory, agent, device, logger)
 
     def collect_experiences(self) -> None:
