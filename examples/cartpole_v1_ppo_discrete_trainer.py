@@ -9,7 +9,6 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 
 env = Env("CartPole-v1")
-state_dim = env.observation_space.shape[0]
 action_dim = env.action_space.n
 
 

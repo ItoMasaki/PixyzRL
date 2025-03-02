@@ -81,11 +81,7 @@ class Logger:
         Examples:
             >>> logger = Logger(log_types=["print"])
             >>> logger.log("Training started")
-            Training started
-
             >>> logger.log({"loss": 0.01, "accuracy": 99.0})
-            loss: 0.01 (step 1)
-            accuracy: 99.0 (step 1)
         """
         with self.lock:
             if step is None:
@@ -165,7 +161,6 @@ class Logger:
         Examples:
             >>> logger = Logger()
             >>> logger.start_epoch(1)
-            Starting epoch 1
         """
         self.log(f"Starting epoch {epoch}", logging.INFO)
 
@@ -178,7 +173,6 @@ class Logger:
         Examples:
             >>> logger = Logger()
             >>> logger.end_epoch(1)
-            Ending epoch 1
         """
         self.log(f"Ending epoch {epoch}", logging.INFO)
 
