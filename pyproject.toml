@@ -9,13 +9,14 @@ build-backend = "setuptools.build_meta"
 name = "pixyzrl"
 version = "0.1.0"
 dependencies = [
+  "swig",
   "torch>=2.1.1",
   "torchaudio>=2.1.1",
   "torchvision>=0.16.1",
   "pixyz",
   "gymnasium[box2d]",
   "torchrl",
-  "cpprb",
+  "tensorboardX>=2.6.0"
 ]
 requires-python = ">=3.10"
 authors = [

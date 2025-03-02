@@ -29,29 +29,22 @@ class RatioLoss(Loss):
     >>> class P(Normal):
     ...     def __init__(self):
     ...         super().__init__(var=["z"],cond_var=["x"],name="p")
-    ...         self.model_loc = torch.nn.Linear(128, 64)
-    ...         self.model_scale = torch.nn.Linear(128, 64)
     ...     def forward(self, x):
-    ...         return {"loc": self.model_loc(x), "scale": F.softplus(self.model_scale(x))}
+    ...         return {"loc": x, "scale": F.softplus(x)}
     >>>
     >>> class Q(Normal):
     ...     def __init__(self):
     ...         super().__init__(var=["z"],cond_var=["x"],name="q")
-    ...         self.model_loc = torch.nn.Linear(128, 64)
-    ...         self.model_scale = torch.nn.Linear(128, 64)
     ...     def forward(self, x):
-    ...         return {"loc": self.model_loc(x), "scale": F.softplus(self.model_scale(x))}
+    ...         return {"loc": x, "scale": F.softplus(x)}
     >>>
-    >>> p = P()
-    >>> q = Q()
-    >>>
-    >>> ratio_loss = RatioLoss(p, q).mean()
+    >>> ratio_loss = RatioLoss(P(), Q()).mean()
     >>>
     >>> x = torch.zeros(1, 128)
-    >>> z = torch.zeros(1, 64)
+    >>> z = torch.zeros(1, 128)
     >>>
     >>> ratio_loss.eval({"z": z, "x": x})
-    tensor(0.9940, grad_fn=<MeanBackward0>)
+    tensor(1.)
 
     """
 
@@ -91,25 +84,23 @@ class ClipLoss(LossSelfOperator):
     >>> import torch
     >>> from torch.nn import functional as F
     >>> from pixyz.distributions import Normal
+    >>> from pixyz.losses import LogProb
     ...
-    >>> # Set distributions
     >>> class P(Normal):
     ...     def __init__(self):
     ...         super().__init__(var=["z"],cond_var=["x"],name="p")
-    ...         self.model_loc = torch.nn.Linear(128, 64)
-    ...         self.model_scale = torch.nn.Linear(128, 64)
     ...     def forward(self, x):
-    ...         return {"loc": self.model_loc(x), "scale": F.softplus(self.model_scale(x))}
+    ...         return {"loc": x, "scale": F.softplus(x)}
     >>>
     >>> p = P()
     >>>
     >>> clip_loss = ClipLoss(LogProb(p), 0.9, 1.1)
     >>>
     >>> x = torch.zeros(1, 128)
-    >>> z = torch.zeros(1, 64)
+    >>> z = torch.zeros(1, 128)
     >>>
     >>> clip_loss.eval({"z": z, "x": x})
-    tensor([1.], grad_fn=<ClampBackward1>)
+    tensor([0.9000])
 
     """
 
@@ -139,13 +130,19 @@ class MSELoss(Loss):
     >>> from torch.nn import functional as F
     >>> from pixyz.distributions import Normal
     >>>
-    >>> mse_loss = MSELoss("x", "y")
+    >>> class P(Normal):
+    ...     def __init__(self):
+    ...         super().__init__(var=["z"],cond_var=["x"],name="p")
+    ...     def forward(self, x):
+    ...         return {"loc": x, "scale": F.softplus(x)}
+    >>>
+    >>> mse_loss = MSELoss(P(), "y")
     >>>
     >>> x = torch.rand(1, 128)
     >>> y = torch.rand(1, 128)
     >>>
-    >>> mse_loss.eval({"x": x, "y": y})
-    tensor(0.1752)
+    >>> mse_loss.eval({"x": x, "y": y}).shape
+    torch.Size([])
 
     """
 

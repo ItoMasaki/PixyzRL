@@ -1,24 +1,42 @@
-# PixyzRL: Reinforcement Learning with Pixyz
+# PixyzRL: A Reinforcement Learning Framework with Probabilistic Generative Models
 
-PixyzRL is a reinforcement learning (RL) library built upon the [Pixyz](https://github.com/masa-su/pixyz/tree/main) library. It provides a modular implementation of Proximal Policy Optimization (PPO) and supports interactions with environments using Gymnasium.
+![PixyzRL Logo](https://github.com/user-attachments/assets/577b9d4b-30d0-493d-95fc-b83a2f292c28)
 
-## Features
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![PyTorch Version](https://img.shields.io/badge/pytorch-2.5.1-pytorch.svg?logo=pytorch&style=flat)](https://pytorch.org/)
+[![Python Version](https://img.shields.io/badge/python-3.10%20%7C%203.11%20%7C%203.12-blue)](https://www.python.org/)
+![workflow](https://github.com/ItoMasaki/PixyzRL/actions/workflows/ci.yml/badge.svg)
+[![Open in Visual Studio Code](https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20Visual%20Studio%20Code&labelColor=2c2c32&color=007acc&logoColor=007acc)](https://open.vscode.dev/ItoMasaki/PixyzRL})
 
-- **Probabilistic Modeling with Pixyz**
-- **Implementation of PPO Algorithm**
-- **Environment Wrappers for Gymnasium**
-- **Memory Management (Rollout Buffer)**
-- **Logging and Training Utilities**
+[Documentation](https://docs.pixyz.io) | [Examples](https://github.com/ItoMasaki/PixyzRL/tree/main/examples) | [GitHub](https://github.com/ItoMasaki/PixyzRL)
+
+## What is PixyzRL?
+
+[**PixyzRL**](https://github.com/ItoMasaki/PixyzRL) is a reinforcement learning (RL) framework based on **probabilistic generative models** and **Bayesian theory**. Built on top of the [Pixyz](https://github.com/masa-su/pixyz) library, it provides a modular and flexible design to enable uncertainty-aware decision-making and improve sample efficiency. PixyzRL supports:
+
+- **Probabilistic Policy Optimization** (e.g., PPO, A2C)
+- **On-policy and Off-policy Learning**
+- **Memory Management for RL (Replay Buffer, Rollout Buffer)**
+- **Integration with Gymnasium environments**
+- **Logging and Model Training Utilities**
 
 ## Installation
 
-PixyzRL requires Python 3.10 or higher. Install dependencies with:
+### Requirements
+
+- Python 3.10+
+- PyTorch 2.5.1+
+- Gymnasium (for environment interaction)
+
+### Install PixyzRL
+
+#### Using `pip`
 
 ```bash
-pip install torch torchaudio torchvision pixyz gymnasium[box2d] torchrl
+pip install torch torchvision torchaudio pixyz gymnasium[box2d] torchrl
 ```
 
-Alternatively, clone and install the repository:
+#### Install from Source
 
 ```bash
 git clone https://github.com/ItoMasaki/PixyzRL.git
@@ -26,11 +44,9 @@ cd PixyzRL
 pip install -e .
 ```
 
-## Getting Started
+## Quick Start
 
-### 1. Setup Environment
-
-Create a Gymnasium environment wrapper using `Env` class:
+### 1. Set Up Environment
 
 ```python
 from pixyzrl.environments import Env
@@ -42,8 +58,6 @@ action_dim = env.action_space.n
 
 ### 2. Define Actor and Critic Networks
 
-Use Pixyz's `Categorical` and `Deterministic` distributions for the Actor and Critic networks:
-
 ```python
 import torch
 from pixyz.distributions import Categorical, Deterministic
@@ -51,7 +65,7 @@ from torch import nn
 
 class Actor(Categorical):
     def __init__(self):
-        super().__init__(var=["a"], cond_var=["o"], name="actor")
+        super().__init__(var=["a"], cond_var=["o"], name="p")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -66,7 +80,7 @@ class Actor(Categorical):
 
 class Critic(Deterministic):
     def __init__(self):
-        super().__init__(var=["v"], cond_var=["o"], name="critic")
+        super().__init__(var=["v"], cond_var=["o"], name="f")
         self.net = nn.Sequential(
             nn.Linear(state_dim, 64),
             nn.ReLU(),
@@ -82,67 +96,58 @@ actor = Actor()
 critic = Critic()
 ```
 
-### 3. Initialize PPO Agent
+#### 2.1 Display distributions as `latex`
+
+```python
+>>> pixyzrl.utils.print_latex(actor)
+p(a|o)
+
+>>> pixyzrl.utils.print_latex(critic)
+f(v|o)
+```
+
+### 3. Prepare PPO and Buffer
 
 ```python
 from pixyzrl.models import PPO
-
-ppo = PPO(actor, critic, None, eps_clip=0.2, lr_actor=3e-4, lr_critic=1e-3, device="cpu", entropy_coef=0.0, mse_coef=1.0)
-```
-
-### 4. Setup Rollout Buffer
-
-```python
 from pixyzrl.memory import RolloutBuffer
+from pixyzrl.trainer import OnPolicyTrainer
+
+agent = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
 
 buffer = RolloutBuffer(
     2048,
-    {"obs": {"shape": (4,)}, "value": {"shape": (1,)}, "action": {"shape": (2,)}, "reward": {"shape": (1,)}, "done": {"shape": (1,)}},
-    {"obs": "o", "action": "a", "reward": "reward", "value": "v", "done": "d", "returns": "r", "advantages": "A"},
-    "cpu", 1
+    {
+        "obs": {"shape": (4,), "map": "o"},
+        "value": {"shape": (1,), "map": "v"},
+        "action": {"shape": (2,), "map": "a"},
+        "reward": {"shape": (1,)},
+        "done": {"shape": (1,)},
+        "returns": {"shape": (1,), "map": "r"},
+        "advantages": {"shape": (1,), "map": "A"},
+    },
+    "cpu",
+    1,
 )
 ```
 
-### 5. Training Loop
+#### 3.1 Display model as `latex`
 
 ```python
-obs, info = env.reset()
-
-for _ in range(2000):
-    obs, info = env.reset()
-    total_reward = 0
-    while len(buffer) < 2048:
-        sample = ppo.select_action({"o": obs.unsqueeze(0)})
-        action, value = sample["a"].detach(), sample["v"].detach()
-        next_obs, reward, done, _, _ = env.step(torch.argmax(action))
-        total_reward += reward
-        buffer.add(obs=obs.detach(), action=action.detach(), value=value.detach(), reward=reward.detach(), done=done.detach())
-        obs = next_obs
-
-        if done:
-            obs, info = env.reset()
-            total_reward = 0
-
-    sample = ppo.select_action({"o": next_obs.unsqueeze(0)})
-    value = sample["v"].detach()
-    buffer.compute_returns_and_advantages_gae(value, 0.99, 0.95)
-
-    for _ in range(40):
-        batch = buffer.sample(128)
-        loss = ppo.train(batch)
-        print(f"loss: {loss}")
-
-    buffer.clear()
-    ppo.actor_old.load_state_dict(ppo.actor.state_dict())
+>>> print_latex(agent)
+mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
 
-In the future work, we don't need to write traning loop explicitly.
+### 4. Training with Trainer
 
-https://github.com/user-attachments/assets/fdf15f97-6fb9-4f12-8522-503eccb47fe5
+```python
+trainer = OnPolicyTrainer(env, buffer, agent, "cpu")
+trainer.train(1000)
+```
 
 ## Directory Structure
 
-```
+```text
 PixyzRL
 ├── docs
 │   └── pixyz
@@ -150,41 +155,31 @@ PixyzRL
 ├── examples  # Example scripts
 ├── pixyzrl
 │   ├── environments  # Environment wrappers
-│   ├── models  # PPO and A2C implementations
+│   ├── models
+│   │   ├── on_policy  # On-policy models (e.g., PPO, A2C)
+│   │   └── off_policy  # Off-policy models (e.g., DQN)
 │   ├── memory  # Experience replay & rollout buffer
-│   ├── trainer  # Training management
+│   ├── trainer  # Training utilities
 │   ├── losses  # Loss function definitions
 │   ├── logger  # Logging utilities
+│   └── utils.py
 └── pyproject.toml
 ```
 
+## Future Work
+
+- [ ] Implement **Deep Q-Network (DQN)**
+- [ ] Implement **Dreamer** (model-based RL)
+- [ ] Integrate with **ChatGPT for automatic architecture generation**
+- [ ] Integrate with **[Genesis](https://genesis-world.readthedocs.io/en/latest/user_guide/overview/what_is_genesis.html)**
 
 ## License
 
-PixyzRL is released under the MIT License.
-
-## Author
-
-Masaki Ito ( l1sum [at] icloud.com )
-
-## Repository
-
-[GitHub - ItoMasaki/PixyzRL](https://github.com/ItoMasaki/PixyzRL)
-
-## Future Work
-
-- [ ] Improve `Trainer` with additional optimization techniques
-- [ ] Enhance `Logger` for better tracking and visualization
-- [ ] Implement model free algorithms:
-  - [ ] Deep Q-Network (DQN)
-  - [ ] Deep Deterministic Policy Gradient (DDPG)
-  - [ ] Soft Actor-Critic (SAC)
-- [ ] Implement model-based algorithms:
-  - [ ] Dreamer
-- [ ] Collaborate with ChatGPT (MyGPT) for building architectures by natural languages.
-- [ ] Collaborate with [Genesis](https://genesis-world.readthedocs.io/en/latest/user_guide/overview/what_is_genesis.html).
+PixyzRL is released under the [MIT License](./LICENSE).
 
 ## Community & Support
 
-For more details, visit:
-[PixyzRL ChatGPT Page](https://chatgpt.com/g/g-67b7c36695fc8191aca4cb7420dad17c-pixyzrl)
+For questions and discussions, please visit:
+
+- [GitHub Issues](https://github.com/ItoMasaki/PixyzRL/issues)
+- [PixyzRL ChatGPT Page](https://chatgpt.com/g/g-67b7c36695fc8191aca4cb7420dad17c-pixyzrl)

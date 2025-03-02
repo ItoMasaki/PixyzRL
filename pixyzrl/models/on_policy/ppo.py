@@ -1,31 +1,34 @@
 """Proximal Policy Optimization (PPO) agent using Pixyz."""
 
+import re
 from copy import deepcopy
 
 import torch
 from pixyz import distributions as dists
 from pixyz.losses import Entropy, MinLoss, Parameter
 from pixyz.losses import Expectation as E  # noqa: N817
-from pixyz.models import Model
 from torch.optim import Adam
 
 from pixyzrl.losses import ClipLoss, MSELoss, RatioLoss
+from pixyzrl.memory import BaseBuffer
+from pixyzrl.models.base_model import RLModel
 
 
-class PPO(Model):
+class PPO(RLModel):
     """PPO agent using Pixyz."""
 
     def __init__(
         self,
         actor: dists.Distribution,
         critic: dists.Distribution,
-        shared_net: dists.Distribution | None,
-        eps_clip: float,
-        lr_actor: float,
-        lr_critic: float,
-        device: str,
+        shared_net: dists.Distribution | None = None,
+        eps_clip: float = 0.2,
+        lr_actor: float = 3e-4,
+        lr_critic: float = 1e-3,
+        device: str = "cpu",
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
+        action_var: str = "a",
     ) -> None:
         """Initialize the PPO agent."""
         self.mse_coef = mse_coef
@@ -34,7 +37,8 @@ class PPO(Model):
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
         self.device = device
-        self.on_policy = True
+        self._is_on_policy = True
+        self._action_var = action_var
 
         # Shared CNN layers (optional)
         self.shared_net = shared_net
@@ -75,3 +79,17 @@ class PPO(Model):
             if self.shared_net is not None:
                 state = self.shared_net.sample(state)
             return self.actor_old.sample(state) | self.critic.sample(state)
+
+    def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -> float:
+        """Perform a single training step."""
+        total_loss = 0
+
+        for _ in range(num_epochs):
+            batch = memory.sample(batch_size)
+            loss = self.train(batch)
+            total_loss += loss
+
+        self.actor_old.load_state_dict(self.actor.state_dict())
+        memory.clear()
+
+        return total_loss
