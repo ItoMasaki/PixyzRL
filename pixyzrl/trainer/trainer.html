@@ -331,15 +331,132 @@ def train_model(self) -&gt; None:
             agent (RLModel): Reinforcement learning agent.
             device (torch.device | str): Device to use.
             logger (Logger | None): Logger to use.
+
+        Example:
+        &gt;&gt;&gt; import torch
+        &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+        &gt;&gt;&gt; from torch import nn
+
+        &gt;&gt;&gt; from pixyzrl.environments import Env
+        &gt;&gt;&gt; from pixyzrl.logger import Logger
+        &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+        &gt;&gt;&gt; from pixyzrl.models import PPO
+        &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+        &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+        &gt;&gt;&gt; action_dim = env.action_space.n
+
+        &gt;&gt;&gt; class Actor(Categorical):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(action_dim),
+        ...             nn.Softmax(dim=-1),
+        ...     )
+        ...     def forward(self, o: torch.Tensor):
+        ...         probs = self.net(o)
+        ...         return {&#34;probs&#34;: probs}
+
+        &gt;&gt;&gt; class Critic(Deterministic):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(1),
+        ...         )
+        ...     def forward(self, o: torch.Tensor):
+        ...         v = self.net(o)
+        ...         return {&#34;v&#34;: v}
+
+        &gt;&gt;&gt; actor = Actor()
+        &gt;&gt;&gt; critic = Critic()
+
+        &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+        &gt;&gt;&gt; buffer = RolloutBuffer(
+        ...     2048,
+        ...     {
+        ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+        ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+        ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+        ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+        ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;A&#34;},
+        ...     },
+        ...     &#34;cpu&#34;,
+        ...     1,
+        ... )
+        &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
         &#34;&#34;&#34;
         super().__init__(env, memory, agent, device, logger)
 
     def collect_experiences(self) -&gt; None:
+        &#34;&#34;&#34;Collect experiences from the environment.
+
+        Example:
+        &gt;&gt;&gt; import torch
+        &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+        &gt;&gt;&gt; from torch import nn
+
+        &gt;&gt;&gt; from pixyzrl.environments import Env
+        &gt;&gt;&gt; from pixyzrl.logger import Logger
+        &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+        &gt;&gt;&gt; from pixyzrl.models import PPO
+        &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+        &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+        &gt;&gt;&gt; action_dim = env.action_space.n
+
+        &gt;&gt;&gt; class Actor(Categorical):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(action_dim),
+        ...             nn.Softmax(dim=-1),
+        ...     )
+        ...     def forward(self, o: torch.Tensor):
+        ...         probs = self.net(o)
+        ...         return {&#34;probs&#34;: probs}
+
+        &gt;&gt;&gt; class Critic(Deterministic):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(1),
+        ...         )
+        ...     def forward(self, o: torch.Tensor):
+        ...         v = self.net(o)
+        ...         return {&#34;v&#34;: v}
+
+        &gt;&gt;&gt; actor = Actor()
+        &gt;&gt;&gt; critic = Critic()
+
+        &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+        &gt;&gt;&gt; buffer = RolloutBuffer(
+        ...     100,
+        ...     {
+        ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+        ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+        ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+        ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+        ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;A&#34;},
+        ...     },
+        ...     &#34;cpu&#34;,
+        ...     1,
+        ... )
+        &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+        &gt;&gt;&gt; trainer.collect_experiences()
+        &#34;&#34;&#34;
         obs, info = self.env.reset()
         done = False
         total_reward = 0
 
-        while len(self.memory) &lt; self.memory.buffer_size:
+        while len(self.memory) &lt; self.memory.buffer_size - 1:
             action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
 
             if self.env.is_discrete:
@@ -365,6 +482,71 @@ def train_model(self) -&gt; None:
         self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
+        &#34;&#34;&#34;Perform a single training step.
+
+        Args:
+            batch_size (int, optional): Batch size for training. Defaults to 128.
+            num_epochs (int, optional): Number of epochs for training. Defaults to 40.
+
+        Example:
+        &gt;&gt;&gt; import torch
+        &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+        &gt;&gt;&gt; from torch import nn
+
+        &gt;&gt;&gt; from pixyzrl.environments import Env
+        &gt;&gt;&gt; from pixyzrl.logger import Logger
+        &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+        &gt;&gt;&gt; from pixyzrl.models import PPO
+        &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+        &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+        &gt;&gt;&gt; action_dim = env.action_space.n
+
+        &gt;&gt;&gt; class Actor(Categorical):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(action_dim),
+        ...             nn.Softmax(dim=-1),
+        ...     )
+        ...     def forward(self, o: torch.Tensor):
+        ...         probs = self.net(o)
+        ...         return {&#34;probs&#34;: probs}
+
+        &gt;&gt;&gt; class Critic(Deterministic):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(1),
+        ...         )
+        ...     def forward(self, o: torch.Tensor):
+        ...         v = self.net(o)
+        ...         return {&#34;v&#34;: v}
+
+        &gt;&gt;&gt; actor = Actor()
+        &gt;&gt;&gt; critic = Critic()
+
+        &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+        &gt;&gt;&gt; buffer = RolloutBuffer(
+        ...     100,
+        ...     {
+        ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+        ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+        ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+        ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+        ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;A&#34;},
+        ...     },
+        ...     &#34;cpu&#34;,
+        ...     1,
+        ... )
+        &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+        &gt;&gt;&gt; trainer.collect_experiences()
+        &gt;&gt;&gt; trainer.train_model()
+        &#34;&#34;&#34;
         if len(self.memory) &lt; self.memory.buffer_size - 1:
             return
 
@@ -374,6 +556,72 @@ def train_model(self) -&gt; None:
             self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss / num_epochs}&#34;)
 
     def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
+        &#34;&#34;&#34;Train the agent.
+
+        Args:
+            num_iterations (int): Number of training iterations.
+            batch_size (int, optional): Batch size for training. Defaults to 128.
+            num_epochs (int, optional): Number of epochs for training. Defaults to 40.
+
+        Example:
+        &gt;&gt;&gt; import torch
+        &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+        &gt;&gt;&gt; from torch import nn
+
+        &gt;&gt;&gt; from pixyzrl.environments import Env
+        &gt;&gt;&gt; from pixyzrl.logger import Logger
+        &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+        &gt;&gt;&gt; from pixyzrl.models import PPO
+        &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+        &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+        &gt;&gt;&gt; action_dim = env.action_space.n
+
+        &gt;&gt;&gt; class Actor(Categorical):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(action_dim),
+        ...             nn.Softmax(dim=-1),
+        ...     )
+        ...     def forward(self, o: torch.Tensor):
+        ...         probs = self.net(o)
+        ...         return {&#34;probs&#34;: probs}
+
+        &gt;&gt;&gt; class Critic(Deterministic):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(1),
+        ...         )
+        ...     def forward(self, o: torch.Tensor):
+        ...         v = self.net(o)
+        ...         return {&#34;v&#34;: v}
+
+        &gt;&gt;&gt; actor = Actor()
+        &gt;&gt;&gt; critic = Critic()
+
+        &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+        &gt;&gt;&gt; buffer = RolloutBuffer(
+        ...     100,
+        ...     {
+        ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+        ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+        ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+        ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+        ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;A&#34;},
+        ...     },
+        ...     &#34;cpu&#34;,
+        ...     1,
+        ... )
+        &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+        &gt;&gt;&gt; trainer.train(10)
+        &#34;&#34;&#34;
+
         for iteration in range(num_iterations):
             self.collect_experiences()
             self.train_model(batch_size, num_epochs)
@@ -394,7 +642,64 @@ def train_model(self) -&gt; None:
 <dd>Device to use.</dd>
 <dt><strong><code>logger</code></strong> :&ensp;<code>Logger | None</code></dt>
 <dd>Logger to use.</dd>
-</dl></div>
+</dl>
+<p>Example:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+&gt;&gt;&gt; from torch import nn
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from pixyzrl.environments import Env
+&gt;&gt;&gt; from pixyzrl.logger import Logger
+&gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+&gt;&gt;&gt; from pixyzrl.models import PPO
+&gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; env = Env(&quot;CartPole-v1&quot;)
+&gt;&gt;&gt; action_dim = env.action_space.n
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Actor(Categorical):
+...     def __init__(self):
+...         super().__init__(var=[&quot;a&quot;], cond_var=[&quot;o&quot;], name=&quot;p&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(action_dim),
+...             nn.Softmax(dim=-1),
+...     )
+...     def forward(self, o: torch.Tensor):
+...         probs = self.net(o)
+...         return {&quot;probs&quot;: probs}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Critic(Deterministic):
+...     def __init__(self):
+...         super().__init__(var=[&quot;v&quot;], cond_var=[&quot;o&quot;], name=&quot;f&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(1),
+...         )
+...     def forward(self, o: torch.Tensor):
+...         v = self.net(o)
+...         return {&quot;v&quot;: v}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; actor = Actor()
+&gt;&gt;&gt; critic = Critic()
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer = RolloutBuffer(
+...     2048,
+...     {
+...         &quot;obs&quot;: {&quot;shape&quot;: (4,), &quot;map&quot;: &quot;o&quot;},
+...         &quot;value&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;v&quot;},
+...         &quot;action&quot;: {&quot;shape&quot;: (2,), &quot;map&quot;: &quot;a&quot;},
+...         &quot;reward&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;done&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;returns&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;r&quot;},
+...         &quot;advantages&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;A&quot;},
+...     },
+...     &quot;cpu&quot;,
+...     1,
+... )
+&gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;, logger)
+</code></pre></div>
 <h3>Ancestors</h3>
 <ul class="hlist">
 <li><a title="pixyzrl.trainer.trainer.BaseTrainer" href="#pixyzrl.trainer.trainer.BaseTrainer">BaseTrainer</a></li>
@@ -402,6 +707,164 @@ def train_model(self) -&gt; None:
 </ul>
 <h3>Methods</h3>
 <dl>
+<dt id="pixyzrl.trainer.trainer.OnPolicyTrainer.collect_experiences"><code class="name flex">
+<span>def <span class="ident">collect_experiences</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def collect_experiences(self) -&gt; None:
+    &#34;&#34;&#34;Collect experiences from the environment.
+
+    Example:
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+    &gt;&gt;&gt; from torch import nn
+
+    &gt;&gt;&gt; from pixyzrl.environments import Env
+    &gt;&gt;&gt; from pixyzrl.logger import Logger
+    &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+    &gt;&gt;&gt; from pixyzrl.models import PPO
+    &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+    &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+    &gt;&gt;&gt; action_dim = env.action_space.n
+
+    &gt;&gt;&gt; class Actor(Categorical):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(action_dim),
+    ...             nn.Softmax(dim=-1),
+    ...     )
+    ...     def forward(self, o: torch.Tensor):
+    ...         probs = self.net(o)
+    ...         return {&#34;probs&#34;: probs}
+
+    &gt;&gt;&gt; class Critic(Deterministic):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(1),
+    ...         )
+    ...     def forward(self, o: torch.Tensor):
+    ...         v = self.net(o)
+    ...         return {&#34;v&#34;: v}
+
+    &gt;&gt;&gt; actor = Actor()
+    &gt;&gt;&gt; critic = Critic()
+
+    &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+    &gt;&gt;&gt; buffer = RolloutBuffer(
+    ...     100,
+    ...     {
+    ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+    ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+    ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+    ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+    ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;A&#34;},
+    ...     },
+    ...     &#34;cpu&#34;,
+    ...     1,
+    ... )
+    &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+    &gt;&gt;&gt; trainer.collect_experiences()
+    &#34;&#34;&#34;
+    obs, info = self.env.reset()
+    done = False
+    total_reward = 0
+
+    while len(self.memory) &lt; self.memory.buffer_size - 1:
+        action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+
+        if self.env.is_discrete:
+            next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
+            done = truncated or terminated
+        else:
+            next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu())
+            done = truncated or terminated
+
+        self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
+        obs = next_obs
+        total_reward += reward
+
+        if self.logger:
+            self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
+
+        if done:
+            obs, info = self.env.reset()
+            done = False
+            total_reward = 0
+
+    action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+    self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)</code></pre>
+</details>
+<div class="desc"><p>Collect experiences from the environment.</p>
+<p>Example:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+&gt;&gt;&gt; from torch import nn
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from pixyzrl.environments import Env
+&gt;&gt;&gt; from pixyzrl.logger import Logger
+&gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+&gt;&gt;&gt; from pixyzrl.models import PPO
+&gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; env = Env(&quot;CartPole-v1&quot;)
+&gt;&gt;&gt; action_dim = env.action_space.n
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Actor(Categorical):
+...     def __init__(self):
+...         super().__init__(var=[&quot;a&quot;], cond_var=[&quot;o&quot;], name=&quot;p&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(action_dim),
+...             nn.Softmax(dim=-1),
+...     )
+...     def forward(self, o: torch.Tensor):
+...         probs = self.net(o)
+...         return {&quot;probs&quot;: probs}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Critic(Deterministic):
+...     def __init__(self):
+...         super().__init__(var=[&quot;v&quot;], cond_var=[&quot;o&quot;], name=&quot;f&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(1),
+...         )
+...     def forward(self, o: torch.Tensor):
+...         v = self.net(o)
+...         return {&quot;v&quot;: v}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; actor = Actor()
+&gt;&gt;&gt; critic = Critic()
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer = RolloutBuffer(
+...     100,
+...     {
+...         &quot;obs&quot;: {&quot;shape&quot;: (4,), &quot;map&quot;: &quot;o&quot;},
+...         &quot;value&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;v&quot;},
+...         &quot;action&quot;: {&quot;shape&quot;: (2,), &quot;map&quot;: &quot;a&quot;},
+...         &quot;reward&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;done&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;returns&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;r&quot;},
+...         &quot;advantages&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;A&quot;},
+...     },
+...     &quot;cpu&quot;,
+...     1,
+... )
+&gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;, logger)
+&gt;&gt;&gt; trainer.collect_experiences()
+</code></pre></div>
+</dd>
 <dt id="pixyzrl.trainer.trainer.OnPolicyTrainer.train"><code class="name flex">
 <span>def <span class="ident">train</span></span>(<span>self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) ‑> None</span>
 </code></dt>
@@ -411,23 +874,304 @@ def train_model(self) -&gt; None:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
+    &#34;&#34;&#34;Train the agent.
+
+    Args:
+        num_iterations (int): Number of training iterations.
+        batch_size (int, optional): Batch size for training. Defaults to 128.
+        num_epochs (int, optional): Number of epochs for training. Defaults to 40.
+
+    Example:
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+    &gt;&gt;&gt; from torch import nn
+
+    &gt;&gt;&gt; from pixyzrl.environments import Env
+    &gt;&gt;&gt; from pixyzrl.logger import Logger
+    &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+    &gt;&gt;&gt; from pixyzrl.models import PPO
+    &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+    &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+    &gt;&gt;&gt; action_dim = env.action_space.n
+
+    &gt;&gt;&gt; class Actor(Categorical):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(action_dim),
+    ...             nn.Softmax(dim=-1),
+    ...     )
+    ...     def forward(self, o: torch.Tensor):
+    ...         probs = self.net(o)
+    ...         return {&#34;probs&#34;: probs}
+
+    &gt;&gt;&gt; class Critic(Deterministic):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(1),
+    ...         )
+    ...     def forward(self, o: torch.Tensor):
+    ...         v = self.net(o)
+    ...         return {&#34;v&#34;: v}
+
+    &gt;&gt;&gt; actor = Actor()
+    &gt;&gt;&gt; critic = Critic()
+
+    &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+    &gt;&gt;&gt; buffer = RolloutBuffer(
+    ...     100,
+    ...     {
+    ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+    ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+    ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+    ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+    ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;A&#34;},
+    ...     },
+    ...     &#34;cpu&#34;,
+    ...     1,
+    ... )
+    &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+    &gt;&gt;&gt; trainer.train(10)
+    &#34;&#34;&#34;
+
     for iteration in range(num_iterations):
         self.collect_experiences()
         self.train_model(batch_size, num_epochs)
         if self.logger:
             self.logger.log(f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)</code></pre>
 </details>
-<div class="desc"></div>
+<div class="desc"><p>Train the agent.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>num_iterations</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of training iterations.</dd>
+<dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Batch size for training. Defaults to 128.</dd>
+<dt><strong><code>num_epochs</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of epochs for training. Defaults to 40.</dd>
+</dl>
+<p>Example:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+&gt;&gt;&gt; from torch import nn
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from pixyzrl.environments import Env
+&gt;&gt;&gt; from pixyzrl.logger import Logger
+&gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+&gt;&gt;&gt; from pixyzrl.models import PPO
+&gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; env = Env(&quot;CartPole-v1&quot;)
+&gt;&gt;&gt; action_dim = env.action_space.n
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Actor(Categorical):
+...     def __init__(self):
+...         super().__init__(var=[&quot;a&quot;], cond_var=[&quot;o&quot;], name=&quot;p&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(action_dim),
+...             nn.Softmax(dim=-1),
+...     )
+...     def forward(self, o: torch.Tensor):
+...         probs = self.net(o)
+...         return {&quot;probs&quot;: probs}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Critic(Deterministic):
+...     def __init__(self):
+...         super().__init__(var=[&quot;v&quot;], cond_var=[&quot;o&quot;], name=&quot;f&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(1),
+...         )
+...     def forward(self, o: torch.Tensor):
+...         v = self.net(o)
+...         return {&quot;v&quot;: v}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; actor = Actor()
+&gt;&gt;&gt; critic = Critic()
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer = RolloutBuffer(
+...     100,
+...     {
+...         &quot;obs&quot;: {&quot;shape&quot;: (4,), &quot;map&quot;: &quot;o&quot;},
+...         &quot;value&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;v&quot;},
+...         &quot;action&quot;: {&quot;shape&quot;: (2,), &quot;map&quot;: &quot;a&quot;},
+...         &quot;reward&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;done&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;returns&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;r&quot;},
+...         &quot;advantages&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;A&quot;},
+...     },
+...     &quot;cpu&quot;,
+...     1,
+... )
+&gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;, logger)
+&gt;&gt;&gt; trainer.train(10)
+</code></pre></div>
+</dd>
+<dt id="pixyzrl.trainer.trainer.OnPolicyTrainer.train_model"><code class="name flex">
+<span>def <span class="ident">train_model</span></span>(<span>self, batch_size: int = 128, num_epochs: int = 40) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def train_model(self, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
+    &#34;&#34;&#34;Perform a single training step.
+
+    Args:
+        batch_size (int, optional): Batch size for training. Defaults to 128.
+        num_epochs (int, optional): Number of epochs for training. Defaults to 40.
+
+    Example:
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+    &gt;&gt;&gt; from torch import nn
+
+    &gt;&gt;&gt; from pixyzrl.environments import Env
+    &gt;&gt;&gt; from pixyzrl.logger import Logger
+    &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+    &gt;&gt;&gt; from pixyzrl.models import PPO
+    &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+    &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+    &gt;&gt;&gt; action_dim = env.action_space.n
+
+    &gt;&gt;&gt; class Actor(Categorical):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(action_dim),
+    ...             nn.Softmax(dim=-1),
+    ...     )
+    ...     def forward(self, o: torch.Tensor):
+    ...         probs = self.net(o)
+    ...         return {&#34;probs&#34;: probs}
+
+    &gt;&gt;&gt; class Critic(Deterministic):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(1),
+    ...         )
+    ...     def forward(self, o: torch.Tensor):
+    ...         v = self.net(o)
+    ...         return {&#34;v&#34;: v}
+
+    &gt;&gt;&gt; actor = Actor()
+    &gt;&gt;&gt; critic = Critic()
+
+    &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+    &gt;&gt;&gt; buffer = RolloutBuffer(
+    ...     100,
+    ...     {
+    ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+    ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+    ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+    ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+    ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;A&#34;},
+    ...     },
+    ...     &#34;cpu&#34;,
+    ...     1,
+    ... )
+    &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+    &gt;&gt;&gt; trainer.collect_experiences()
+    &gt;&gt;&gt; trainer.train_model()
+    &#34;&#34;&#34;
+    if len(self.memory) &lt; self.memory.buffer_size - 1:
+        return
+
+    total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
+
+    if self.logger:
+        self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss / num_epochs}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Perform a single training step.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Batch size for training. Defaults to 128.</dd>
+<dt><strong><code>num_epochs</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of epochs for training. Defaults to 40.</dd>
+</dl>
+<p>Example:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+&gt;&gt;&gt; from torch import nn
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from pixyzrl.environments import Env
+&gt;&gt;&gt; from pixyzrl.logger import Logger
+&gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+&gt;&gt;&gt; from pixyzrl.models import PPO
+&gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; env = Env(&quot;CartPole-v1&quot;)
+&gt;&gt;&gt; action_dim = env.action_space.n
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Actor(Categorical):
+...     def __init__(self):
+...         super().__init__(var=[&quot;a&quot;], cond_var=[&quot;o&quot;], name=&quot;p&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(action_dim),
+...             nn.Softmax(dim=-1),
+...     )
+...     def forward(self, o: torch.Tensor):
+...         probs = self.net(o)
+...         return {&quot;probs&quot;: probs}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Critic(Deterministic):
+...     def __init__(self):
+...         super().__init__(var=[&quot;v&quot;], cond_var=[&quot;o&quot;], name=&quot;f&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(1),
+...         )
+...     def forward(self, o: torch.Tensor):
+...         v = self.net(o)
+...         return {&quot;v&quot;: v}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; actor = Actor()
+&gt;&gt;&gt; critic = Critic()
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer = RolloutBuffer(
+...     100,
+...     {
+...         &quot;obs&quot;: {&quot;shape&quot;: (4,), &quot;map&quot;: &quot;o&quot;},
+...         &quot;value&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;v&quot;},
+...         &quot;action&quot;: {&quot;shape&quot;: (2,), &quot;map&quot;: &quot;a&quot;},
+...         &quot;reward&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;done&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;returns&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;r&quot;},
+...         &quot;advantages&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;A&quot;},
+...     },
+...     &quot;cpu&quot;,
+...     1,
+... )
+&gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;, logger)
+&gt;&gt;&gt; trainer.collect_experiences()
+&gt;&gt;&gt; trainer.train_model()
+</code></pre></div>
 </dd>
 </dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="pixyzrl.trainer.trainer.BaseTrainer" href="#pixyzrl.trainer.trainer.BaseTrainer">BaseTrainer</a></b></code>:
 <ul class="hlist">
-<li><code><a title="pixyzrl.trainer.trainer.BaseTrainer.collect_experiences" href="#pixyzrl.trainer.trainer.BaseTrainer.collect_experiences">collect_experiences</a></code></li>
 <li><code><a title="pixyzrl.trainer.trainer.BaseTrainer.load_model" href="#pixyzrl.trainer.trainer.BaseTrainer.load_model">load_model</a></code></li>
 <li><code><a title="pixyzrl.trainer.trainer.BaseTrainer.save_model" href="#pixyzrl.trainer.trainer.BaseTrainer.save_model">save_model</a></code></li>
-<li><code><a title="pixyzrl.trainer.trainer.BaseTrainer.train_model" href="#pixyzrl.trainer.trainer.BaseTrainer.train_model">train_model</a></code></li>
 </ul>
 </li>
 </ul>
@@ -470,7 +1214,9 @@ def train_model(self) -&gt; None:
 <li>
 <h4><code><a title="pixyzrl.trainer.trainer.OnPolicyTrainer" href="#pixyzrl.trainer.trainer.OnPolicyTrainer">OnPolicyTrainer</a></code></h4>
 <ul class="">
+<li><code><a title="pixyzrl.trainer.trainer.OnPolicyTrainer.collect_experiences" href="#pixyzrl.trainer.trainer.OnPolicyTrainer.collect_experiences">collect_experiences</a></code></li>
 <li><code><a title="pixyzrl.trainer.trainer.OnPolicyTrainer.train" href="#pixyzrl.trainer.trainer.OnPolicyTrainer.train">train</a></code></li>
+<li><code><a title="pixyzrl.trainer.trainer.OnPolicyTrainer.train_model" href="#pixyzrl.trainer.trainer.OnPolicyTrainer.train_model">train_model</a></code></li>
 </ul>
 </li>
 </ul>

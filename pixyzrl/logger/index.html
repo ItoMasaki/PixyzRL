@@ -134,11 +134,7 @@ el.replaceWith(d);
         Examples:
             &gt;&gt;&gt; logger = Logger(log_types=[&#34;print&#34;])
             &gt;&gt;&gt; logger.log(&#34;Training started&#34;)
-            Training started
-
             &gt;&gt;&gt; logger.log({&#34;loss&#34;: 0.01, &#34;accuracy&#34;: 99.0})
-            loss: 0.01 (step 1)
-            accuracy: 99.0 (step 1)
         &#34;&#34;&#34;
         with self.lock:
             if step is None:
@@ -218,7 +214,6 @@ el.replaceWith(d);
         Examples:
             &gt;&gt;&gt; logger = Logger()
             &gt;&gt;&gt; logger.start_epoch(1)
-            Starting epoch 1
         &#34;&#34;&#34;
         self.log(f&#34;Starting epoch {epoch}&#34;, logging.INFO)
 
@@ -231,7 +226,6 @@ el.replaceWith(d);
         Examples:
             &gt;&gt;&gt; logger = Logger()
             &gt;&gt;&gt; logger.end_epoch(1)
-            Ending epoch 1
         &#34;&#34;&#34;
         self.log(f&#34;Ending epoch {epoch}&#34;, logging.INFO)
 
@@ -329,7 +323,6 @@ el.replaceWith(d);
     Examples:
         &gt;&gt;&gt; logger = Logger()
         &gt;&gt;&gt; logger.end_epoch(1)
-        Ending epoch 1
     &#34;&#34;&#34;
     self.log(f&#34;Ending epoch {epoch}&#34;, logging.INFO)</code></pre>
 </details>
@@ -342,7 +335,6 @@ el.replaceWith(d);
 <h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; logger = Logger()
 &gt;&gt;&gt; logger.end_epoch(1)
-Ending epoch 1
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.logger.Logger.log"><code class="name flex">
@@ -364,11 +356,7 @@ Ending epoch 1
     Examples:
         &gt;&gt;&gt; logger = Logger(log_types=[&#34;print&#34;])
         &gt;&gt;&gt; logger.log(&#34;Training started&#34;)
-        Training started
-
         &gt;&gt;&gt; logger.log({&#34;loss&#34;: 0.01, &#34;accuracy&#34;: 99.0})
-        loss: 0.01 (step 1)
-        accuracy: 99.0 (step 1)
     &#34;&#34;&#34;
     with self.lock:
         if step is None:
@@ -394,11 +382,7 @@ Ending epoch 1
 <h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; logger = Logger(log_types=[&quot;print&quot;])
 &gt;&gt;&gt; logger.log(&quot;Training started&quot;)
-Training started
-</code></pre>
-<pre><code class="language-python-repl">&gt;&gt;&gt; logger.log({&quot;loss&quot;: 0.01, &quot;accuracy&quot;: 99.0})
-loss: 0.01 (step 1)
-accuracy: 99.0 (step 1)
+&gt;&gt;&gt; logger.log({&quot;loss&quot;: 0.01, &quot;accuracy&quot;: 99.0})
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.logger.Logger.set_log_level"><code class="name flex">
@@ -450,7 +434,6 @@ accuracy: 99.0 (step 1)
     Examples:
         &gt;&gt;&gt; logger = Logger()
         &gt;&gt;&gt; logger.start_epoch(1)
-        Starting epoch 1
     &#34;&#34;&#34;
     self.log(f&#34;Starting epoch {epoch}&#34;, logging.INFO)</code></pre>
 </details>
@@ -463,7 +446,6 @@ accuracy: 99.0 (step 1)
 <h2 id="examples">Examples</h2>
 <pre><code class="language-python-repl">&gt;&gt;&gt; logger = Logger()
 &gt;&gt;&gt; logger.start_epoch(1)
-Starting epoch 1
 </code></pre></div>
 </dd>
 </dl>
