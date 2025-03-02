@@ -91,7 +91,7 @@ class BaseBuffer:
             1
         """
         idx = torch.randint(0, self.pos - 1, (batch_size,))
-        return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}
+        return {self.key_mapping[k]: v[idx].to(self.device).detach().squeeze() for k, v in self.buffer.items()}
 
     def clear(self) -> None:
         """Clear the buffer.

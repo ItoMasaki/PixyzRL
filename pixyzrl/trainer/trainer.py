@@ -191,13 +191,18 @@ class OnPolicyTrainer(BaseTrainer):
         total_reward = 0
 
         while len(self.memory) < self.memory.buffer_size - 1:
+            if len(obs.shape) == 1:
+                obs = obs.unsqueeze(0)
+            elif len(obs.shape) == 3:
+                obs = obs.permute(2, 0, 1).unsqueeze(0)
+
             action = self.agent.select_action({"o": obs.to(self.device)})
 
             if self.env.is_discrete:
                 next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
                 done = truncated or terminated
             else:
-                next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu())
+                next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
                 done = truncated or terminated
 
             self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
@@ -211,6 +216,11 @@ class OnPolicyTrainer(BaseTrainer):
                 obs, info = self.env.reset()
                 done = False
                 total_reward = 0
+
+        if len(obs.shape) == 1:
+            obs = obs.unsqueeze(0)
+        elif len(obs.shape) == 3:
+            obs = obs.permute(2, 0, 1).unsqueeze(0)
 
         action = self.agent.select_action({"o": obs.to(self.device)})
         self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)
