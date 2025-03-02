@@ -88,17 +88,18 @@ class OnPolicyTrainer(BaseTrainer):
             total_reward += reward
 
             if self.logger:
-                self.logger.log("Collected on-policy experiences. Total reward: {total_reward}")
+                self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
 
             if done:
                 obs, info = self.env.reset()
                 done = False
+                total_reward = 0
 
         action = self.agent.select_action({"o": obs.to(self.device)})
         self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -> None:
-        if len(self.memory) < self.memory.buffer_size:
+        if len(self.memory) < self.memory.buffer_size - 1:
             return
 
         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)

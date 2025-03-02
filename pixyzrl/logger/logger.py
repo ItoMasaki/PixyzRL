@@ -23,16 +23,24 @@ class Logger:
         global_step (int): Step counter for logging.
     """
 
-    def __init__(self, log_dir: str = "logs", log_level: int = logging.INFO, log_types: list[str] | None = None, log_format: str = "%(asctime)s - %(levelname)s - %(message)s", max_log_size: int = 5 * 1024 * 1024, backup_count: int = 3) -> None:
+    def __init__(
+        self,
+        log_dir: str = "logs",
+        log_level: int = logging.INFO,
+        log_types: list[str] | None = None,
+        log_format: str = "%(asctime)s - %(levelname)s - %(message)s",
+        max_log_size: int = 5 * 1024 * 1024,
+        backup_count: int = 3,
+    ) -> None:
         """Initializes the logger, TensorBoard writer, and log types.
 
         Args:
-            log_dir (str): Directory where logs will be stored.
-            log_level (int): Logging level (e.g., logging.INFO, logging.DEBUG).
-            log_types (list, optional): List of logging types to enable. Defaults to all types.
-            log_format (str): Format for log messages.
-            max_log_size (int): Maximum size of log files before rotating.
-            backup_count (int): Number of backup log files to keep.
+            log_dir (str, optional): Directory where logs will be stored. Defaults to "logs".
+            log_level (int, optional): Logging level (e.g., logging.INFO, logging.DEBUG). Defaults to logging.INFO.
+            log_types (list[str] | None, optional): List of logging types to enable. Defaults to all types.
+            log_format (str, optional): Format for log messages. Defaults to "%(asctime)s - %(levelname)s - %(message)s".
+            max_log_size (int, optional): Maximum size of log files before rotating. Defaults to 5MB.
+            backup_count (int, optional): Number of backup log files to keep. Defaults to 3.
 
         Examples:
             >>> logger = Logger(log_dir="logs", log_types=["print", "file"])
@@ -41,77 +49,99 @@ class Logger:
         Path(log_dir).mkdir(parents=True, exist_ok=True)
 
         if log_types is None:
-            log_types = ["file", "print", "tensorboard", "json", "csv"]  # Default to all types
+            log_types = ["file", "print", "tensorboard", "json", "csv"]
         self.log_types = set(log_types)
         self.lock = threading.Lock()
 
         log_file = Path(log_dir) / "training.log"
-        json_file = Path(log_dir) / "training.json"
-        csv_file = Path(log_dir) / "training.csv"
+        self.json_file = Path(log_dir) / "training.json"
+        self.csv_file = Path(log_dir) / "training.csv"
 
-        self.json_file = json_file
-        self.csv_file = csv_file
-
-        logging.basicConfig(level=log_level, format=log_format, handlers=[RotatingFileHandler(log_file, maxBytes=max_log_size, backupCount=backup_count), logging.StreamHandler()])
+        logging.basicConfig(
+            level=log_level,
+            format=log_format,
+            handlers=[
+                RotatingFileHandler(log_file, maxBytes=max_log_size, backupCount=backup_count),
+                logging.StreamHandler(),
+            ],
+        )
 
         self.logger = logging.getLogger("PixyzRLLogger")
         self.writer = SummaryWriter(log_dir) if "tensorboard" in self.log_types else None
         self.global_step = 0
 
-    def log(self, message: str, level: int = logging.INFO) -> None:
-        """Logs a message based on selected log types.
+    def log(self, message: str | dict[str, Any], level: int = logging.INFO, step: int | None = None) -> None:
+        """Logs a message or a dictionary of values based on selected log types.
 
         Args:
-            message (str): The message to log.
-            level (int): Logging level (e.g., logging.INFO, logging.ERROR).
+            message (str | dict[str, Any]): The message to log or a dictionary of values to log.
+            level (int, optional): Logging level (e.g., logging.INFO, logging.ERROR). Defaults to logging.INFO.
+            step (int | None, optional): Step index for logging. Defaults to internal counter.
 
         Examples:
             >>> logger = Logger(log_types=["print"])
             >>> logger.log("Training started")
             Training started
+
+            >>> logger.log({"loss": 0.01, "accuracy": 99.0})
+            loss: 0.01 (step 1)
+            accuracy: 99.0 (step 1)
         """
         with self.lock:
-            if "file" in self.log_types or "print" in self.log_types:
-                self.logger.log(level, message)
-            if "print" in self.log_types:
-                print(message)
+            if step is None:
+                step = self.global_step
 
-    def log_dict(self, log_data: dict[str, Any], step: int | None = None) -> None:
-        """Logs a dictionary of values based on selected log types.
+            if isinstance(message, str):
+                self._log_message(message, level)
+            else:
+                self._log_dict(message, step)
 
-        Args:
-            log_data (dict): Dictionary containing log names as keys and values as numeric data.
-            step (int, optional): Step index for logging. Defaults to internal counter.
+            self.global_step += 1
 
-        Examples:
-            >>> logger = Logger(log_types=["print"])
-            >>> logger.log_dict({"loss": 0.01, "accuracy": 99.0})
-            loss: 0.01 (step 0)
-            accuracy: 99.0 (step 0)
-        """
-        if step is None:
-            step = self.global_step
+    def _log_message(self, message: str, level: int) -> None:
+        """Logs a string message."""
+        if "file" in self.log_types or "print" in self.log_types:
+            self.logger.log(level, message)
 
-        with self.lock:
-            for key, value in log_data.items():
-                if isinstance(value, int | float):
-                    if "tensorboard" in self.log_types and self.writer:
-                        self.writer.add_scalar(key, value, step)
-                    if "file" in self.log_types or "print" in self.log_types:
-                        log_message = f"{key}: {value} (step {step})"
-                        self.logger.info(log_message)
-                        if "print" in self.log_types:
-                            print(log_message)
-                    if "json" in self.log_types:
-                        with open(self.json_file, "a") as f:
-                            json.dump({"step": step, key: value}, f)
-                            f.write("\n")
-                    if "csv" in self.log_types:
-                        with open(self.csv_file, "a", newline="") as f:
-                            writer = csv.writer(f)
-                            writer.writerow([step, key, value])
+    def _log_dict(self, message: dict[str, Any], step: int) -> None:
+        """Logs a dictionary of values."""
+        for key, value in message.items():
+            if isinstance(value, int | float):
+                self._log_tensorboard(key, value, step)
+                self._log_file(key, value, step)
+                self._log_print(key, value, step)
+                self._log_json(key, value, step)
+                self._log_csv(key, value, step)
 
-        self.global_step += 1
+    def _log_tensorboard(self, key: str, value: float, step: int) -> None:
+        """Logs a value to TensorBoard."""
+        if "tensorboard" in self.log_types and self.writer:
+            self.writer.add_scalar(key, value, step)
+
+    def _log_file(self, key: str, value: float, step: int) -> None:
+        """Logs a value to file and print."""
+        log_message = f"{key}: {value} (step {step})"
+        if "file" in self.log_types:
+            self.logger.info(log_message)
+
+    def _log_print(self, key: str, value: float, step: int) -> None:
+        """Logs a value to the console."""
+        if "print" in self.log_types:
+            self.logger.info("%s: %s (step %d)", key, value, step)
+
+    def _log_json(self, key: str, value: float, step: int) -> None:
+        """Logs a value to a JSON file."""
+        if "json" in self.log_types:
+            with open(self.json_file, "a") as f:
+                json.dump({"step": step, key: value}, f)
+                f.write("\n")
+
+    def _log_csv(self, key: str, value: float, step: int) -> None:
+        """Logs a value to a CSV file."""
+        if "csv" in self.log_types:
+            with open(self.csv_file, "a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([step, key, value])
 
     def set_log_level(self, level: int) -> None:
         """Dynamically changes the logging level.
