@@ -14,7 +14,7 @@ def is_env_notebook() -> bool:
     return env_name != "TerminalInteractiveShell"
 
 
-def print_latex(obj: Any) -> Math | str:
+def print_latex(obj: Any) -> Math | str | None:
     """Print formulas in latex format.
 
     Parameters
@@ -34,4 +34,4 @@ def print_latex(obj: Any) -> Math | str:
         return Math(latex_text)
 
     print(latex_text)  # noqa: T201
-    return latex_text
+    return None
