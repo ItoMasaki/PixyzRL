@@ -32,8 +32,12 @@ def print_latex(obj: Any) -> Math | str | None:
         Math | str | None: Math object if the environment is Jupyter Notebook, string if not, None otherwise.
 
     Examples:
-        >>> print_latex(pixyz.losses.KullbackLeibler())
-        \begin{equation}KL\left[p(x)||q(x)\right] = \mathbb{E}_{p(x)}\left[\log\frac{p(x)}{q(x)}\right]\end{equation}
+        >>> from pixyz.distributions import Normal
+        >>> from pixyz.losses import KullbackLeibler
+        >>> p = Normal(loc=0., scale=1., var=["x"], cond_var=["y"], features_shape=[1], name="p")
+        >>> q = Normal(loc=0., scale=1., var=["x"], cond_var=["y"], features_shape=[1], name="q")
+        >>> print_latex(KullbackLeibler(p, q))
+        D_{KL} \\left[p(x|y)||q(x|y) \\right]
     """
 
     if isinstance(obj, pixyz.distributions.distributions.Distribution | pixyz.distributions.distributions.DistGraph):
