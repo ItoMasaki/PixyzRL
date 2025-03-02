@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites><testsuite name="pytest" errors="0" failures="17" skipped="0" tests="23" time="4.121" timestamp="2025-03-02T11:19:43.841667" hostname="122x209x100x44.ap122.ftth.ucom.ne.jp"><testcase classname="pixyzrl.utils" name="pixyzrl.utils.is_env_notebook" time="0.010" /><testcase classname="pixyzrl.utils" name="pixyzrl.utils.print_latex" time="0.003"><failure message="026 Print formulas in latex format.&#10;027 &#10;028     Args:&#10;029         obj (Any): Object to be printed in latex format.&#10;030 &#10;031     Returns:&#10;032         Math | str | None: Math object if the environment is Jupyter Notebook, string if not, None otherwise.&#10;033 &#10;034     Examples:&#10;035         &gt;&gt;&gt; print_latex(pixyz.losses.KullbackLeibler())&#10;UNEXPECTED EXCEPTION: TypeError(&quot;KullbackLeibler() missing 2 required positional arguments: 'p' and 'q'&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.utils.print_latex[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;TypeError: KullbackLeibler() missing 2 required positional arguments: 'p' and 'q'&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/utils.py:35: UnexpectedException">026 Print formulas in latex format.
+027 
+028     Args:
+029         obj (Any): Object to be printed in latex format.
+030 
+031     Returns:
+032         Math | str | None: Math object if the environment is Jupyter Notebook, string if not, None otherwise.
+033 
+034     Examples:
+035         &gt;&gt;&gt; print_latex(pixyz.losses.KullbackLeibler())
+UNEXPECTED EXCEPTION: TypeError("KullbackLeibler() missing 2 required positional arguments: 'p' and 'q'")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.utils.print_latex[0]&gt;", line 1, in &lt;module&gt;
+TypeError: KullbackLeibler() missing 2 required positional arguments: 'p' and 'q'
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/utils.py:35: UnexpectedException</failure></testcase><testcase classname="pixyzrl.environments.env" name="pixyzrl.environments.env.Env.__init__" time="1.097" /><testcase classname="pixyzrl.environments.env" name="pixyzrl.environments.env.Env.action_space" time="0.002"><failure message="151 Return action space.&#10;152 &#10;153         Examples:&#10;154             &gt;&gt;&gt; action_space = env.action_space&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'env' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.environments.env.Env.action_space[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'env' is not defined. Did you mean: 'Env'?&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:154: UnexpectedException">151 Return action space.
+152 
+153         Examples:
+154             &gt;&gt;&gt; action_space = env.action_space
+UNEXPECTED EXCEPTION: NameError("name 'env' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.environments.env.Env.action_space[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'env' is not defined. Did you mean: 'Env'?
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:154: UnexpectedException</failure></testcase><testcase classname="pixyzrl.environments.env" name="pixyzrl.environments.env.Env.close" time="0.001"><failure message="125 Close the environment.&#10;126 &#10;127         Examples:&#10;128             &gt;&gt;&gt; env.close()&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'env' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.environments.env.Env.close[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'env' is not defined. Did you mean: 'Env'?&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:128: UnexpectedException">125 Close the environment.
+126 
+127         Examples:
+128             &gt;&gt;&gt; env.close()
+UNEXPECTED EXCEPTION: NameError("name 'env' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.environments.env.Env.close[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'env' is not defined. Did you mean: 'Env'?
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:128: UnexpectedException</failure></testcase><testcase classname="pixyzrl.environments.env" name="pixyzrl.environments.env.Env.observation_space" time="0.002"><failure message="142 Return observation space.&#10;143 &#10;144         Examples:&#10;145             &gt;&gt;&gt; obs_space = env.observation_space&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'env' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.environments.env.Env.observation_space[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'env' is not defined. Did you mean: 'Env'?&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:145: UnexpectedException">142 Return observation space.
+143 
+144         Examples:
+145             &gt;&gt;&gt; obs_space = env.observation_space
+UNEXPECTED EXCEPTION: NameError("name 'env' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.environments.env.Env.observation_space[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'env' is not defined. Did you mean: 'Env'?
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:145: UnexpectedException</failure></testcase><testcase classname="pixyzrl.environments.env" name="pixyzrl.environments.env.Env.render" time="0.003"><failure message="133 Render the environment.&#10;134 &#10;135         Examples:&#10;136             &gt;&gt;&gt; env.render()&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'env' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.environments.env.Env.render[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'env' is not defined. Did you mean: 'Env'?&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:136: UnexpectedException">133 Render the environment.
+134 
+135         Examples:
+136             &gt;&gt;&gt; env.render()
+UNEXPECTED EXCEPTION: NameError("name 'env' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.environments.env.Env.render[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'env' is not defined. Did you mean: 'Env'?
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:136: UnexpectedException</failure></testcase><testcase classname="pixyzrl.environments.env" name="pixyzrl.environments.env.Env.reset" time="0.002"><failure message="089 Reset the environment.&#10;090 &#10;091         Returns:&#10;092             tuple[NDArray[Any], dict[str, Any]]: Observation&#10;093 &#10;094         Examples:&#10;095             &gt;&gt;&gt; obs, info = env.reset()&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'env' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.environments.env.Env.reset[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'env' is not defined. Did you mean: 'Env'?&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:95: UnexpectedException">089 Reset the environment.
+090 
+091         Returns:
+092             tuple[NDArray[Any], dict[str, Any]]: Observation
+093 
+094         Examples:
+095             &gt;&gt;&gt; obs, info = env.reset()
+UNEXPECTED EXCEPTION: NameError("name 'env' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.environments.env.Env.reset[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'env' is not defined. Did you mean: 'Env'?
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:95: UnexpectedException</failure></testcase><testcase classname="pixyzrl.environments.env" name="pixyzrl.environments.env.Env.step" time="0.002"><failure message="101 Take a step in the environment with support for both discrete and continuous actions.&#10;102 &#10;103         Args:&#10;104             action (Any): Action to take in the environment.&#10;105 &#10;106         Returns:&#10;107             tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]: Observation, reward, truncated, terminated, info&#10;108 &#10;109         Examples:&#10;110             &gt;&gt;&gt; obs, reward, truncated, terminated, info = env.step(action)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'env' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.environments.env.Env.step[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'env' is not defined. Did you mean: 'Env'?&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:110: UnexpectedException">101 Take a step in the environment with support for both discrete and continuous actions.
+102 
+103         Args:
+104             action (Any): Action to take in the environment.
+105 
+106         Returns:
+107             tuple[NDArray[Any], NDArray[Any], NDArray[Any], NDArray[Any], dict[str, Any]]: Observation, reward, truncated, terminated, info
+108 
+109         Examples:
+110             &gt;&gt;&gt; obs, reward, truncated, terminated, info = env.step(action)
+UNEXPECTED EXCEPTION: NameError("name 'env' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.environments.env.Env.step[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'env' is not defined. Did you mean: 'Env'?
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/environments/env.py:110: UnexpectedException</failure></testcase><testcase classname="pixyzrl.losses.losses" name="pixyzrl.losses.losses.ClipLoss" time="0.010"><failure message="097     ...     def __init__(self):&#10;098     ...         super().__init__(var=[&quot;z&quot;],cond_var=[&quot;x&quot;],name=&quot;p&quot;)&#10;099     ...         self.model_loc = torch.nn.Linear(128, 64)&#10;100     ...         self.model_scale = torch.nn.Linear(128, 64)&#10;101     ...     def forward(self, x):&#10;102     ...         return {&quot;loc&quot;: self.model_loc(x), &quot;scale&quot;: F.softplus(self.model_scale(x))}&#10;103     &gt;&gt;&gt;&#10;104     &gt;&gt;&gt; p = P()&#10;105     &gt;&gt;&gt;&#10;106     &gt;&gt;&gt; clip_loss = ClipLoss(LogProb(p), 0.9, 1.1)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'LogProb' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.losses.losses.ClipLoss[5]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'LogProb' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py:106: UnexpectedException">097     ...     def __init__(self):
+098     ...         super().__init__(var=["z"],cond_var=["x"],name="p")
+099     ...         self.model_loc = torch.nn.Linear(128, 64)
+100     ...         self.model_scale = torch.nn.Linear(128, 64)
+101     ...     def forward(self, x):
+102     ...         return {"loc": self.model_loc(x), "scale": F.softplus(self.model_scale(x))}
+103     &gt;&gt;&gt;
+104     &gt;&gt;&gt; p = P()
+105     &gt;&gt;&gt;
+106     &gt;&gt;&gt; clip_loss = ClipLoss(LogProb(p), 0.9, 1.1)
+UNEXPECTED EXCEPTION: NameError("name 'LogProb' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.losses.losses.ClipLoss[5]&gt;", line 1, in &lt;module&gt;
+NameError: name 'LogProb' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py:106: UnexpectedException</failure></testcase><testcase classname="pixyzrl.losses.losses" name="pixyzrl.losses.losses.MSELoss" time="0.005"><failure message="134 Mean Square Error.&#10;135 &#10;136     Examples&#10;137     --------&#10;138     &gt;&gt;&gt; import torch&#10;139     &gt;&gt;&gt; from torch.nn import functional as F&#10;140     &gt;&gt;&gt; from pixyz.distributions import Normal&#10;141     &gt;&gt;&gt;&#10;142     &gt;&gt;&gt; mse_loss = MSELoss(&quot;x&quot;, &quot;y&quot;)&#10;UNEXPECTED EXCEPTION: AttributeError(&quot;'str' object has no attribute 'cond_var'&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.losses.losses.MSELoss[3]&gt;&quot;, line 1, in &lt;module&gt;&#10;  File &quot;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py&quot;, line 154, in __init__&#10;    super().__init__([*p.cond_var, var])&#10;                       ^^^^^^^^^^&#10;AttributeError: 'str' object has no attribute 'cond_var'&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py:142: UnexpectedException">134 Mean Square Error.
+135 
+136     Examples
+137     --------
+138     &gt;&gt;&gt; import torch
+139     &gt;&gt;&gt; from torch.nn import functional as F
+140     &gt;&gt;&gt; from pixyz.distributions import Normal
+141     &gt;&gt;&gt;
+142     &gt;&gt;&gt; mse_loss = MSELoss("x", "y")
+UNEXPECTED EXCEPTION: AttributeError("'str' object has no attribute 'cond_var'")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.losses.losses.MSELoss[3]&gt;", line 1, in &lt;module&gt;
+  File "/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py", line 154, in __init__
+    super().__init__([*p.cond_var, var])
+                       ^^^^^^^^^^
+AttributeError: 'str' object has no attribute 'cond_var'
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py:142: UnexpectedException</failure></testcase><testcase classname="pixyzrl.losses.losses" name="pixyzrl.losses.losses.RatioLoss" time="0.048"><failure message="044     &gt;&gt;&gt;&#10;045     &gt;&gt;&gt; p = P()&#10;046     &gt;&gt;&gt; q = Q()&#10;047     &gt;&gt;&gt;&#10;048     &gt;&gt;&gt; ratio_loss = RatioLoss(p, q).mean()&#10;049     &gt;&gt;&gt;&#10;050     &gt;&gt;&gt; x = torch.zeros(1, 128)&#10;051     &gt;&gt;&gt; z = torch.zeros(1, 64)&#10;052     &gt;&gt;&gt;&#10;053     &gt;&gt;&gt; ratio_loss.eval({&quot;z&quot;: z, &quot;x&quot;: x})&#10;Expected:&#10;    tensor(0.9940, grad_fn=&lt;MeanBackward0&gt;)&#10;Got:&#10;    tensor(0.7774, grad_fn=&lt;MeanBackward0&gt;)&#10;&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py:53: DocTestFailure">044     &gt;&gt;&gt;
+045     &gt;&gt;&gt; p = P()
+046     &gt;&gt;&gt; q = Q()
+047     &gt;&gt;&gt;
+048     &gt;&gt;&gt; ratio_loss = RatioLoss(p, q).mean()
+049     &gt;&gt;&gt;
+050     &gt;&gt;&gt; x = torch.zeros(1, 128)
+051     &gt;&gt;&gt; z = torch.zeros(1, 64)
+052     &gt;&gt;&gt;
+053     &gt;&gt;&gt; ratio_loss.eval({"z": z, "x": x})
+Expected:
+    tensor(0.9940, grad_fn=&lt;MeanBackward0&gt;)
+Got:
+    tensor(0.7774, grad_fn=&lt;MeanBackward0&gt;)
+
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/losses/losses.py:53: DocTestFailure</failure></testcase><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.BaseBuffer" time="0.002" /><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.BaseBuffer.__init__" time="0.009" /><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.BaseBuffer.__len__" time="0.002"><failure message="097 Return the number of stored experiences.&#10;098 &#10;099         Returns:&#10;100             int: Number of stored experiences.&#10;101 &#10;102         Example:&#10;103             &gt;&gt;&gt; len(buffer)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'buffer' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.memory.memory.BaseBuffer.__len__[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'buffer' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:103: UnexpectedException">097 Return the number of stored experiences.
+098 
+099         Returns:
+100             int: Number of stored experiences.
+101 
+102         Example:
+103             &gt;&gt;&gt; len(buffer)
+UNEXPECTED EXCEPTION: NameError("name 'buffer' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.memory.memory.BaseBuffer.__len__[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'buffer' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:103: UnexpectedException</failure></testcase><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.BaseBuffer.add" time="0.003"><failure message="056 Add a new experience to the buffer.&#10;057 &#10;058         Args:&#10;059             **kwargs (dict[str, Any]): Key-value pairs of experience data.&#10;060 &#10;061         Example:&#10;062             &gt;&gt;&gt; buffer.add(obs=obs, action=action, reward=reward, done=done)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'buffer' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.memory.memory.BaseBuffer.add[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'buffer' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:62: UnexpectedException">056 Add a new experience to the buffer.
+057 
+058         Args:
+059             **kwargs (dict[str, Any]): Key-value pairs of experience data.
+060 
+061         Example:
+062             &gt;&gt;&gt; buffer.add(obs=obs, action=action, reward=reward, done=done)
+UNEXPECTED EXCEPTION: NameError("name 'buffer' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.memory.memory.BaseBuffer.add[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'buffer' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:62: UnexpectedException</failure></testcase><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.BaseBuffer.clear" time="0.002"><failure message="087 Clear the buffer.&#10;088 &#10;089         Example&#10;090             &gt;&gt;&gt; buffer.clear()&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'buffer' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.memory.memory.BaseBuffer.clear[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'buffer' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:90: UnexpectedException">087 Clear the buffer.
+088 
+089         Example
+090             &gt;&gt;&gt; buffer.clear()
+UNEXPECTED EXCEPTION: NameError("name 'buffer' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.memory.memory.BaseBuffer.clear[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'buffer' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:90: UnexpectedException</failure></testcase><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.BaseBuffer.sample" time="0.002"><failure message="072 Sample a batch of experiences.&#10;073 &#10;074         Args:&#10;075             batch_size (int): Number of samples per batch.&#10;076 &#10;077         Returns:&#10;078             dict[str, Any]: Sampled batch of experiences.&#10;079 &#10;080         Example:&#10;081             &gt;&gt;&gt; batch = buffer.sample(32)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'buffer' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.memory.memory.BaseBuffer.sample[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'buffer' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:81: UnexpectedException">072 Sample a batch of experiences.
+073 
+074         Args:
+075             batch_size (int): Number of samples per batch.
+076 
+077         Returns:
+078             dict[str, Any]: Sampled batch of experiences.
+079 
+080         Example:
+081             &gt;&gt;&gt; batch = buffer.sample(32)
+UNEXPECTED EXCEPTION: NameError("name 'buffer' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.memory.memory.BaseBuffer.sample[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'buffer' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:81: UnexpectedException</failure></testcase><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.RolloutBuffer" time="0.001" /><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.RolloutBuffer.__init__" time="0.001" /><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_gae" time="0.002"><failure message="149             last_state (torch.Tensor): Last state of the trajectory.&#10;150             gamma (float): Discount factor.&#10;151             lmbd (float): Lambda factor for GAE.&#10;152             critic (Distribution): Critic distribution.&#10;153 &#10;154         Returns:&#10;155             dict[str, torch.Tensor]: Returns and advantages.&#10;156 &#10;157         Example:&#10;158             &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_gae(last_state, gamma, lmbd, critic)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'buffer' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_gae[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'buffer' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:158: UnexpectedException">149             last_state (torch.Tensor): Last state of the trajectory.
+150             gamma (float): Discount factor.
+151             lmbd (float): Lambda factor for GAE.
+152             critic (Distribution): Critic distribution.
+153 
+154         Returns:
+155             dict[str, torch.Tensor]: Returns and advantages.
+156 
+157         Example:
+158             &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_gae(last_state, gamma, lmbd, critic)
+UNEXPECTED EXCEPTION: NameError("name 'buffer' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_gae[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'buffer' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:158: UnexpectedException</failure></testcase><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_mc" time="0.002"><failure message="186 Compute returns and advantages for the stored trajectories.&#10;187 &#10;188         Args:&#10;189             gamma (float): Discount factor.&#10;190 &#10;191         Returns:&#10;192             dict[str, torch.Tensor]: Returns and advantages.&#10;193 &#10;194         Example:&#10;195             &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'buffer' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_mc[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'buffer' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:195: UnexpectedException">186 Compute returns and advantages for the stored trajectories.
+187 
+188         Args:
+189             gamma (float): Discount factor.
+190 
+191         Returns:
+192             dict[str, torch.Tensor]: Returns and advantages.
+193 
+194         Example:
+195             &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_mc(gamma)
+UNEXPECTED EXCEPTION: NameError("name 'buffer' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_mc[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'buffer' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:195: UnexpectedException</failure></testcase><testcase classname="pixyzrl.memory.memory" name="pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_n_step" time="0.002"><failure message="212 &#10;213         Args:&#10;214             gamma (float): Discount factor.&#10;215             n_step (int): Number of steps for n-step returns.&#10;216 &#10;217         Returns:&#10;218             dict[str, torch.Tensor]: Returns and advantages.&#10;219 &#10;220         Example:&#10;221             &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)&#10;UNEXPECTED EXCEPTION: NameError(&quot;name 'buffer' is not defined&quot;)&#10;Traceback (most recent call last):&#10;  File &quot;/opt/anaconda3/lib/python3.12/doctest.py&quot;, line 1368, in __run&#10;    exec(compile(example.source, filename, &quot;single&quot;,&#10;  File &quot;&lt;doctest pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_n_step[0]&gt;&quot;, line 1, in &lt;module&gt;&#10;NameError: name 'buffer' is not defined&#10;/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:221: UnexpectedException">212 
+213         Args:
+214             gamma (float): Discount factor.
+215             n_step (int): Number of steps for n-step returns.
+216 
+217         Returns:
+218             dict[str, torch.Tensor]: Returns and advantages.
+219 
+220         Example:
+221             &gt;&gt;&gt; returns_advantages = buffer.compute_returns_and_advantages_n_step(gamma, n_step)
+UNEXPECTED EXCEPTION: NameError("name 'buffer' is not defined")
+Traceback (most recent call last):
+  File "/opt/anaconda3/lib/python3.12/doctest.py", line 1368, in __run
+    exec(compile(example.source, filename, "single",
+  File "&lt;doctest pixyzrl.memory.memory.RolloutBuffer.compute_returns_and_advantages_n_step[0]&gt;", line 1, in &lt;module&gt;
+NameError: name 'buffer' is not defined
+/Users/itomasaki/Desktop/PixyzRL/pixyzrl/memory/memory.py:221: UnexpectedException</failure></testcase></testsuite></testsuites>

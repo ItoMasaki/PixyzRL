@@ -1,4 +1,3 @@
-import re
 from typing import Any
 
 import pixyz
@@ -6,7 +5,15 @@ from IPython.display import Math
 
 
 def is_env_notebook() -> bool:
-    """Determine wheather is the environment Jupyter Notebook"""
+    """Determine wheather is the environment Jupyter Notebook
+
+    Returns:
+        bool: True if the environment is Jupyter Notebook, False otherwise.
+
+    Examples:
+        >>> is_env_notebook()
+        False
+    """
     if "get_ipython" not in globals():
         # Python shell
         return False
@@ -18,10 +25,15 @@ def is_env_notebook() -> bool:
 def print_latex(obj: Any) -> Math | str | None:
     """Print formulas in latex format.
 
-    Parameters
-    ----------
-    obj : pixyz.distributions.distributions.Distribution, pixyz.losses.losses.Loss or pixyz.models.model.Model.
+    Args:
+        obj (Any): Object to be printed in latex format.
 
+    Returns:
+        Math | str | None: Math object if the environment is Jupyter Notebook, string if not, None otherwise.
+
+    Examples:
+        >>> print_latex(pixyz.losses.KullbackLeibler())
+        \begin{equation}KL\left[p(x)||q(x)\right] = \mathbb{E}_{p(x)}\left[\log\frac{p(x)}{q(x)}\right]\end{equation}
     """
 
     if isinstance(obj, pixyz.distributions.distributions.Distribution | pixyz.distributions.distributions.DistGraph):
