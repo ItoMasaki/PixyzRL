@@ -3,6 +3,7 @@ from pixyz.distributions import Categorical, Deterministic
 from torch import nn
 
 from pixyzrl.environments import Env
+from pixyzrl.logger import Logger
 from pixyzrl.memory import RolloutBuffer
 from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
@@ -67,5 +68,7 @@ buffer = RolloutBuffer(
     1,
 )
 
-trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
+logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["tensorboard"])
+
+trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger=logger)
 trainer.train(1000)

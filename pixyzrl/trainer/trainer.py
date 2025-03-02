@@ -104,6 +104,7 @@ class OnPolicyTrainer(BaseTrainer):
         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
 
         if self.logger:
+            if 
             self.logger.log(f"On-policy training step completed. Loss: {total_loss / num_epochs}")
 
     def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -> None:
