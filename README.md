@@ -139,6 +139,8 @@ buffer = RolloutBuffer(
 mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1.2), A \frac{p(a|o)}{old(a|o)}\right) \right)
 ```
 
+<img width="1272" alt="latex" src="https://github.com/user-attachments/assets/317f1f12-bf29-4015-87ee-1aa53ed6b26f" />
+
 ### 4. Training with Trainer
 
 ```python
