@@ -53,7 +53,15 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def is_env_notebook() -&gt; bool:
-    &#34;&#34;&#34;Determine wheather is the environment Jupyter Notebook&#34;&#34;&#34;
+    &#34;&#34;&#34;Determine wheather is the environment Jupyter Notebook
+
+    Returns:
+        bool: True if the environment is Jupyter Notebook, False otherwise.
+
+    Examples:
+        &gt;&gt;&gt; is_env_notebook()
+        False
+    &#34;&#34;&#34;
     if &#34;get_ipython&#34; not in globals():
         # Python shell
         return False
@@ -61,7 +69,16 @@ el.replaceWith(d);
     # Return the negated condition directly
     return env_name != &#34;TerminalInteractiveShell&#34;</code></pre>
 </details>
-<div class="desc"><p>Determine wheather is the environment Jupyter Notebook</p></div>
+<div class="desc"><p>Determine wheather is the environment Jupyter Notebook</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the environment is Jupyter Notebook, False otherwise.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; is_env_notebook()
+False
+</code></pre></div>
 </dd>
 <dt id="pixyzrl.utils.print_latex"><code class="name flex">
 <span>def <span class="ident">print_latex</span></span>(<span>obj: Any) ‑> IPython.core.display.Math | str | None</span>
@@ -74,10 +91,19 @@ el.replaceWith(d);
 <pre><code class="python">def print_latex(obj: Any) -&gt; Math | str | None:
     &#34;&#34;&#34;Print formulas in latex format.
 
-    Parameters
-    ----------
-    obj : pixyz.distributions.distributions.Distribution, pixyz.losses.losses.Loss or pixyz.models.model.Model.
+    Args:
+        obj (Any): Object to be printed in latex format.
 
+    Returns:
+        Math | str | None: Math object if the environment is Jupyter Notebook, string if not, None otherwise.
+
+    Examples:
+        &gt;&gt;&gt; from pixyz.distributions import Normal
+        &gt;&gt;&gt; from pixyz.losses import KullbackLeibler
+        &gt;&gt;&gt; p = Normal(loc=0., scale=1., var=[&#34;x&#34;], cond_var=[&#34;y&#34;], features_shape=[1], name=&#34;p&#34;)
+        &gt;&gt;&gt; q = Normal(loc=0., scale=1., var=[&#34;x&#34;], cond_var=[&#34;y&#34;], features_shape=[1], name=&#34;q&#34;)
+        &gt;&gt;&gt; print_latex(KullbackLeibler(p, q))
+        D_{KL} \\left[p(x|y)||q(x|y) \\right]
     &#34;&#34;&#34;
 
     if isinstance(obj, pixyz.distributions.distributions.Distribution | pixyz.distributions.distributions.DistGraph):
@@ -94,8 +120,24 @@ el.replaceWith(d);
     return None</code></pre>
 </details>
 <div class="desc"><p>Print formulas in latex format.</p>
-<h2 id="parameters">Parameters</h2>
-<p>obj : pixyz.distributions.distributions.Distribution, pixyz.losses.losses.Loss or pixyz.models.model.Model.</p></div>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>obj</code></strong> :&ensp;<code>Any</code></dt>
+<dd>Object to be printed in latex format.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>Math | str | None</code></dt>
+<dd>Math object if the environment is Jupyter Notebook, string if not, None otherwise.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from pixyz.distributions import Normal
+&gt;&gt;&gt; from pixyz.losses import KullbackLeibler
+&gt;&gt;&gt; p = Normal(loc=0., scale=1., var=[&quot;x&quot;], cond_var=[&quot;y&quot;], features_shape=[1], name=&quot;p&quot;)
+&gt;&gt;&gt; q = Normal(loc=0., scale=1., var=[&quot;x&quot;], cond_var=[&quot;y&quot;], features_shape=[1], name=&quot;q&quot;)
+&gt;&gt;&gt; print_latex(KullbackLeibler(p, q))
+D_{KL} \left[p(x|y)||q(x|y) \right]
+</code></pre></div>
 </dd>
 </dl>
 </section>

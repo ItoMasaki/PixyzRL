@@ -88,7 +88,15 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def is_env_notebook() -&gt; bool:
-    &#34;&#34;&#34;Determine wheather is the environment Jupyter Notebook&#34;&#34;&#34;
+    &#34;&#34;&#34;Determine wheather is the environment Jupyter Notebook
+
+    Returns:
+        bool: True if the environment is Jupyter Notebook, False otherwise.
+
+    Examples:
+        &gt;&gt;&gt; is_env_notebook()
+        False
+    &#34;&#34;&#34;
     if &#34;get_ipython&#34; not in globals():
         # Python shell
         return False
@@ -96,7 +104,16 @@ el.replaceWith(d);
     # Return the negated condition directly
     return env_name != &#34;TerminalInteractiveShell&#34;</code></pre>
 </details>
-<div class="desc"><p>Determine wheather is the environment Jupyter Notebook</p></div>
+<div class="desc"><p>Determine wheather is the environment Jupyter Notebook</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>True if the environment is Jupyter Notebook, False otherwise.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; is_env_notebook()
+False
+</code></pre></div>
 </dd>
 </dl>
 </section>
