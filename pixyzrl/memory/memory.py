@@ -3,7 +3,6 @@ from typing import Any
 
 import numpy as np
 import torch
-from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
 
