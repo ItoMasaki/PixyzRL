@@ -1,6 +1,5 @@
 """Single Gym environment wrapper."""
 
-import re
 from abc import ABC, abstractmethod
 from re import S
 from typing import Any

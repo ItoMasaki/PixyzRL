@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from math import e
 
 import torch
 
@@ -190,40 +191,49 @@ class OnPolicyTrainer(BaseTrainer):
         done = False
         total_reward = 0
 
-        while len(self.memory) < self.memory.buffer_size - 1:
+        with torch.no_grad():
+            while len(self.memory) < self.memory.buffer_size - 1:
+                if len(obs.shape) == 1:
+                    obs = obs.unsqueeze(0)
+                elif len(obs.shape) == 3:
+                    obs = obs.permute(2, 0, 1).unsqueeze(0) / 255.0
+
+                action = self.agent.select_action({"o": obs.to(self.device)})
+
+                if self.env.is_discrete:
+                    next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
+                    done = truncated or terminated
+                else:
+                    next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
+                    done = truncated or terminated
+
+                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done.detach(), value=action[self.agent.critic.var[0]].cpu().detach())
+                obs = next_obs
+                total_reward += reward
+
+                if done:
+                    if self.logger:
+                        self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
+
+                    obs, info = self.env.reset()
+                    done = False
+                    total_reward = 0
+
+            if self.logger:
+                self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
+
             if len(obs.shape) == 1:
                 obs = obs.unsqueeze(0)
             elif len(obs.shape) == 3:
                 obs = obs.permute(2, 0, 1).unsqueeze(0)
 
-            action = self.agent.select_action({"o": obs.to(self.device)})
-
-            if self.env.is_discrete:
-                next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-                done = truncated or terminated
+            self.value_estimate = "gae"
+            if self.value_estimate == "gae":
+                self.memory.compute_returns_and_advantages_gae(0.99, 0.95)
+            elif self.value_estimate == "mc":
+                self.memory.compute_returns_and_advantages_mc(0.99)
             else:
-                next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
-                done = truncated or terminated
-
-            self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
-            obs = next_obs
-            total_reward += reward
-
-            if self.logger:
-                self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
-
-            if done:
-                obs, info = self.env.reset()
-                done = False
-                total_reward = 0
-
-        if len(obs.shape) == 1:
-            obs = obs.unsqueeze(0)
-        elif len(obs.shape) == 3:
-            obs = obs.permute(2, 0, 1).unsqueeze(0)
-
-        action = self.agent.select_action({"o": obs.to(self.device)})
-        self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)
+                pass
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -> None:
         """Perform a single training step.
@@ -297,7 +307,7 @@ class OnPolicyTrainer(BaseTrainer):
         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
 
         if self.logger:
-            self.logger.log(f"On-policy training step completed. Loss: {total_loss / num_epochs}")
+            self.logger.log(f"On-policy training step completed. Loss: {total_loss}")
 
     def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -> None:
         """Train the agent.
@@ -369,6 +379,7 @@ class OnPolicyTrainer(BaseTrainer):
         for iteration in range(num_iterations):
             self.collect_experiences()
             self.train_model(batch_size, num_epochs)
+            self.memory.clear()
             if self.logger:
                 self.logger.log(f"On-policy Iteration {iteration + 1}/{num_iterations} completed.")
 
