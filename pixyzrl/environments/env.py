@@ -1,7 +1,6 @@
 """Single Gym environment wrapper."""
 
 from abc import ABC, abstractmethod
-from re import S
 from typing import Any
 
 import gymnasium as gym

@@ -1,5 +1,3 @@
-import re
-
 import torch
 from pixyz.distributions import Deterministic, Normal
 from torch import nn
