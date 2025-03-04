@@ -57,7 +57,7 @@ class BaseTrainer(ABC):
 class OnPolicyTrainer(BaseTrainer):
     """Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C)."""
 
-    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
+    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = "gae", device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
         """Initialize the on-policy trainer.
 
         Args:
@@ -125,6 +125,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
         """
         super().__init__(env, memory, agent, device, logger)
+        self.value_estimate = value_estimate
 
     def collect_experiences(self) -> None:
         """Collect experiences from the environment.
@@ -184,7 +185,7 @@ class OnPolicyTrainer(BaseTrainer):
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
         >>> trainer.collect_experiences()
         """
         obs, info = self.env.reset()
@@ -227,11 +228,10 @@ class OnPolicyTrainer(BaseTrainer):
             elif len(obs.shape) == 3:
                 obs = obs.permute(2, 0, 1).unsqueeze(0)
 
-            self.value_estimate = "gae"
             if self.value_estimate == "gae":
-                self.memory.compute_returns_and_advantages_gae(0.99, 0.95)
+                self.memory.compute_returns_and_advantages_gae()
             elif self.value_estimate == "mc":
-                self.memory.compute_returns_and_advantages_mc(0.99)
+                self.memory.compute_returns_and_advantages_mc()
             else:
                 pass
 
@@ -297,7 +297,7 @@ class OnPolicyTrainer(BaseTrainer):
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
         >>> trainer.collect_experiences()
         >>> trainer.train_model()
         """
@@ -372,7 +372,7 @@ class OnPolicyTrainer(BaseTrainer):
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
         >>> trainer.train(10)
         """
 
