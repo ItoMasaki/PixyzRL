@@ -372,7 +372,7 @@ class OnPolicyTrainer(BaseTrainer):
         ... )
         >>> logger = Logger("logs")
         >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.train(10)
+        >>> trainer.train(1)
         """
 
         for iteration in range(num_iterations):
