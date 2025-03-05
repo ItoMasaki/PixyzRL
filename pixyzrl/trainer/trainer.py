@@ -335,8 +335,9 @@ class OnPolicyTrainer(BaseTrainer):
         ...         super().__init__(var=["a"], cond_var=["o"], name="p")
         ...         self.net = nn.Sequential(
         ...             nn.LazyLinear(action_dim),
+        ...             nn.ReLU(),
         ...             nn.Softmax(dim=-1),
-        ...     )
+        ...         )
         ...     def forward(self, o: torch.Tensor):
         ...         probs = self.net(o)
         ...         return {"probs": probs}
