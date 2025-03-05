@@ -28,18 +28,18 @@ jobs:
           pip install -e .
 
       - name: Run tests
-        run: pytest --doctest-modules --cov=pixyzrl --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov-report=xml pixyzrl | tee pytest-coverage.txt
+        run: pytest --doctest-modules --cov=pixyzrl --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov-report=xml pixyzrl | tee pytest-coverage.xml
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
         with:
-          pytest-coverage-path: ./pytest-coverage.txt
+          pytest-coverage-path: ./pytest-coverage.xml
           junitxml-path: ./pytest.xml
 
       - name: Upload coverage reports to Codecov with GitHub Action
         uses: codecov/codecov-action@v3
         with:
           token: 3095d231-c0f1-4412-b2f7-d2c9e620288e
-          file: ./pytest-coverage.txt
+          file: ./pytest-coverage.xml
           flags: unittests
           name: codecov-umbrella
