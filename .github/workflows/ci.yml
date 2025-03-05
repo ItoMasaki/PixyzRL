@@ -28,7 +28,7 @@ jobs:
           pip install -e .
 
       - name: Run tests
-        run: pytest --doctest-modules --cov=pixyzrl --junitxml=pytest.xml --cov-report=term-missing:skip-covered --cov-report=xml pixyzrl | tee coverage.xml
+        run: pytest --doctest-modules --cov=pixyzrl --junitxml=pytest.xml --cov-report=xml pixyzrl
 
       - name: Pytest coverage comment
         uses: MishaKav/pytest-coverage-comment@main
