@@ -966,6 +966,8 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         ...     def __init__(self):
         ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
         ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(64),
+        ...             nn.ReLU(),
         ...             nn.LazyLinear(action_dim),
         ...             nn.ReLU(),
         ...             nn.Softmax(dim=-1),
@@ -978,6 +980,8 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         ...     def __init__(self):
         ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
         ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(64),
+        ...             nn.ReLU(),
         ...             nn.LazyLinear(1),
         ...         )
         ...     def forward(self, o: torch.Tensor):
@@ -1304,6 +1308,8 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     ...     def __init__(self):
     ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
     ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(64),
+    ...             nn.ReLU(),
     ...             nn.LazyLinear(action_dim),
     ...             nn.ReLU(),
     ...             nn.Softmax(dim=-1),
@@ -1316,6 +1322,8 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     ...     def __init__(self):
     ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
     ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(64),
+    ...             nn.ReLU(),
     ...             nn.LazyLinear(1),
     ...         )
     ...     def forward(self, o: torch.Tensor):
@@ -1381,6 +1389,8 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 ...     def __init__(self):
 ...         super().__init__(var=[&quot;a&quot;], cond_var=[&quot;o&quot;], name=&quot;p&quot;)
 ...         self.net = nn.Sequential(
+...             nn.LazyLinear(64),
+...             nn.ReLU(),
 ...             nn.LazyLinear(action_dim),
 ...             nn.ReLU(),
 ...             nn.Softmax(dim=-1),
@@ -1393,6 +1403,8 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 ...     def __init__(self):
 ...         super().__init__(var=[&quot;v&quot;], cond_var=[&quot;o&quot;], name=&quot;f&quot;)
 ...         self.net = nn.Sequential(
+...             nn.LazyLinear(64),
+...             nn.ReLU(),
 ...             nn.LazyLinear(1),
 ...         )
 ...     def forward(self, o: torch.Tensor):
