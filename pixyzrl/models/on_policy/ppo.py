@@ -1,6 +1,5 @@
 """Proximal Policy Optimization (PPO) agent using Pixyz."""
 
-import re
 from copy import deepcopy
 
 import torch
@@ -23,8 +22,8 @@ class PPO(RLModel):
         critic: dists.Distribution,
         shared_net: dists.Distribution | None = None,
         eps_clip: float = 0.2,
-        lr_actor: float = 3e-4,
-        lr_critic: float = 1e-3,
+        lr_actor: float = 1e-4,
+        lr_critic: float = 3e-4,
         device: str = "cpu",
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
@@ -176,6 +175,5 @@ class PPO(RLModel):
             total_loss += loss
 
         self.actor_old.load_state_dict(self.actor.state_dict())
-        memory.clear()
 
-        return total_loss
+        return total_loss / num_epochs

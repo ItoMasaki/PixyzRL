@@ -56,7 +56,7 @@ class BaseTrainer(ABC):
 class OnPolicyTrainer(BaseTrainer):
     """Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C)."""
 
-    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
+    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = "gae", device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
         """Initialize the on-policy trainer.
 
         Args:
@@ -124,6 +124,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
         """
         super().__init__(env, memory, agent, device, logger)
+        self.value_estimate = value_estimate
 
     def collect_experiences(self) -> None:
         """Collect experiences from the environment.
@@ -183,37 +184,55 @@ class OnPolicyTrainer(BaseTrainer):
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
         >>> trainer.collect_experiences()
         """
         obs, info = self.env.reset()
         done = False
         total_reward = 0
 
-        while len(self.memory) < self.memory.buffer_size - 1:
-            action = self.agent.select_action({"o": obs.to(self.device)})
+        with torch.no_grad():
+            while len(self.memory) < self.memory.buffer_size - 1:
+                if len(obs.shape) == 1:
+                    obs = obs.unsqueeze(0)
+                elif len(obs.shape) == 3:
+                    obs = obs.permute(2, 0, 1).unsqueeze(0) / 255.0
 
-            if self.env.is_discrete:
-                next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-                done = truncated or terminated
-            else:
-                next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu())
-                done = truncated or terminated
+                action = self.agent.select_action({"o": obs.to(self.device)})
 
-            self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
-            obs = next_obs
-            total_reward += reward
+                if self.env.is_discrete:
+                    next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
+                    done = truncated or terminated
+                else:
+                    next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
+                    done = truncated or terminated
+
+                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done.detach(), value=action[self.agent.critic.var[0]].cpu().detach())
+                obs = next_obs
+                total_reward += reward
+
+                if done:
+                    if self.logger:
+                        self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
+
+                    obs, info = self.env.reset()
+                    done = False
+                    total_reward = 0
 
             if self.logger:
                 self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
 
-            if done:
-                obs, info = self.env.reset()
-                done = False
-                total_reward = 0
+            if len(obs.shape) == 1:
+                obs = obs.unsqueeze(0)
+            elif len(obs.shape) == 3:
+                obs = obs.permute(2, 0, 1).unsqueeze(0)
 
-        action = self.agent.select_action({"o": obs.to(self.device)})
-        self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)
+            if self.value_estimate == "gae":
+                self.memory.compute_returns_and_advantages_gae()
+            elif self.value_estimate == "mc":
+                self.memory.compute_returns_and_advantages_mc()
+            else:
+                pass
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -> None:
         """Perform a single training step.
@@ -277,7 +296,7 @@ class OnPolicyTrainer(BaseTrainer):
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
         >>> trainer.collect_experiences()
         >>> trainer.train_model()
         """
@@ -287,7 +306,7 @@ class OnPolicyTrainer(BaseTrainer):
         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
 
         if self.logger:
-            self.logger.log(f"On-policy training step completed. Loss: {total_loss / num_epochs}")
+            self.logger.log(f"On-policy training step completed. Loss: {total_loss}")
 
     def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -> None:
         """Train the agent.
@@ -316,8 +335,9 @@ class OnPolicyTrainer(BaseTrainer):
         ...         super().__init__(var=["a"], cond_var=["o"], name="p")
         ...         self.net = nn.Sequential(
         ...             nn.LazyLinear(action_dim),
+        ...             nn.ReLU(),
         ...             nn.Softmax(dim=-1),
-        ...     )
+        ...         )
         ...     def forward(self, o: torch.Tensor):
         ...         probs = self.net(o)
         ...         return {"probs": probs}
@@ -352,13 +372,14 @@ class OnPolicyTrainer(BaseTrainer):
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
-        >>> trainer.train(10)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
+        >>> trainer.train(1)
         """
 
         for iteration in range(num_iterations):
             self.collect_experiences()
             self.train_model(batch_size, num_epochs)
+            self.memory.clear()
             if self.logger:
                 self.logger.log(f"On-policy Iteration {iteration + 1}/{num_iterations} completed.")
 
@@ -369,43 +390,57 @@ class OffPolicyTrainer(BaseTrainer):
     def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
         super().__init__(env, memory, agent, device, logger)
 
-    def collect_experiences(self) -> None:
-        obs, info = self.env.reset()
-        done = False
 
-        while not done:
-            action = self.agent.select_action({"o": obs.to(self.device)})
+#     def collect_experiences(self) -> None:
+#         obs, info = self.env.reset()
+#         done = False
 
-            if self.env.is_discrete:
-                next_obs, reward, done, _, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-            else:
-                next_obs, reward, done, _, _ = self.env.step(action[self.agent.action_var].cpu().numpy())
+#         while not done:
+#             action = self.agent.select_action({"o": obs.to(self.device)})
 
-            self.memory.add(obs=obs, action=action[self.agent.action_var].cpu().numpy(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
-            obs = next_obs
+#             if self.env.is_discrete:
+#                 next_obs, reward, done, _, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
+#             else:
+#                 next_obs, reward, done, _, _ = self.env.step(action[self.agent.action_var].cpu().numpy())
 
-        if self.logger:
-            self.logger.log("Collected off-policy experiences.")
+#             self.memory.add(obs=obs, action=action[self.agent.action_var].cpu().numpy(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
+#             obs = next_obs
 
-    def train_model(self, batch_size: int = 128, num_epochs: int = 4) -> None:
-        if len(self.memory) < self.memory.buffer_size:
-            return
+#         if self.logger:
+#             self.logger.log("Collected off-policy experiences.")
 
-        total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
+#     def train_model(self, batch_size: int = 128, num_epochs: int = 4) -> None:
+#         if len(self.memory) < self.memory.buffer_size:
+#             return
 
-        if self.logger:
-            self.logger.log(f"Off-policy training step completed. Loss: {total_loss / num_epochs}")
+#         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
 
-    def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 4) -> None:
-        for iteration in range(num_iterations):
-            self.collect_experiences()
-            self.train_model(batch_size, num_epochs)
-            if self.logger:
-                self.logger.log(f"Off-policy Iteration {iteration + 1}/{num_iterations} completed.")
+#         if self.logger:
+#             self.logger.log(f"Off-policy training step completed. Loss: {total_loss / num_epochs}")
+
+#     def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 4) -> None:
+#         for iteration in range(num_iterations):
+#             self.collect_experiences()
+#             self.train_model(batch_size, num_epochs)
+#             if self.logger:
+#                 self.logger.log(f"Off-policy Iteration {iteration + 1}/{num_iterations} completed.")
 
 
 def create_trainer(env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> BaseTrainer:
-    """Create a trainer based on the type of agent."""
+    """Create a trainer based on the type of agent.
+
+    Args:
+        env (BaseEnv): Environment.
+        memory (BaseBuffer): Replay buffer.
+        agent (RLModel): Reinforcement learning agent.
+        device (torch.device | str): Device to use.
+        logger (Logger | None): Logger to use.
+
+    Returns:
+        BaseTrainer: Trainer instance.
+
+    Example:
+    """
     if agent.is_on_policy:
         return OnPolicyTrainer(env, memory, agent, device, logger)
 

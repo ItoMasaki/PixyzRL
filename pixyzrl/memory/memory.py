@@ -4,7 +4,6 @@ from typing import Any
 import numpy as np
 import torch
 from numpy.typing import NDArray
-from pixyz.distributions import Distribution
 
 
 class BaseBuffer:
@@ -64,7 +63,7 @@ class BaseBuffer:
             if isinstance(v, np.ndarray):
                 v = torch.from_numpy(v).to(self.device)
 
-            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape)
+            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape).to(self.device)
 
     def sample(self, batch_size: int) -> dict[str, Any]:
         """Sample a batch of experiences.
@@ -88,10 +87,10 @@ class BaseBuffer:
             >>>
             >>> batch = buffer.sample(1)
             >>> len(batch["o"])
-            1
+            4
         """
         idx = torch.randint(0, self.pos - 1, (batch_size,))
-        return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}
+        return {self.key_mapping[k]: v[idx].to(self.device).detach().squeeze() for k, v in self.buffer.items()}
 
     def clear(self) -> None:
         """Clear the buffer.
@@ -133,11 +132,10 @@ class BaseBuffer:
         return self.pos
 
     @abstractmethod
-    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lam: float) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_gae(self) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
-            last_state (torch.Tensor): Last state of the trajectory.
             gamma (float): Discount factor.
             lam (float): Lambda factor for GAE.
             critic (Distribution): Critic distribution.
@@ -154,13 +152,12 @@ class BaseBuffer:
             ... }, "cpu", 1)
             >>>
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
-            >>> last_value = torch.zeros(1)
-            >>> buffer.compute_returns_and_advantages_gae(last_value, 0.99, 0.95)
+            >>> buffer.compute_returns_and_advantages_gae()
         """
         ...
 
     @abstractmethod
-    def compute_returns_and_advantages_mc(self, gamma: float) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_mc(self) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -180,7 +177,7 @@ class BaseBuffer:
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
             >>> last_value = torch.zeros(1)
             >>>
-            >>> buffer.compute_returns_and_advantages_mc(0.99)
+            >>> buffer.compute_returns_and_advantages_mc()
         """
         ...
 
@@ -214,7 +211,17 @@ class BaseBuffer:
 class RolloutBuffer(BaseBuffer):
     """Rollout buffer for storing trajectories."""
 
-    def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
+    def __init__(
+        self,
+        buffer_size: int,
+        env_dict: dict[str, Any],
+        device: str,
+        n_envs: int = 1,
+        reward_normalization: bool = False,
+        advantage_normalization: bool = False,
+        gamma: float = 0.99,
+        lam: float = 0.95,
+    ) -> None:
         """
         Initialize the replay buffer with flexible env_dict settings.
 
@@ -234,8 +241,15 @@ class RolloutBuffer(BaseBuffer):
         """
         super().__init__(buffer_size, env_dict, device, n_envs)
 
-    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lam: float) -> dict[str, torch.Tensor]:
+        self.reward_normalization = reward_normalization
+        self.advantage_normalization = advantage_normalization
+        self.gamma = gamma
+        self.lam = lam
+
+    def compute_returns_and_advantages_gae(self) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
+        E(t) = r(t) + gamma * V(t+1) * (1 - done) - V(t)
+        A(t) = gamma * lambda * (1 - done) * A(t+1) + E(t)
 
         Args:
             last_state (torch.Tensor): Last state of the trajectory.
@@ -260,36 +274,35 @@ class RolloutBuffer(BaseBuffer):
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
             >>>
             >>> last_value = torch.zeros(1)
-            >>> return_advantage = buffer.compute_returns_and_advantages_gae(last_value, 0.99, 0.95)
+            >>> return_advantage = buffer.compute_returns_and_advantages_gae()
             >>> "returns" in return_advantage and "advantages" in return_advantage
             True
         """
-        with torch.no_grad():
-            advantages = torch.zeros_like(self.buffer["reward"])
-            gae = 0.0
+        advantages = torch.zeros_like(self.buffer["reward"])
+        returns = torch.zeros_like(self.buffer["reward"])
 
-            for i in reversed(range(self.buffer_size)):
-                if i == self.buffer_size - 1:
-                    # バッチ末端の next_value は last_value（実装により異なる）
-                    next_value = last_value
-                    next_nonterminal = 1.0 - self.buffer["done"][i]
-                else:
-                    next_value = self.buffer["value"][i + 1]
-                    next_nonterminal = 1.0 - self.buffer["done"][i + 1]
+        self.buffer["value"][-1] = 0.0
+        self.buffer["reward"][-1] = 0.0
 
-                delta = self.buffer["reward"][i] + gamma * next_value * next_nonterminal - self.buffer["value"][i]
-                gae = delta + gamma * lam * next_nonterminal * gae
-                advantages[i] = gae
+        # GAE の再帰計算
+        for i in reversed(range(self.buffer_size - 1)):
+            # E(t) = r(t) + gamma * V(t+1) * (1 - done) - V(t)
+            delta = self.buffer["reward"][i] + self.gamma * self.buffer["value"][i + 1] * (not self.buffer["done"][i]) - self.buffer["value"][i]
+            advantages[i] = delta + self.gamma * self.lam * (1 - self.buffer["done"][i]) * advantages[i + 1]
+            returns[i] = advantages[i] + self.buffer["value"][i]
 
-            # 最終的にReturnを作る場合は以下
-            returns = advantages + self.buffer["value"]
+        # 価値関数の値を加えてリターンを計算
+        returns = (advantages + self.buffer["value"]).reshape(-1, 1)
+        advantages = advantages.reshape(-1, 1)
 
+        # 必要に応じて正規化
+        if self.advantage_normalization:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
 
-    def compute_returns_and_advantages_mc(self, gamma: float) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_mc(self) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -312,19 +325,23 @@ class RolloutBuffer(BaseBuffer):
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
             >>>
             >>> last_value = torch.zeros(1)
-            >>> return_advantage = buffer.compute_returns_and_advantages_mc(0.99)
+            >>> return_advantage = buffer.compute_returns_and_advantages_mc()
             >>> "returns" in return_advantage and "advantages" in return_advantage
             True
         """
         returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
         discounted_return = torch.zeros(self.n_envs, device=self.device)
+
         for i in reversed(range(self.buffer_size)):
-            discounted_return = self.buffer["reward"][i] + gamma * discounted_return * (1 - self.buffer["done"][i])
+            # E(t) = r(t) + gamma * V(t+1) * (1 - done) - V(t)
+            discounted_return = self.buffer["reward"][i] + self.gamma * discounted_return * (1 - self.buffer["done"][i])
             returns[i] = discounted_return
 
-        advantages = returns - self.buffer["value"]
+        returns = (returns - returns.mean()) / (returns.std() + 1e-8)
 
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+        advantages = returns - self.buffer["value"].reshape(-1, 1)
+        if self.advantage_normalization:
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
