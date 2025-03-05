@@ -334,6 +334,8 @@ class OnPolicyTrainer(BaseTrainer):
         ...     def __init__(self):
         ...         super().__init__(var=["a"], cond_var=["o"], name="p")
         ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(64),
+        ...             nn.ReLU(),
         ...             nn.LazyLinear(action_dim),
         ...             nn.ReLU(),
         ...             nn.Softmax(dim=-1),
@@ -346,6 +348,8 @@ class OnPolicyTrainer(BaseTrainer):
         ...     def __init__(self):
         ...         super().__init__(var=["v"], cond_var=["o"], name="f")
         ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(64),
+        ...             nn.ReLU(),
         ...             nn.LazyLinear(1),
         ...         )
         ...     def forward(self, o: torch.Tensor):
