@@ -389,43 +389,57 @@ class OffPolicyTrainer(BaseTrainer):
     def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
         super().__init__(env, memory, agent, device, logger)
 
-    def collect_experiences(self) -> None:
-        obs, info = self.env.reset()
-        done = False
 
-        while not done:
-            action = self.agent.select_action({"o": obs.to(self.device)})
+#     def collect_experiences(self) -> None:
+#         obs, info = self.env.reset()
+#         done = False
 
-            if self.env.is_discrete:
-                next_obs, reward, done, _, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-            else:
-                next_obs, reward, done, _, _ = self.env.step(action[self.agent.action_var].cpu().numpy())
+#         while not done:
+#             action = self.agent.select_action({"o": obs.to(self.device)})
 
-            self.memory.add(obs=obs, action=action[self.agent.action_var].cpu().numpy(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
-            obs = next_obs
+#             if self.env.is_discrete:
+#                 next_obs, reward, done, _, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
+#             else:
+#                 next_obs, reward, done, _, _ = self.env.step(action[self.agent.action_var].cpu().numpy())
 
-        if self.logger:
-            self.logger.log("Collected off-policy experiences.")
+#             self.memory.add(obs=obs, action=action[self.agent.action_var].cpu().numpy(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
+#             obs = next_obs
 
-    def train_model(self, batch_size: int = 128, num_epochs: int = 4) -> None:
-        if len(self.memory) < self.memory.buffer_size:
-            return
+#         if self.logger:
+#             self.logger.log("Collected off-policy experiences.")
 
-        total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
+#     def train_model(self, batch_size: int = 128, num_epochs: int = 4) -> None:
+#         if len(self.memory) < self.memory.buffer_size:
+#             return
 
-        if self.logger:
-            self.logger.log(f"Off-policy training step completed. Loss: {total_loss / num_epochs}")
+#         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
 
-    def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 4) -> None:
-        for iteration in range(num_iterations):
-            self.collect_experiences()
-            self.train_model(batch_size, num_epochs)
-            if self.logger:
-                self.logger.log(f"Off-policy Iteration {iteration + 1}/{num_iterations} completed.")
+#         if self.logger:
+#             self.logger.log(f"Off-policy training step completed. Loss: {total_loss / num_epochs}")
+
+#     def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 4) -> None:
+#         for iteration in range(num_iterations):
+#             self.collect_experiences()
+#             self.train_model(batch_size, num_epochs)
+#             if self.logger:
+#                 self.logger.log(f"Off-policy Iteration {iteration + 1}/{num_iterations} completed.")
 
 
 def create_trainer(env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> BaseTrainer:
-    """Create a trainer based on the type of agent."""
+    """Create a trainer based on the type of agent.
+
+    Args:
+        env (BaseEnv): Environment.
+        memory (BaseBuffer): Replay buffer.
+        agent (RLModel): Reinforcement learning agent.
+        device (torch.device | str): Device to use.
+        logger (Logger | None): Logger to use.
+
+    Returns:
+        BaseTrainer: Trainer instance.
+
+    Example:
+    """
     if agent.is_on_policy:
         return OnPolicyTrainer(env, memory, agent, device, logger)
 
