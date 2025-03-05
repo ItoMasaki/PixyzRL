@@ -119,7 +119,7 @@ el.replaceWith(d);
             if isinstance(v, np.ndarray):
                 v = torch.from_numpy(v).to(self.device)
 
-            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape)
+            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape).to(self.device)
 
     def sample(self, batch_size: int) -&gt; dict[str, Any]:
         &#34;&#34;&#34;Sample a batch of experiences.
@@ -143,10 +143,10 @@ el.replaceWith(d);
             &gt;&gt;&gt;
             &gt;&gt;&gt; batch = buffer.sample(1)
             &gt;&gt;&gt; len(batch[&#34;o&#34;])
-            1
+            4
         &#34;&#34;&#34;
         idx = torch.randint(0, self.pos - 1, (batch_size,))
-        return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}
+        return {self.key_mapping[k]: v[idx].to(self.device).detach().squeeze() for k, v in self.buffer.items()}
 
     def clear(self) -&gt; None:
         &#34;&#34;&#34;Clear the buffer.
@@ -188,11 +188,10 @@ el.replaceWith(d);
         return self.pos
 
     @abstractmethod
-    def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lam: float) -&gt; dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_gae(self) -&gt; dict[str, torch.Tensor]:
         &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
 
         Args:
-            last_state (torch.Tensor): Last state of the trajectory.
             gamma (float): Discount factor.
             lam (float): Lambda factor for GAE.
             critic (Distribution): Critic distribution.
@@ -209,13 +208,12 @@ el.replaceWith(d);
             ... }, &#34;cpu&#34;, 1)
             &gt;&gt;&gt;
             &gt;&gt;&gt; buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
-            &gt;&gt;&gt; last_value = torch.zeros(1)
-            &gt;&gt;&gt; buffer.compute_returns_and_advantages_gae(last_value, 0.99, 0.95)
+            &gt;&gt;&gt; buffer.compute_returns_and_advantages_gae()
         &#34;&#34;&#34;
         ...
 
     @abstractmethod
-    def compute_returns_and_advantages_mc(self, gamma: float) -&gt; dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_mc(self) -&gt; dict[str, torch.Tensor]:
         &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -235,7 +233,7 @@ el.replaceWith(d);
             &gt;&gt;&gt; buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
             &gt;&gt;&gt; last_value = torch.zeros(1)
             &gt;&gt;&gt;
-            &gt;&gt;&gt; buffer.compute_returns_and_advantages_mc(0.99)
+            &gt;&gt;&gt; buffer.compute_returns_and_advantages_mc()
         &#34;&#34;&#34;
         ...
 
@@ -326,7 +324,7 @@ el.replaceWith(d);
         if isinstance(v, np.ndarray):
             v = torch.from_numpy(v).to(self.device)
 
-        self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape)</code></pre>
+        self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape).to(self.device)</code></pre>
 </details>
 <div class="desc"><p>Add a new experience to the buffer.</p>
 <h2 id="args">Args</h2>
@@ -389,7 +387,7 @@ el.replaceWith(d);
 &gt;&gt;&gt; buffer.clear()</p></div>
 </dd>
 <dt id="pixyzrl.trainer.BaseBuffer.compute_returns_and_advantages_gae"><code class="name flex">
-<span>def <span class="ident">compute_returns_and_advantages_gae</span></span>(<span>self, last_value: torch.Tensor, gamma: float, lam: float) ‑> dict[str, torch.Tensor]</span>
+<span>def <span class="ident">compute_returns_and_advantages_gae</span></span>(<span>self) ‑> dict[str, torch.Tensor]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -397,11 +395,10 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: float, lam: float) -&gt; dict[str, torch.Tensor]:
+def compute_returns_and_advantages_gae(self) -&gt; dict[str, torch.Tensor]:
     &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
 
     Args:
-        last_state (torch.Tensor): Last state of the trajectory.
         gamma (float): Discount factor.
         lam (float): Lambda factor for GAE.
         critic (Distribution): Critic distribution.
@@ -418,16 +415,13 @@ def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: fl
         ... }, &#34;cpu&#34;, 1)
         &gt;&gt;&gt;
         &gt;&gt;&gt; buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
-        &gt;&gt;&gt; last_value = torch.zeros(1)
-        &gt;&gt;&gt; buffer.compute_returns_and_advantages_gae(last_value, 0.99, 0.95)
+        &gt;&gt;&gt; buffer.compute_returns_and_advantages_gae()
     &#34;&#34;&#34;
     ...</code></pre>
 </details>
 <div class="desc"><p>Compute returns and advantages for the stored trajectories.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>last_state</code></strong> :&ensp;<code>torch.Tensor</code></dt>
-<dd>Last state of the trajectory.</dd>
 <dt><strong><code>gamma</code></strong> :&ensp;<code>float</code></dt>
 <dd>Discount factor.</dd>
 <dt><strong><code>lam</code></strong> :&ensp;<code>float</code></dt>
@@ -449,12 +443,11 @@ def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: fl
 ... }, &quot;cpu&quot;, 1)
 &gt;&gt;&gt;
 &gt;&gt;&gt; buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
-&gt;&gt;&gt; last_value = torch.zeros(1)
-&gt;&gt;&gt; buffer.compute_returns_and_advantages_gae(last_value, 0.99, 0.95)
+&gt;&gt;&gt; buffer.compute_returns_and_advantages_gae()
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.trainer.BaseBuffer.compute_returns_and_advantages_mc"><code class="name flex">
-<span>def <span class="ident">compute_returns_and_advantages_mc</span></span>(<span>self, gamma: float) ‑> dict[str, torch.Tensor]</span>
+<span>def <span class="ident">compute_returns_and_advantages_mc</span></span>(<span>self) ‑> dict[str, torch.Tensor]</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -462,7 +455,7 @@ def compute_returns_and_advantages_gae(self, last_value: torch.Tensor, gamma: fl
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def compute_returns_and_advantages_mc(self, gamma: float) -&gt; dict[str, torch.Tensor]:
+def compute_returns_and_advantages_mc(self) -&gt; dict[str, torch.Tensor]:
     &#34;&#34;&#34;Compute returns and advantages for the stored trajectories.
 
     Args:
@@ -482,7 +475,7 @@ def compute_returns_and_advantages_mc(self, gamma: float) -&gt; dict[str, torch.
         &gt;&gt;&gt; buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
         &gt;&gt;&gt; last_value = torch.zeros(1)
         &gt;&gt;&gt;
-        &gt;&gt;&gt; buffer.compute_returns_and_advantages_mc(0.99)
+        &gt;&gt;&gt; buffer.compute_returns_and_advantages_mc()
     &#34;&#34;&#34;
     ...</code></pre>
 </details>
@@ -508,7 +501,7 @@ def compute_returns_and_advantages_mc(self, gamma: float) -&gt; dict[str, torch.
 &gt;&gt;&gt; buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
 &gt;&gt;&gt; last_value = torch.zeros(1)
 &gt;&gt;&gt;
-&gt;&gt;&gt; buffer.compute_returns_and_advantages_mc(0.99)
+&gt;&gt;&gt; buffer.compute_returns_and_advantages_mc()
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.trainer.BaseBuffer.compute_returns_and_advantages_n_step"><code class="name flex">
@@ -602,10 +595,10 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         &gt;&gt;&gt;
         &gt;&gt;&gt; batch = buffer.sample(1)
         &gt;&gt;&gt; len(batch[&#34;o&#34;])
-        1
+        4
     &#34;&#34;&#34;
     idx = torch.randint(0, self.pos - 1, (batch_size,))
-    return {self.key_mapping[k]: v[idx].to(self.device).detach() for k, v in self.buffer.items()}</code></pre>
+    return {self.key_mapping[k]: v[idx].to(self.device).detach().squeeze() for k, v in self.buffer.items()}</code></pre>
 </details>
 <div class="desc"><p>Sample a batch of experiences.</p>
 <h2 id="args">Args</h2>
@@ -631,7 +624,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 &gt;&gt;&gt;
 &gt;&gt;&gt; batch = buffer.sample(1)
 &gt;&gt;&gt; len(batch[&quot;o&quot;])
-1
+4
 </code></pre></div>
 </dd>
 </dl>
@@ -649,41 +642,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     &#34;&#34;&#34;Trainer class for off-policy reinforcement learning methods (e.g., DQN, DDPG).&#34;&#34;&#34;
 
     def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None) -&gt; None:
-        super().__init__(env, memory, agent, device, logger)
-
-    def collect_experiences(self) -&gt; None:
-        obs, info = self.env.reset()
-        done = False
-
-        while not done:
-            action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
-
-            if self.env.is_discrete:
-                next_obs, reward, done, _, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-            else:
-                next_obs, reward, done, _, _ = self.env.step(action[self.agent.action_var].cpu().numpy())
-
-            self.memory.add(obs=obs, action=action[self.agent.action_var].cpu().numpy(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
-            obs = next_obs
-
-        if self.logger:
-            self.logger.log(&#34;Collected off-policy experiences.&#34;)
-
-    def train_model(self, batch_size: int = 128, num_epochs: int = 4) -&gt; None:
-        if len(self.memory) &lt; self.memory.buffer_size:
-            return
-
-        total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
-
-        if self.logger:
-            self.logger.log(f&#34;Off-policy training step completed. Loss: {total_loss / num_epochs}&#34;)
-
-    def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 4) -&gt; None:
-        for iteration in range(num_iterations):
-            self.collect_experiences()
-            self.train_model(batch_size, num_epochs)
-            if self.logger:
-                self.logger.log(f&#34;Off-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)</code></pre>
+        super().__init__(env, memory, agent, device, logger)</code></pre>
 </details>
 <div class="desc"><p>Trainer class for off-policy reinforcement learning methods (e.g., DQN, DDPG).</p>
 <p>Initialize the trainer.</p>
@@ -705,26 +664,6 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 <li><a title="pixyzrl.trainer.trainer.BaseTrainer" href="trainer.html#pixyzrl.trainer.trainer.BaseTrainer">BaseTrainer</a></li>
 <li>abc.ABC</li>
 </ul>
-<h3>Methods</h3>
-<dl>
-<dt id="pixyzrl.trainer.OffPolicyTrainer.train"><code class="name flex">
-<span>def <span class="ident">train</span></span>(<span>self, num_iterations: int, batch_size: int = 128, num_epochs: int = 4) ‑> None</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 4) -&gt; None:
-    for iteration in range(num_iterations):
-        self.collect_experiences()
-        self.train_model(batch_size, num_epochs)
-        if self.logger:
-            self.logger.log(f&#34;Off-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)</code></pre>
-</details>
-<div class="desc"></div>
-</dd>
-</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="pixyzrl.trainer.trainer.BaseTrainer" href="trainer.html#pixyzrl.trainer.trainer.BaseTrainer">BaseTrainer</a></b></code>:
@@ -739,7 +678,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 </dd>
 <dt id="pixyzrl.trainer.OnPolicyTrainer"><code class="flex name class">
 <span>class <span class="ident">OnPolicyTrainer</span></span>
-<span>(</span><span>env: <a title="pixyzrl.environments.env.BaseEnv" href="../environments/env.html#pixyzrl.environments.env.BaseEnv">BaseEnv</a>,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>agent: <a title="pixyzrl.models.base_model.RLModel" href="../models/base_model.html#pixyzrl.models.base_model.RLModel">RLModel</a>,<br>device: torch.device | str = 'cpu',<br>logger: <a title="pixyzrl.logger.logger.Logger" href="../logger/logger.html#pixyzrl.logger.logger.Logger">Logger</a> | None = None)</span>
+<span>(</span><span>env: <a title="pixyzrl.environments.env.BaseEnv" href="../environments/env.html#pixyzrl.environments.env.BaseEnv">BaseEnv</a>,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>agent: <a title="pixyzrl.models.base_model.RLModel" href="../models/base_model.html#pixyzrl.models.base_model.RLModel">RLModel</a>,<br>value_estimate: str = 'gae',<br>device: torch.device | str = 'cpu',<br>logger: <a title="pixyzrl.logger.logger.Logger" href="../logger/logger.html#pixyzrl.logger.logger.Logger">Logger</a> | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -749,7 +688,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 <pre><code class="python">class OnPolicyTrainer(BaseTrainer):
     &#34;&#34;&#34;Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C).&#34;&#34;&#34;
 
-    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None) -&gt; None:
+    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = &#34;gae&#34;, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None) -&gt; None:
         &#34;&#34;&#34;Initialize the on-policy trainer.
 
         Args:
@@ -817,6 +756,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
         &#34;&#34;&#34;
         super().__init__(env, memory, agent, device, logger)
+        self.value_estimate = value_estimate
 
     def collect_experiences(self) -&gt; None:
         &#34;&#34;&#34;Collect experiences from the environment.
@@ -876,37 +816,55 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         ...     1,
         ... )
         &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
-        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
         &gt;&gt;&gt; trainer.collect_experiences()
         &#34;&#34;&#34;
         obs, info = self.env.reset()
         done = False
         total_reward = 0
 
-        while len(self.memory) &lt; self.memory.buffer_size - 1:
-            action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+        with torch.no_grad():
+            while len(self.memory) &lt; self.memory.buffer_size - 1:
+                if len(obs.shape) == 1:
+                    obs = obs.unsqueeze(0)
+                elif len(obs.shape) == 3:
+                    obs = obs.permute(2, 0, 1).unsqueeze(0) / 255.0
 
-            if self.env.is_discrete:
-                next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-                done = truncated or terminated
-            else:
-                next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu())
-                done = truncated or terminated
+                action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
 
-            self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
-            obs = next_obs
-            total_reward += reward
+                if self.env.is_discrete:
+                    next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
+                    done = truncated or terminated
+                else:
+                    next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
+                    done = truncated or terminated
+
+                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done.detach(), value=action[self.agent.critic.var[0]].cpu().detach())
+                obs = next_obs
+                total_reward += reward
+
+                if done:
+                    if self.logger:
+                        self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
+
+                    obs, info = self.env.reset()
+                    done = False
+                    total_reward = 0
 
             if self.logger:
                 self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
 
-            if done:
-                obs, info = self.env.reset()
-                done = False
-                total_reward = 0
+            if len(obs.shape) == 1:
+                obs = obs.unsqueeze(0)
+            elif len(obs.shape) == 3:
+                obs = obs.permute(2, 0, 1).unsqueeze(0)
 
-        action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
-        self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)
+            if self.value_estimate == &#34;gae&#34;:
+                self.memory.compute_returns_and_advantages_gae()
+            elif self.value_estimate == &#34;mc&#34;:
+                self.memory.compute_returns_and_advantages_mc()
+            else:
+                pass
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
         &#34;&#34;&#34;Perform a single training step.
@@ -970,7 +928,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         ...     1,
         ... )
         &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
-        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
         &gt;&gt;&gt; trainer.collect_experiences()
         &gt;&gt;&gt; trainer.train_model()
         &#34;&#34;&#34;
@@ -980,7 +938,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
 
         if self.logger:
-            self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss / num_epochs}&#34;)
+            self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss}&#34;)
 
     def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
         &#34;&#34;&#34;Train the agent.
@@ -1009,8 +967,9 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
         ...         self.net = nn.Sequential(
         ...             nn.LazyLinear(action_dim),
+        ...             nn.ReLU(),
         ...             nn.Softmax(dim=-1),
-        ...     )
+        ...         )
         ...     def forward(self, o: torch.Tensor):
         ...         probs = self.net(o)
         ...         return {&#34;probs&#34;: probs}
@@ -1045,13 +1004,14 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         ...     1,
         ... )
         &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
-        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
-        &gt;&gt;&gt; trainer.train(10)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
+        &gt;&gt;&gt; trainer.train(1)
         &#34;&#34;&#34;
 
         for iteration in range(num_iterations):
             self.collect_experiences()
             self.train_model(batch_size, num_epochs)
+            self.memory.clear()
             if self.logger:
                 self.logger.log(f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)</code></pre>
 </details>
@@ -1200,37 +1160,55 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     ...     1,
     ... )
     &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
-    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
     &gt;&gt;&gt; trainer.collect_experiences()
     &#34;&#34;&#34;
     obs, info = self.env.reset()
     done = False
     total_reward = 0
 
-    while len(self.memory) &lt; self.memory.buffer_size - 1:
-        action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+    with torch.no_grad():
+        while len(self.memory) &lt; self.memory.buffer_size - 1:
+            if len(obs.shape) == 1:
+                obs = obs.unsqueeze(0)
+            elif len(obs.shape) == 3:
+                obs = obs.permute(2, 0, 1).unsqueeze(0) / 255.0
 
-        if self.env.is_discrete:
-            next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-            done = truncated or terminated
-        else:
-            next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu())
-            done = truncated or terminated
+            action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
 
-        self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward, done=done, value=action[self.agent.critic.var[0]].cpu().detach())
-        obs = next_obs
-        total_reward += reward
+            if self.env.is_discrete:
+                next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
+                done = truncated or terminated
+            else:
+                next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
+                done = truncated or terminated
+
+            self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done.detach(), value=action[self.agent.critic.var[0]].cpu().detach())
+            obs = next_obs
+            total_reward += reward
+
+            if done:
+                if self.logger:
+                    self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
+
+                obs, info = self.env.reset()
+                done = False
+                total_reward = 0
 
         if self.logger:
             self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
 
-        if done:
-            obs, info = self.env.reset()
-            done = False
-            total_reward = 0
+        if len(obs.shape) == 1:
+            obs = obs.unsqueeze(0)
+        elif len(obs.shape) == 3:
+            obs = obs.permute(2, 0, 1).unsqueeze(0)
 
-    action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
-    self.memory.compute_returns_and_advantages_gae(action[self.agent.critic.var[0]].cpu(), 0.99, 0.95)</code></pre>
+        if self.value_estimate == &#34;gae&#34;:
+            self.memory.compute_returns_and_advantages_gae()
+        elif self.value_estimate == &#34;mc&#34;:
+            self.memory.compute_returns_and_advantages_mc()
+        else:
+            pass</code></pre>
 </details>
 <div class="desc"><p>Collect experiences from the environment.</p>
 <p>Example:</p>
@@ -1288,7 +1266,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 ...     1,
 ... )
 &gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
-&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;, logger)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;)
 &gt;&gt;&gt; trainer.collect_experiences()
 </code></pre></div>
 </dd>
@@ -1327,8 +1305,9 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
     ...         self.net = nn.Sequential(
     ...             nn.LazyLinear(action_dim),
+    ...             nn.ReLU(),
     ...             nn.Softmax(dim=-1),
-    ...     )
+    ...         )
     ...     def forward(self, o: torch.Tensor):
     ...         probs = self.net(o)
     ...         return {&#34;probs&#34;: probs}
@@ -1363,13 +1342,14 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     ...     1,
     ... )
     &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
-    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
-    &gt;&gt;&gt; trainer.train(10)
+    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
+    &gt;&gt;&gt; trainer.train(1)
     &#34;&#34;&#34;
 
     for iteration in range(num_iterations):
         self.collect_experiences()
         self.train_model(batch_size, num_epochs)
+        self.memory.clear()
         if self.logger:
             self.logger.log(f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)</code></pre>
 </details>
@@ -1402,8 +1382,9 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 ...         super().__init__(var=[&quot;a&quot;], cond_var=[&quot;o&quot;], name=&quot;p&quot;)
 ...         self.net = nn.Sequential(
 ...             nn.LazyLinear(action_dim),
+...             nn.ReLU(),
 ...             nn.Softmax(dim=-1),
-...     )
+...         )
 ...     def forward(self, o: torch.Tensor):
 ...         probs = self.net(o)
 ...         return {&quot;probs&quot;: probs}
@@ -1438,8 +1419,8 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 ...     1,
 ... )
 &gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
-&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;, logger)
-&gt;&gt;&gt; trainer.train(10)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;)
+&gt;&gt;&gt; trainer.train(1)
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.trainer.OnPolicyTrainer.train_model"><code class="name flex">
@@ -1512,7 +1493,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     ...     1,
     ... )
     &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
-    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;, logger)
+    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
     &gt;&gt;&gt; trainer.collect_experiences()
     &gt;&gt;&gt; trainer.train_model()
     &#34;&#34;&#34;
@@ -1522,7 +1503,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
 
     if self.logger:
-        self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss / num_epochs}&#34;)</code></pre>
+        self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss}&#34;)</code></pre>
 </details>
 <div class="desc"><p>Perform a single training step.</p>
 <h2 id="args">Args</h2>
@@ -1587,7 +1568,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 ...     1,
 ... )
 &gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
-&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;, logger)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;)
 &gt;&gt;&gt; trainer.collect_experiences()
 &gt;&gt;&gt; trainer.train_model()
 </code></pre></div>
@@ -1636,9 +1617,6 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 </li>
 <li>
 <h4><code><a title="pixyzrl.trainer.OffPolicyTrainer" href="#pixyzrl.trainer.OffPolicyTrainer">OffPolicyTrainer</a></code></h4>
-<ul class="">
-<li><code><a title="pixyzrl.trainer.OffPolicyTrainer.train" href="#pixyzrl.trainer.OffPolicyTrainer.train">train</a></code></li>
-</ul>
 </li>
 <li>
 <h4><code><a title="pixyzrl.trainer.OnPolicyTrainer" href="#pixyzrl.trainer.OnPolicyTrainer">OnPolicyTrainer</a></code></h4>

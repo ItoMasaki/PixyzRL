@@ -138,7 +138,7 @@ el.replaceWith(d);
 </dd>
 <dt id="pixyzrl.models.on_policy.PPO"><code class="flex name class">
 <span>class <span class="ident">PPO</span></span>
-<span>(</span><span>actor: pixyz.distributions.distributions.Distribution,<br>critic: pixyz.distributions.distributions.Distribution,<br>shared_net: pixyz.distributions.distributions.Distribution | None = None,<br>eps_clip: float = 0.2,<br>lr_actor: float = 0.0003,<br>lr_critic: float = 0.001,<br>device: str = 'cpu',<br>mse_coef: float = 0.5,<br>entropy_coef: float = 0.01,<br>action_var: str = 'a')</span>
+<span>(</span><span>actor: pixyz.distributions.distributions.Distribution,<br>critic: pixyz.distributions.distributions.Distribution,<br>shared_net: pixyz.distributions.distributions.Distribution | None = None,<br>eps_clip: float = 0.2,<br>lr_actor: float = 0.0001,<br>lr_critic: float = 0.0003,<br>device: str = 'cpu',<br>mse_coef: float = 0.5,<br>entropy_coef: float = 0.01,<br>action_var: str = 'a')</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -154,8 +154,8 @@ el.replaceWith(d);
         critic: dists.Distribution,
         shared_net: dists.Distribution | None = None,
         eps_clip: float = 0.2,
-        lr_actor: float = 3e-4,
-        lr_critic: float = 1e-3,
+        lr_actor: float = 1e-4,
+        lr_critic: float = 3e-4,
         device: str = &#34;cpu&#34;,
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
@@ -307,9 +307,8 @@ el.replaceWith(d);
             total_loss += loss
 
         self.actor_old.load_state_dict(self.actor.state_dict())
-        memory.clear()
 
-        return total_loss</code></pre>
+        return total_loss / num_epochs</code></pre>
 </details>
 <div class="desc"><p>PPO agent using Pixyz.</p>
 <p>Initialize the PPO agent.</p>
@@ -492,9 +491,8 @@ torch.Size([1, 128])
         total_loss += loss
 
     self.actor_old.load_state_dict(self.actor.state_dict())
-    memory.clear()
 
-    return total_loss</code></pre>
+    return total_loss / num_epochs</code></pre>
 </details>
 <div class="desc"><p>Perform a single training step.</p>
 <h2 id="args">Args</h2>

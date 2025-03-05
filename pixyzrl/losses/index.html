@@ -238,8 +238,8 @@ deterministically calcurated loss and updated all samples.</p></div>
 
     def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
         &#34;&#34;&#34;Forward pass.&#34;&#34;&#34;
-        loss = self.mse(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var].squeeze()).mean()
-
+        pred = self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze()
+        loss = self.mse(pred, x_dict[self.var].squeeze())
         return loss, {}</code></pre>
 </details>
 <div class="desc"><p>Mean Square Error.</p>
@@ -280,8 +280,8 @@ torch.Size([])
 </summary>
 <pre><code class="python">def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
     &#34;&#34;&#34;Forward pass.&#34;&#34;&#34;
-    loss = self.mse(self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze(), x_dict[self.var].squeeze()).mean()
-
+    pred = self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze()
+    loss = self.mse(pred, x_dict[self.var].squeeze())
     return loss, {}</code></pre>
 </details>
 <div class="desc"><p>Forward pass.</p></div>
