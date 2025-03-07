@@ -6,7 +6,9 @@ from typing import Any
 import gymnasium as gym
 import numpy as np
 import torch
-from gymnasium.spaces import Box, Discrete, Space
+from gymnasium.spaces import Box, Discrete, MultiDiscrete, Space
+from matplotlib import axis
+from matplotlib import pyplot as plt
 
 
 class BaseEnv(ABC):
@@ -29,9 +31,11 @@ class BaseEnv(ABC):
         self._action_space = Space()
         self._is_discrete = False
         self._num_envs = num_envs
+        self._env = None
+        self._render_mode = "rgb_array"
 
     @abstractmethod
-    def reset(self) -> tuple[torch.Tensor, dict[str, Any]]:
+    def reset(self, **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
         """Reset the environment."""
         ...
 
@@ -70,11 +74,19 @@ class BaseEnv(ABC):
         """Return whether the action space is discrete."""
         return self._is_discrete
 
+    @property
+    def env(self):
+        return self._env
+
+    @property
+    def render_mode(self):
+        return self._render_mode
+
 
 class Env(BaseEnv):
     """Standard single Gym environment wrapper."""
 
-    def __init__(self, env_name: str, env_num: int = 1, action_var: str = "a", seed: int = 42, render_mode: str = "human") -> None:
+    def __init__(self, env_name: str, num_envs: int = 1, action_var: str = "a", seed: int = 42, render_mode: str = "human") -> None:
         """
         Initialize the environment.
 
@@ -87,17 +99,23 @@ class Env(BaseEnv):
         Examples:
             >>> env = Env("CartPole-v1")
         """
-        super().__init__(env_name, num_envs=1, seed=seed)
-        self._env = gym.make(env_name, render_mode=render_mode)
+        super().__init__(env_name, num_envs=num_envs, seed=seed)
+
+        if num_envs > 1:
+            self._env = gym.make_vec(env_name, num_envs=num_envs, render_mode=render_mode, vectorization_mode="sync")
+        else:
+            self._env = gym.make(env_name, render_mode=render_mode)
+
         self.action_var = action_var
+        self._render_mode = render_mode
         self._env.reset(seed=seed)
 
-        self._env_num = env_num
+        self._num_envs = num_envs
         self._observation_space = self._env.observation_space
         self._action_space = self._env.action_space
         self._is_discrete = isinstance(self._env.action_space, Discrete)
 
-    def reset(self) -> tuple[torch.Tensor, dict[str, Any]]:
+    def reset(self, **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
         """Reset the environment.
 
         Returns:
@@ -107,7 +125,7 @@ class Env(BaseEnv):
             >>> env = Env("CartPole-v1")
             >>> obs, info = env.reset()
         """
-        obs, info = self._env.reset(seed=self.seed)
+        obs, info = self._env.reset(seed=self.seed, options=kwargs)
         return torch.Tensor(obs), info
 
     def step(self, action: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
@@ -133,11 +151,14 @@ class Env(BaseEnv):
         if isinstance(action, torch.Tensor):
             action = action.detach().cpu().numpy()
 
+        if isinstance(self._env.action_space, Discrete | MultiDiscrete):
+            action = np.argmax(action, axis=-1)
+
         elif isinstance(self._env.action_space, Box):
             action = np.clip(action, self._env.action_space.low, self._env.action_space.high)  # 連続値を制限
 
         obs, reward, terminated, truncated, info = self._env.step(action)
-        return torch.Tensor(obs), torch.Tensor([reward]), torch.Tensor([terminated]), torch.Tensor([truncated]), info
+        return torch.Tensor(obs), torch.Tensor([reward] if isinstance(reward, float) else reward).reshape(-1, 1), torch.Tensor([terminated] if isinstance(terminated, bool) else terminated).reshape(-1, 1), torch.Tensor([truncated] if isinstance(truncated, bool) else truncated).reshape(-1, 1), info
 
     def close(self) -> None:
         """Close the environment.
@@ -155,4 +176,14 @@ class Env(BaseEnv):
             >>> env = Env("CartPole-v1")
             >>> env.render()
         """
-        self._env.render()
+        frames = self._env.render()
+
+        if frames is None:
+            return
+
+        if self._render_mode == "rgb_array":
+            plt.cla()
+            plt.clf()
+            plt.imshow(np.array(frames).mean(axis=0).astype(np.uint8))
+            plt.axis("off")
+            plt.pause(0.01)

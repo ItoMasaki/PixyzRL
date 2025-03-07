@@ -192,6 +192,7 @@ class OnPolicyTrainer(BaseTrainer):
         total_reward = 0
 
         with torch.no_grad():
+            # Collect on-policy experiences
             while len(self.memory) < self.memory.buffer_size - 1:
                 if len(obs.shape) == 1:
                     obs = obs.unsqueeze(0)
@@ -199,40 +200,42 @@ class OnPolicyTrainer(BaseTrainer):
                     obs = obs.permute(2, 0, 1).unsqueeze(0) / 255.0
 
                 action = self.agent.select_action({"o": obs.to(self.device)})
+                next_obs, reward, truncated, terminated, info = self.env.step(action[self.agent.action_var].cpu().squeeze().numpy())
+                done = torch.logical_or(truncated, terminated)
 
-                if self.env.is_discrete:
-                    next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-                    done = truncated or terminated
-                else:
-                    next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
-                    done = truncated or terminated
-
-                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done.detach(), value=action[self.agent.critic.var[0]].cpu().detach())
+                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done, value=action[self.agent.critic.var[0]].cpu().detach())
                 obs = next_obs
-                total_reward += reward
 
-                if done:
-                    if self.logger:
-                        self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
+                total_reward += reward.detach().numpy().astype(float)
+                total_reward *= 1 - done.detach().numpy().astype(bool)
+                if self.logger:
+                    self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.squeeze()}")
 
-                    obs, info = self.env.reset()
-                    done = False
-                    total_reward = 0
+                if done.detach().numpy().astype(bool).any() and self.env.num_envs == 1:
+                    obs, info = self.env.reset(reset_mask=done.detach().numpy().astype(bool))
 
-            if self.logger:
-                self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.detach().item()}")
+                if self.env.render_mode == "rgb_array":
+                    self.env.render()
 
+            # Preprocess the collected experiences
             if len(obs.shape) == 1:
                 obs = obs.unsqueeze(0)
             elif len(obs.shape) == 3:
                 obs = obs.permute(2, 0, 1).unsqueeze(0)
 
             if self.value_estimate == "gae":
+                if self.logger:
+                    self.logger.log("Computing GAE returns and advantages.")
                 self.memory.compute_returns_and_advantages_gae()
             elif self.value_estimate == "mc":
+                if self.logger:
+                    self.logger.log("Computing Monte Carlo returns and advantages.")
                 self.memory.compute_returns_and_advantages_mc()
             else:
-                pass
+                if self.logger:
+                    self.logger.log("Invalid value estimate method. Using GAE instead.")
+
+                self.memory.compute_returns_and_advantages_gae()
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -> None:
         """Perform a single training step.

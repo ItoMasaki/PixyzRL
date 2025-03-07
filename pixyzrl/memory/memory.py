@@ -37,7 +37,29 @@ class BaseBuffer:
         self.pos = 0
 
         for k, v in env_dict.items():
-            self.buffer[k] = torch.empty((buffer_size, n_envs, *v["shape"]), dtype=v.get("dtype", torch.float32), device=device)
+            self.buffer[k] = torch.ones((buffer_size, n_envs, *v["shape"]), dtype=v.get("dtype", torch.float32), device=device)
+
+    def __len__(self) -> int:
+        """Return the number of stored experiences.
+
+        Returns:
+            int: Number of stored experiences.
+
+        Example:
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>>
+            >>> len(buffer)
+            2
+        """
+        return self.pos * self.n_envs
 
     def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -> None:
         """Add a new experience to the buffer.
@@ -58,12 +80,14 @@ class BaseBuffer:
             >>> done = np.random.rand(1)
             >>> buffer.add(obs=obs, action=action, reward=reward, done=done)
         """
-        self.pos = (self.pos + 1) % self.buffer_size
+        self.pos = self.pos % self.buffer_size
         for k, v in kwargs.items():
             if isinstance(v, np.ndarray):
                 v = torch.from_numpy(v).to(self.device)
 
-            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape).to(self.device)
+            self.buffer[k][self.pos] = v.reshape(self.n_envs, *self.env_dict[k]["shape"]).to(self.device)
+
+        self.pos += 1
 
     def sample(self, batch_size: int) -> dict[str, Any]:
         """Sample a batch of experiences.
@@ -89,8 +113,9 @@ class BaseBuffer:
             >>> len(batch["o"])
             4
         """
-        idx = torch.randint(0, self.pos - 1, (batch_size,))
-        return {self.key_mapping[k]: v[idx].to(self.device).detach().squeeze() for k, v in self.buffer.items()}
+        idx = torch.randint(0, self.pos - 1, (batch_size,), device=self.device)
+        env_idx = torch.randint(0, self.n_envs, (batch_size,), device=self.device)
+        return {self.key_mapping[k]: v[idx, env_idx].reshape(batch_size, *self.env_dict[k]["shape"]).to(self.device).detach() for k, v in self.buffer.items()}
 
     def clear(self) -> None:
         """Clear the buffer.
@@ -108,28 +133,6 @@ class BaseBuffer:
         for k in self.buffer:
             self.buffer[k].zero_()
         self.pos = 0
-
-    def __len__(self) -> int:
-        """Return the number of stored experiences.
-
-        Returns:
-            int: Number of stored experiences.
-
-        Example:
-            >>> buffer = BaseBuffer(1000, {
-            ...     "obs": {"shape": (4,), "map": "o"},
-            ...     "action": {"shape": (1,), "map": "a"},
-            ...     "reward": {"shape": (1,), "map": "r"},
-            ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
-            >>>
-            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
-            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
-            >>>
-            >>> len(buffer)
-            2
-        """
-        return self.pos
 
     @abstractmethod
     def compute_returns_and_advantages_gae(self) -> dict[str, torch.Tensor]:
@@ -287,13 +290,12 @@ class RolloutBuffer(BaseBuffer):
         # GAE の再帰計算
         for i in reversed(range(self.buffer_size - 1)):
             # E(t) = r(t) + gamma * V(t+1) * (1 - done) - V(t)
-            delta = self.buffer["reward"][i] + self.gamma * self.buffer["value"][i + 1] * (not self.buffer["done"][i]) - self.buffer["value"][i]
+            delta = self.buffer["reward"][i] + self.gamma * self.buffer["value"][i + 1] * (1 - self.buffer["done"][i]) - self.buffer["value"][i]
             advantages[i] = delta + self.gamma * self.lam * (1 - self.buffer["done"][i]) * advantages[i + 1]
             returns[i] = advantages[i] + self.buffer["value"][i]
 
         # 価値関数の値を加えてリターンを計算
-        returns = (advantages + self.buffer["value"]).reshape(-1, 1)
-        advantages = advantages.reshape(-1, 1)
+        returns = advantages + self.buffer["value"]
 
         # 必要に応じて正規化
         if self.advantage_normalization:
@@ -339,7 +341,7 @@ class RolloutBuffer(BaseBuffer):
 
         returns = (returns - returns.mean()) / (returns.std() + 1e-8)
 
-        advantages = returns - self.buffer["value"].reshape(-1, 1)
+        advantages = returns - self.buffer["value"]
         if self.advantage_normalization:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
