@@ -93,7 +93,29 @@ el.replaceWith(d);
         self.pos = 0
 
         for k, v in env_dict.items():
-            self.buffer[k] = torch.empty((buffer_size, n_envs, *v[&#34;shape&#34;]), dtype=v.get(&#34;dtype&#34;, torch.float32), device=device)
+            self.buffer[k] = torch.ones((buffer_size, n_envs, *v[&#34;shape&#34;]), dtype=v.get(&#34;dtype&#34;, torch.float32), device=device)
+
+    def __len__(self) -&gt; int:
+        &#34;&#34;&#34;Return the number of stored experiences.
+
+        Returns:
+            int: Number of stored experiences.
+
+        Example:
+            &gt;&gt;&gt; buffer = BaseBuffer(1000, {
+            ...     &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+            ...     &#34;action&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;a&#34;},
+            ...     &#34;reward&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+            ...     &#34;done&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;d&#34;}
+            ... }, &#34;cpu&#34;, 1)
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            &gt;&gt;&gt; buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            &gt;&gt;&gt;
+            &gt;&gt;&gt; len(buffer)
+            2
+        &#34;&#34;&#34;
+        return self.pos * self.n_envs
 
     def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -&gt; None:
         &#34;&#34;&#34;Add a new experience to the buffer.
@@ -114,12 +136,14 @@ el.replaceWith(d);
             &gt;&gt;&gt; done = np.random.rand(1)
             &gt;&gt;&gt; buffer.add(obs=obs, action=action, reward=reward, done=done)
         &#34;&#34;&#34;
-        self.pos = (self.pos + 1) % self.buffer_size
+        self.pos = self.pos % self.buffer_size
         for k, v in kwargs.items():
             if isinstance(v, np.ndarray):
                 v = torch.from_numpy(v).to(self.device)
 
-            self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape).to(self.device)
+            self.buffer[k][self.pos] = v.reshape(self.n_envs, *self.env_dict[k][&#34;shape&#34;]).to(self.device)
+
+        self.pos += 1
 
     def sample(self, batch_size: int) -&gt; dict[str, Any]:
         &#34;&#34;&#34;Sample a batch of experiences.
@@ -143,10 +167,11 @@ el.replaceWith(d);
             &gt;&gt;&gt;
             &gt;&gt;&gt; batch = buffer.sample(1)
             &gt;&gt;&gt; len(batch[&#34;o&#34;])
-            4
+            1
         &#34;&#34;&#34;
-        idx = torch.randint(0, self.pos - 1, (batch_size,))
-        return {self.key_mapping[k]: v[idx].to(self.device).detach().squeeze() for k, v in self.buffer.items()}
+        idx = torch.randint(0, self.pos - 1, (batch_size,), device=self.device)
+        env_idx = torch.randint(0, self.n_envs, (batch_size,), device=self.device)
+        return {self.key_mapping[k]: v[idx, env_idx].reshape(batch_size, *self.env_dict[k][&#34;shape&#34;]).to(self.device).detach() for k, v in self.buffer.items()}
 
     def clear(self) -&gt; None:
         &#34;&#34;&#34;Clear the buffer.
@@ -164,28 +189,6 @@ el.replaceWith(d);
         for k in self.buffer:
             self.buffer[k].zero_()
         self.pos = 0
-
-    def __len__(self) -&gt; int:
-        &#34;&#34;&#34;Return the number of stored experiences.
-
-        Returns:
-            int: Number of stored experiences.
-
-        Example:
-            &gt;&gt;&gt; buffer = BaseBuffer(1000, {
-            ...     &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
-            ...     &#34;action&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;a&#34;},
-            ...     &#34;reward&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
-            ...     &#34;done&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;d&#34;}
-            ... }, &#34;cpu&#34;, 1)
-            &gt;&gt;&gt;
-            &gt;&gt;&gt; buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
-            &gt;&gt;&gt; buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
-            &gt;&gt;&gt;
-            &gt;&gt;&gt; len(buffer)
-            2
-        &#34;&#34;&#34;
-        return self.pos
 
     @abstractmethod
     def compute_returns_and_advantages_gae(self) -&gt; dict[str, torch.Tensor]:
@@ -319,12 +322,14 @@ el.replaceWith(d);
         &gt;&gt;&gt; done = np.random.rand(1)
         &gt;&gt;&gt; buffer.add(obs=obs, action=action, reward=reward, done=done)
     &#34;&#34;&#34;
-    self.pos = (self.pos + 1) % self.buffer_size
+    self.pos = self.pos % self.buffer_size
     for k, v in kwargs.items():
         if isinstance(v, np.ndarray):
             v = torch.from_numpy(v).to(self.device)
 
-        self.buffer[k][self.pos] = v.reshape(self.n_envs, *v.shape).to(self.device)</code></pre>
+        self.buffer[k][self.pos] = v.reshape(self.n_envs, *self.env_dict[k][&#34;shape&#34;]).to(self.device)
+
+    self.pos += 1</code></pre>
 </details>
 <div class="desc"><p>Add a new experience to the buffer.</p>
 <h2 id="args">Args</h2>
@@ -595,10 +600,11 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         &gt;&gt;&gt;
         &gt;&gt;&gt; batch = buffer.sample(1)
         &gt;&gt;&gt; len(batch[&#34;o&#34;])
-        4
+        1
     &#34;&#34;&#34;
-    idx = torch.randint(0, self.pos - 1, (batch_size,))
-    return {self.key_mapping[k]: v[idx].to(self.device).detach().squeeze() for k, v in self.buffer.items()}</code></pre>
+    idx = torch.randint(0, self.pos - 1, (batch_size,), device=self.device)
+    env_idx = torch.randint(0, self.n_envs, (batch_size,), device=self.device)
+    return {self.key_mapping[k]: v[idx, env_idx].reshape(batch_size, *self.env_dict[k][&#34;shape&#34;]).to(self.device).detach() for k, v in self.buffer.items()}</code></pre>
 </details>
 <div class="desc"><p>Sample a batch of experiences.</p>
 <h2 id="args">Args</h2>
@@ -624,7 +630,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
 &gt;&gt;&gt;
 &gt;&gt;&gt; batch = buffer.sample(1)
 &gt;&gt;&gt; len(batch[&quot;o&quot;])
-4
+1
 </code></pre></div>
 </dd>
 </dl>
@@ -824,6 +830,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
         total_reward = 0
 
         with torch.no_grad():
+            # Collect on-policy experiences
             while len(self.memory) &lt; self.memory.buffer_size - 1:
                 if len(obs.shape) == 1:
                     obs = obs.unsqueeze(0)
@@ -831,40 +838,42 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
                     obs = obs.permute(2, 0, 1).unsqueeze(0) / 255.0
 
                 action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+                next_obs, reward, truncated, terminated, info = self.env.step(action[self.agent.action_var].cpu().squeeze().numpy())
+                done = torch.logical_or(truncated, terminated)
 
-                if self.env.is_discrete:
-                    next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-                    done = truncated or terminated
-                else:
-                    next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
-                    done = truncated or terminated
-
-                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done.detach(), value=action[self.agent.critic.var[0]].cpu().detach())
+                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done, value=action[self.agent.critic.var[0]].cpu().detach())
                 obs = next_obs
-                total_reward += reward
 
-                if done:
-                    if self.logger:
-                        self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
+                total_reward += reward.detach().numpy().astype(float)
+                total_reward *= 1 - done.detach().numpy().astype(bool)
+                if self.logger:
+                    self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.squeeze()}&#34;)
 
-                    obs, info = self.env.reset()
-                    done = False
-                    total_reward = 0
+                if done.detach().numpy().astype(bool).any() and self.env.num_envs == 1:
+                    obs, info = self.env.reset(reset_mask=done.detach().numpy().astype(bool))
 
-            if self.logger:
-                self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
+                if self.env.render_mode == &#34;rgb_array&#34;:
+                    self.env.render()
 
+            # Preprocess the collected experiences
             if len(obs.shape) == 1:
                 obs = obs.unsqueeze(0)
             elif len(obs.shape) == 3:
                 obs = obs.permute(2, 0, 1).unsqueeze(0)
 
             if self.value_estimate == &#34;gae&#34;:
+                if self.logger:
+                    self.logger.log(&#34;Computing GAE returns and advantages.&#34;)
                 self.memory.compute_returns_and_advantages_gae()
             elif self.value_estimate == &#34;mc&#34;:
+                if self.logger:
+                    self.logger.log(&#34;Computing Monte Carlo returns and advantages.&#34;)
                 self.memory.compute_returns_and_advantages_mc()
             else:
-                pass
+                if self.logger:
+                    self.logger.log(&#34;Invalid value estimate method. Using GAE instead.&#34;)
+
+                self.memory.compute_returns_and_advantages_gae()
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
         &#34;&#34;&#34;Perform a single training step.
@@ -1172,6 +1181,7 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
     total_reward = 0
 
     with torch.no_grad():
+        # Collect on-policy experiences
         while len(self.memory) &lt; self.memory.buffer_size - 1:
             if len(obs.shape) == 1:
                 obs = obs.unsqueeze(0)
@@ -1179,40 +1189,42 @@ def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -&gt;
                 obs = obs.permute(2, 0, 1).unsqueeze(0) / 255.0
 
             action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+            next_obs, reward, truncated, terminated, info = self.env.step(action[self.agent.action_var].cpu().squeeze().numpy())
+            done = torch.logical_or(truncated, terminated)
 
-            if self.env.is_discrete:
-                next_obs, reward, truncated, terminated, _ = self.env.step(torch.argmax(action[self.agent.action_var].cpu()))
-                done = truncated or terminated
-            else:
-                next_obs, reward, truncated, terminated, _ = self.env.step(action[self.agent.action_var].cpu().squeeze())
-                done = truncated or terminated
-
-            self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done.detach(), value=action[self.agent.critic.var[0]].cpu().detach())
+            self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done, value=action[self.agent.critic.var[0]].cpu().detach())
             obs = next_obs
-            total_reward += reward
 
-            if done:
-                if self.logger:
-                    self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
+            total_reward += reward.detach().numpy().astype(float)
+            total_reward *= 1 - done.detach().numpy().astype(bool)
+            if self.logger:
+                self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.squeeze()}&#34;)
 
-                obs, info = self.env.reset()
-                done = False
-                total_reward = 0
+            if done.detach().numpy().astype(bool).any() and self.env.num_envs == 1:
+                obs, info = self.env.reset(reset_mask=done.detach().numpy().astype(bool))
 
-        if self.logger:
-            self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.detach().item()}&#34;)
+            if self.env.render_mode == &#34;rgb_array&#34;:
+                self.env.render()
 
+        # Preprocess the collected experiences
         if len(obs.shape) == 1:
             obs = obs.unsqueeze(0)
         elif len(obs.shape) == 3:
             obs = obs.permute(2, 0, 1).unsqueeze(0)
 
         if self.value_estimate == &#34;gae&#34;:
+            if self.logger:
+                self.logger.log(&#34;Computing GAE returns and advantages.&#34;)
             self.memory.compute_returns_and_advantages_gae()
         elif self.value_estimate == &#34;mc&#34;:
+            if self.logger:
+                self.logger.log(&#34;Computing Monte Carlo returns and advantages.&#34;)
             self.memory.compute_returns_and_advantages_mc()
         else:
-            pass</code></pre>
+            if self.logger:
+                self.logger.log(&#34;Invalid value estimate method. Using GAE instead.&#34;)
+
+            self.memory.compute_returns_and_advantages_gae()</code></pre>
 </details>
 <div class="desc"><p>Collect experiences from the environment.</p>
 <p>Example:</p>
