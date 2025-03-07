@@ -111,7 +111,7 @@ class BaseBuffer:
             >>>
             >>> batch = buffer.sample(1)
             >>> len(batch["o"])
-            4
+            1
         """
         idx = torch.randint(0, self.pos - 1, (batch_size,), device=self.device)
         env_idx = torch.randint(0, self.n_envs, (batch_size,), device=self.device)
