@@ -106,5 +106,5 @@ buffer = RolloutBuffer(
 
 logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
 
-trainer = OnPolicyTrainer(env, buffer, ppo, "mps", logger=logger)
+trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
 trainer.train(1000, 1024, 10)
