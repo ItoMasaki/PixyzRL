@@ -7,7 +7,6 @@ import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium.spaces import Box, Discrete, MultiDiscrete, Space
-from matplotlib import axis
 from matplotlib import pyplot as plt
 
 
@@ -75,11 +74,13 @@ class BaseEnv(ABC):
         return self._is_discrete
 
     @property
-    def env(self):
+    def env(self) -> gym.Env[Any, Any] | None:
+        """Return the gym environment."""
         return self._env
 
     @property
-    def render_mode(self):
+    def render_mode(self) -> str:
+        """Return the rendering mode."""
         return self._render_mode
 
 

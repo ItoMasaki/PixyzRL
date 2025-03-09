@@ -61,7 +61,7 @@ class BaseBuffer:
         """
         return self.pos * self.n_envs
 
-    def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -> None:
+    def add(self, **kwargs: dict[str, torch.Tensor]) -> None:
         """Add a new experience to the buffer.
 
         Args:
