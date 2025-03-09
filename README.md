@@ -148,6 +148,10 @@ trainer = OnPolicyTrainer(env, buffer, agent, "cpu")
 trainer.train(1000)
 ```
 
+
+https://github.com/user-attachments/assets/2a7f50fc-6786-4e9c-832b-ca04e130c6f1
+
+
 ## Directory Structure
 
 ```text
