@@ -290,7 +290,7 @@ def train_model(self) -&gt; None:
 </dd>
 <dt id="pixyzrl.trainer.trainer.OnPolicyTrainer"><code class="flex name class">
 <span>class <span class="ident">OnPolicyTrainer</span></span>
-<span>(</span><span>env: <a title="pixyzrl.environments.env.BaseEnv" href="../environments/env.html#pixyzrl.environments.env.BaseEnv">BaseEnv</a>,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>agent: <a title="pixyzrl.models.base_model.RLModel" href="../models/base_model.html#pixyzrl.models.base_model.RLModel">RLModel</a>,<br>value_estimate: str = 'gae',<br>device: torch.device | str = 'cpu',<br>logger: <a title="pixyzrl.logger.logger.Logger" href="../logger/logger.html#pixyzrl.logger.logger.Logger">Logger</a> | None = None)</span>
+<span>(</span><span>env: <a title="pixyzrl.environments.env.BaseEnv" href="../environments/env.html#pixyzrl.environments.env.BaseEnv">BaseEnv</a>,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>agent: <a title="pixyzrl.models.base_model.RLModel" href="../models/base_model.html#pixyzrl.models.base_model.RLModel">RLModel</a>,<br>value_estimate: str = 'gae',<br>device: torch.device | str = 'cpu',<br>logger: <a title="pixyzrl.logger.logger.Logger" href="../logger/logger.html#pixyzrl.logger.logger.Logger">Logger</a> | None = None,<br>transform: torchvision.transforms.transforms.Compose | None = None)</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -300,7 +300,7 @@ def train_model(self) -&gt; None:
 <pre><code class="python">class OnPolicyTrainer(BaseTrainer):
     &#34;&#34;&#34;Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C).&#34;&#34;&#34;
 
-    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = &#34;gae&#34;, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None) -&gt; None:
+    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = &#34;gae&#34;, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None, transform: Compose | None = None) -&gt; None:
         &#34;&#34;&#34;Initialize the on-policy trainer.
 
         Args:
@@ -369,6 +369,7 @@ def train_model(self) -&gt; None:
         &#34;&#34;&#34;
         super().__init__(env, memory, agent, device, logger)
         self.value_estimate = value_estimate
+        self.transform = transform
 
     def collect_experiences(self) -&gt; None:
         &#34;&#34;&#34;Collect experiences from the environment.
@@ -462,6 +463,9 @@ def train_model(self) -&gt; None:
                     self.env.render()
 
             # Preprocess the collected experiences
+            # if self.transform:
+            #     obs = self.transform
+
             if len(obs.shape) == 1:
                 obs = obs.unsqueeze(0)
             elif len(obs.shape) == 3:
@@ -478,7 +482,6 @@ def train_model(self) -&gt; None:
             else:
                 if self.logger:
                     self.logger.log(&#34;Invalid value estimate method. Using GAE instead.&#34;)
-
                 self.memory.compute_returns_and_advantages_gae()
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
@@ -813,6 +816,9 @@ def train_model(self) -&gt; None:
                 self.env.render()
 
         # Preprocess the collected experiences
+        # if self.transform:
+        #     obs = self.transform
+
         if len(obs.shape) == 1:
             obs = obs.unsqueeze(0)
         elif len(obs.shape) == 3:
@@ -829,7 +835,6 @@ def train_model(self) -&gt; None:
         else:
             if self.logger:
                 self.logger.log(&#34;Invalid value estimate method. Using GAE instead.&#34;)
-
             self.memory.compute_returns_and_advantages_gae()</code></pre>
 </details>
 <div class="desc"><p>Collect experiences from the environment.</p>

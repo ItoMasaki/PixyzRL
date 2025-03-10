@@ -117,7 +117,7 @@ el.replaceWith(d);
         &#34;&#34;&#34;
         return self.pos * self.n_envs
 
-    def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -&gt; None:
+    def add(self, **kwargs: dict[str, torch.Tensor]) -&gt; None:
         &#34;&#34;&#34;Add a new experience to the buffer.
 
         Args:
@@ -296,14 +296,14 @@ el.replaceWith(d);
 <h3>Methods</h3>
 <dl>
 <dt id="pixyzrl.memory.BaseBuffer.add"><code class="name flex">
-<span>def <span class="ident">add</span></span>(<span>self,<br>**kwargs: dict[str, torch.Tensor | numpy.ndarray[tuple[int, ...], numpy.dtype[typing.Any]]]) ‑> None</span>
+<span>def <span class="ident">add</span></span>(<span>self, **kwargs: dict[str, torch.Tensor]) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def add(self, **kwargs: dict[str, torch.Tensor | NDArray[Any]]) -&gt; None:
+<pre><code class="python">def add(self, **kwargs: dict[str, torch.Tensor]) -&gt; None:
     &#34;&#34;&#34;Add a new experience to the buffer.
 
     Args:
