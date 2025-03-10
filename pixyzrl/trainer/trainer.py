@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 
 import torch
+from torchvision.transforms import Compose
 
 from pixyzrl.environments import BaseEnv
 from pixyzrl.logger import Logger
@@ -56,7 +57,7 @@ class BaseTrainer(ABC):
 class OnPolicyTrainer(BaseTrainer):
     """Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C)."""
 
-    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = "gae", device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
+    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = "gae", device: torch.device | str = "cpu", logger: Logger | None = None, transform: Compose | None = None) -> None:
         """Initialize the on-policy trainer.
 
         Args:
@@ -125,6 +126,7 @@ class OnPolicyTrainer(BaseTrainer):
         """
         super().__init__(env, memory, agent, device, logger)
         self.value_estimate = value_estimate
+        self.transform = transform
 
     def collect_experiences(self) -> None:
         """Collect experiences from the environment.
@@ -218,6 +220,9 @@ class OnPolicyTrainer(BaseTrainer):
                     self.env.render()
 
             # Preprocess the collected experiences
+            # if self.transform:
+            #     obs = self.transform
+
             if len(obs.shape) == 1:
                 obs = obs.unsqueeze(0)
             elif len(obs.shape) == 3:
@@ -234,7 +239,6 @@ class OnPolicyTrainer(BaseTrainer):
             else:
                 if self.logger:
                     self.logger.log("Invalid value estimate method. Using GAE instead.")
-
                 self.memory.compute_returns_and_advantages_gae()
 
     def train_model(self, batch_size: int = 128, num_epochs: int = 40) -> None:
