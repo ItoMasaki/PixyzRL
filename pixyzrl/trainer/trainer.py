@@ -209,9 +209,10 @@ class OnPolicyTrainer(BaseTrainer):
                 obs = next_obs
 
                 total_reward += reward.detach().numpy().astype(float)
-                total_reward *= 1 - done.detach().numpy().astype(bool)
                 if self.logger:
-                    self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.squeeze()}")
+                    self.logger.log(f"Collected on-policy experiences. Total reward: {total_reward.squeeze().round(2)}")
+
+                total_reward *= 1 - done.detach().numpy().astype(bool)
 
                 if done.detach().numpy().astype(bool).any() and self.env.num_envs == 1:
                     obs, info = self.env.reset(reset_mask=done.detach().numpy().astype(bool))
