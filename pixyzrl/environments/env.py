@@ -272,6 +272,7 @@ class Env(BaseEnv):
         elif isinstance(self._env.action_space, Box):
             action = np.clip(action, self._env.action_space.low, self._env.action_space.high)  # 連続値を制限
 
+        print(action)
         obs, reward, terminated, truncated, info = self._env.step(action)
         return torch.Tensor(obs), torch.Tensor([reward] if isinstance(reward, float) else reward).reshape(-1, 1), torch.Tensor([terminated] if isinstance(terminated, bool) else terminated).reshape(-1, 1), torch.Tensor([truncated] if isinstance(truncated, bool) else truncated).reshape(-1, 1), info
 
