@@ -325,6 +325,7 @@ def step(self, action: Any) -&gt; tuple[torch.Tensor, torch.Tensor, torch.Tensor
             self._env = gym.make_vec(env_name, num_envs=num_envs, render_mode=render_mode, vectorization_mode=&#34;sync&#34;)
         else:
             self._env = gym.make(env_name, render_mode=render_mode)
+        # self._env = BipedalRobotEnv()
 
         self.action_var = action_var
         self._render_mode = render_mode
