@@ -269,11 +269,11 @@ class Env(BaseEnv):
         if isinstance(self._env.action_space, Discrete | MultiDiscrete):
             action = np.argmax(action, axis=-1)
 
-        elif isinstance(self._env.action_space, Box):
-            action = np.clip(action, self._env.action_space.low, self._env.action_space.high)  # 連続値を制限
+        # elif isinstance(self._env.action_space, Box):
+        #     action = np.clip(action, self._env.action_space.low, self._env.action_space.high)  # 連続値を制限
 
         obs, reward, terminated, truncated, info = self._env.step(action)
-        return torch.Tensor(obs), torch.Tensor([reward] if isinstance(reward, float) else reward).reshape(-1, 1), torch.Tensor([terminated] if isinstance(terminated, bool) else terminated).reshape(-1, 1), torch.Tensor([truncated] if isinstance(truncated, bool) else truncated).reshape(-1, 1), info
+        return torch.Tensor(obs), torch.Tensor([reward] if isinstance(reward, float | int) else reward).reshape(-1, 1), torch.Tensor([terminated] if isinstance(terminated, bool) else terminated).reshape(-1, 1), torch.Tensor([truncated] if isinstance(truncated, bool) else truncated).reshape(-1, 1), info
 
     def close(self) -> None:
         """Close the environment.
