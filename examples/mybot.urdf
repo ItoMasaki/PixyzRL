@@ -9,7 +9,7 @@
   <material name="red">
     <color rgba="1 0 0 1"/>
   </material>
-
+<!-- 
   <link name="camera">
     <visual>
       <geometry>
@@ -18,12 +18,6 @@
       </geometry>
       <material name="red" />
     </visual>
-    <collision>
-      <geometry>
-        <box size="0.1 0.1 0.1"/>
-        <origin rpy="0 0 0" xyz="0 0 0"/>
-      </geometry>    
-    </collision>
     <inertial>
       <mass value="0.1"/>
       <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
@@ -34,7 +28,7 @@
     <origin rpy="0 0 0" xyz="0 -0.25 0"/>
     <parent link="base_link"/>
     <child link="camera"/>
-  </joint>
+  </joint> -->
 
   <link name="base_link">
     <visual>
@@ -51,7 +45,7 @@
       </geometry>
     </collision>
     <inertial>
-      <mass value="1"/>
+      <mass value="0.1"/>
       <inertia ixx="0.1" ixy="0" ixz="0" iyy="0.1" iyz="0" izz="0.1"/>
     </inertial>
   </link>
@@ -300,8 +294,6 @@
     <origin rpy="0 0 -0.885" xyz="0.09 -0.09 0"/>
     <parent link="link5"/>
     <child link="link7"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="1" lower="-0.065" upper="0.565"/>
   </joint>
 
   <link name="link8">
@@ -328,8 +320,6 @@
     <origin rpy="0 0 -0.885" xyz="0.09 -0.09 0"/>
     <parent link="link6"/>
     <child link="link8"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="1" lower="-0.065" upper="0.565"/>
   </joint>
 
   <link name="link9">
@@ -412,8 +402,6 @@
     <origin rpy="0 0 -0.75" xyz="-0.05 0.06 0"/>
     <parent link="link9"/>
     <child link="link11"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="1" lower="-0.065" upper="0.565"/>
   </joint>
 
   <link name="link12">
@@ -440,8 +428,6 @@
     <origin rpy="0 0 -0.75" xyz="-0.05 0.06 0"/>
     <parent link="link10"/>
     <child link="link12"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="1" lower="-0.065" upper="0.565"/>
   </joint>
 
   <link name="link13">
@@ -524,8 +510,6 @@
     <origin rpy="0 0 -0.42" xyz="-0.05 -0.03 -0.01"/>
     <parent link="link13"/>
     <child link="link15"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="1" lower="-0.465" upper="0.165"/>
   </joint>
 
   <link name="link16">
@@ -552,7 +536,5 @@
     <origin rpy="0 0 -0.42" xyz="-0.05 -0.03 0.01"/>
     <parent link="link14"/>
     <child link="link16"/>
-    <axis xyz="0 0 1"/>
-    <limit effort="100" velocity="1" lower="-0.465" upper="0.165"/>
   </joint>
 </robot>
