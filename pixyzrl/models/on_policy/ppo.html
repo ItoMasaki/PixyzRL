@@ -118,7 +118,6 @@ el.replaceWith(d);
         self.eps_clip = eps_clip
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
-        self.device = device
         self._is_on_policy = True
         self._action_var = action_var
 
@@ -127,8 +126,8 @@ el.replaceWith(d);
 
         # Actor network
         self.actor = actor
-        self.actor_old = deepcopy(actor)
-        self.actor_old.name = &#34;old&#34;
+        self.actor_old = deepcopy(actor).to(device)
+        self.actor_old.name += &#34;_{old}&#34;
 
         # Critic network
         self.critic = critic
@@ -147,11 +146,14 @@ el.replaceWith(d);
 
         super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []), optimizer=Adam, optimizer_params={})
 
+        for dist in self.distributions:
+            dist.to(device)
+
         # Optimizer
         self.optimizer = torch.optim.Adam(
             [
-                {&#34;params&#34;: self.actor.parameters(), &#34;lr&#34;: self.lr_actor},
-                {&#34;params&#34;: self.critic.parameters(), &#34;lr&#34;: self.lr_critic},
+                {&#34;params&#34;: self.actor.parameters(), &#34;lr&#34;: self.lr_actor, &#34;clip_grad_value&#34;: 0.5, &#34;clip_grad_norm&#34;: 0.5},
+                {&#34;params&#34;: self.critic.parameters(), &#34;lr&#34;: self.lr_critic, &#34;clip_grad_value&#34;: 0.5, &#34;clip_grad_norm&#34;: 0.5},
             ],
         )
 
