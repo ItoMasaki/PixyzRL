@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 class BaseBuffer:
     """Base class for replay buffers."""
 
-    def __init__(self, buffer_size: int, env_dict: dict[str, Any], device: str, n_envs: int = 1) -> None:
+    def __init__(self, buffer_size: int, env_dict: dict[str, Any], n_envs: int = 1) -> None:
         """
         Initialize the replay buffer with flexible env_dict settings.
 
@@ -29,15 +29,32 @@ class BaseBuffer:
         """
         self.buffer = {}
 
+        self._device = "cpu"
         self.buffer_size = buffer_size
         self.env_dict = env_dict
         self.key_mapping = {k: v.get("map", k) for k, v in env_dict.items()}
-        self.device = device
         self.n_envs = n_envs
         self.pos = 0
+        self.setup_buffer("cpu")
 
-        for k, v in env_dict.items():
-            self.buffer[k] = torch.ones((buffer_size, n_envs, *v["shape"]), dtype=v.get("dtype", torch.float32), device=device)
+    def setup_buffer(self, device: str) -> None:
+        """Setup the replay buffer with the specified device.
+
+        Args:
+            device (str): Device to store the replay buffer.
+
+        Example:
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, 1)
+            >>>
+            >>> buffer.setup_buffer("cpu")
+        """
+        for k, v in self.env_dict.items():
+            self.buffer[k] = torch.ones((self.buffer_size, self.n_envs, *v["shape"]), dtype=v.get("dtype", torch.float32), device=device)
 
     def __len__(self) -> int:
         """Return the number of stored experiences.
@@ -210,6 +227,30 @@ class BaseBuffer:
         """
         ...
 
+    @property
+    def device(self) -> str:
+        return self._device
+
+    @device.setter
+    def device(self, device: str) -> None:
+        """Set the device of the replay buffer.
+
+        Args:
+            device (str): Device to store the replay buffer.
+
+        Example:
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, "cpu", 1)
+            >>>
+            >>> buffer.device = "cpu"
+        """
+        self.setup_buffer(device)
+        self._device = device
+
 
 class RolloutBuffer(BaseBuffer):
     """Rollout buffer for storing trajectories."""
@@ -218,7 +259,6 @@ class RolloutBuffer(BaseBuffer):
         self,
         buffer_size: int,
         env_dict: dict[str, Any],
-        device: str,
         n_envs: int = 1,
         reward_normalization: bool = False,
         advantage_normalization: bool = False,
@@ -242,7 +282,7 @@ class RolloutBuffer(BaseBuffer):
             ...     "done": {"shape": (1,), "map": "d"}
             ... }, "cpu", 1)
         """
-        super().__init__(buffer_size, env_dict, device, n_envs)
+        super().__init__(buffer_size, env_dict, n_envs)
 
         self.reward_normalization = reward_normalization
         self.advantage_normalization = advantage_normalization

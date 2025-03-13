@@ -9,7 +9,7 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 from pixyzrl.utils import print_latex
 
-env = Env("BipedalWalker-v3", 10, render_mode="rgb_array")
+env = Env("BipedalWalker-v3", 10, render_mode="")
 # action_dim = env.action_space.shape[0]
 
 
@@ -105,4 +105,4 @@ buffer = RolloutBuffer(
 logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
 
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
-trainer.train(1000, 1024, 10)
+trainer.train(10000, 1024, 10)
