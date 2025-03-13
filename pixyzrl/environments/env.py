@@ -10,7 +10,7 @@ import pybullet as p
 import pybullet_data as pd
 import torch
 from gymnasium import spaces
-from gymnasium.spaces import Box, Discrete, MultiDiscrete, Space
+from gymnasium.spaces import Discrete, MultiDiscrete, Space
 from matplotlib import pyplot as plt
 from numpy.typing import NDArray
 
@@ -177,9 +177,16 @@ class BaseEnv(ABC):
         return self._observation_space
 
     @property
-    def action_space(self) -> Space[Any]:
-        """Return action space."""
-        return self._action_space
+    def action_space(self) -> int:
+        """Return the size of the action space."""
+        if hasattr(self._action_space, "shape") and self._action_space.shape is not None:
+            return self._action_space.shape[-1]
+        if isinstance(self._action_space, Discrete):
+            return int(self._action_space.n)
+        if isinstance(self._action_space, MultiDiscrete):
+            return int(np.prod(self._action_space.nvec))
+        msg = "Unsupported action space type"
+        raise ValueError(msg)
 
     @property
     def is_discrete(self) -> bool:
@@ -219,7 +226,6 @@ class Env(BaseEnv):
             self._env = gym.make_vec(env_name, num_envs=num_envs, render_mode=render_mode, vectorization_mode="sync")
         else:
             self._env = gym.make(env_name, render_mode=render_mode)
-        # self._env = BipedalRobotEnv()
 
         self.action_var = action_var
         self._render_mode = render_mode
@@ -268,9 +274,6 @@ class Env(BaseEnv):
 
         if isinstance(self._env.action_space, Discrete | MultiDiscrete):
             action = np.argmax(action, axis=-1)
-
-        # elif isinstance(self._env.action_space, Box):
-        #     action = np.clip(action, self._env.action_space.low, self._env.action_space.high)  # 連続値を制限
 
         obs, reward, terminated, truncated, info = self._env.step(action)
         return torch.Tensor(obs), torch.Tensor([reward] if isinstance(reward, float | int) else reward).reshape(-1, 1), torch.Tensor([terminated] if isinstance(terminated, bool) else terminated).reshape(-1, 1), torch.Tensor([truncated] if isinstance(truncated, bool) else truncated).reshape(-1, 1), info

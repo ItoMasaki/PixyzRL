@@ -9,7 +9,7 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 
 env = Env("CartPole-v1")
-action_dim = env.action_space.n
+action_dim = env.action_space
 
 
 class Actor(Categorical):

@@ -75,7 +75,6 @@ class PPO(RLModel):
         self.eps_clip = eps_clip
         self.lr_actor = lr_actor
         self.lr_critic = lr_critic
-        self.device = device
         self._is_on_policy = True
         self._action_var = action_var
 
@@ -84,8 +83,8 @@ class PPO(RLModel):
 
         # Actor network
         self.actor = actor
-        self.actor_old = deepcopy(actor)
-        self.actor_old.name = "old"
+        self.actor_old = deepcopy(actor).to(device)
+        self.actor_old.name += "_{old}"
 
         # Critic network
         self.critic = critic
@@ -104,11 +103,14 @@ class PPO(RLModel):
 
         super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []), optimizer=Adam, optimizer_params={})
 
+        for dist in self.distributions:
+            dist.to(device)
+
         # Optimizer
         self.optimizer = torch.optim.Adam(
             [
-                {"params": self.actor.parameters(), "lr": self.lr_actor},
-                {"params": self.critic.parameters(), "lr": self.lr_critic},
+                {"params": self.actor.parameters(), "lr": self.lr_actor, "clip_grad_value": 0.5, "clip_grad_norm": 0.5},
+                {"params": self.critic.parameters(), "lr": self.lr_critic, "clip_grad_value": 0.5, "clip_grad_norm": 0.5},
             ],
         )
 
