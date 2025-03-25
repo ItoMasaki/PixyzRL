@@ -11,6 +11,11 @@
 
 [Documentation](https://docs.pixyz.io) | [Examples](https://github.com/ItoMasaki/PixyzRL/tree/main/examples) | [GitHub](https://github.com/ItoMasaki/PixyzRL)
 
+|bipedal-walker-v3|lunar-lander-v3|
+|:-:|:-:|
+|<video src="https://github.com/user-attachments/assets/72045515-8c56-4308-acd8-6aca48915024"/>|<video src="https://github.com/user-attachments/assets/aba4af68-1ded-4578-b463-529f0f6d0cde"/>|
+
+
 ## What is PixyzRL?
 
 [**PixyzRL**](https://github.com/ItoMasaki/PixyzRL) is a reinforcement learning (RL) framework based on **probabilistic generative models** and **Bayesian theory**. Built on top of the [Pixyz](https://github.com/masa-su/pixyz) library, it provides a modular and flexible design to enable uncertainty-aware decision-making and improve sample efficiency. PixyzRL supports:
@@ -147,14 +152,6 @@ mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1
 trainer = OnPolicyTrainer(env, buffer, agent, "cpu")
 trainer.train(1000)
 ```
-
-
-https://github.com/user-attachments/assets/2a7f50fc-6786-4e9c-832b-ca04e130c6f1
-
-
-Bipedal Walker v3
-
-https://github.com/user-attachments/assets/f8822d12-2105-46be-be1e-47b1b5a673fa
 
 
 ## Directory Structure
