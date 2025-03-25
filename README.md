@@ -152,6 +152,11 @@ trainer.train(1000)
 https://github.com/user-attachments/assets/2a7f50fc-6786-4e9c-832b-ca04e130c6f1
 
 
+Bipedal Walker v3
+
+https://github.com/user-attachments/assets/f8822d12-2105-46be-be1e-47b1b5a673fa
+
+
 ## Directory Structure
 
 ```text
