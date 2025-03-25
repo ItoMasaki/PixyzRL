@@ -1,3 +1,3 @@
-from .losses import ClipLoss, MSELoss, RatioLoss, ppo
+from .losses import ClipLoss, MSELoss, PPOClipLoss, RatioLoss, ValueClipLoss
 
-__all__ = ["ClipLoss", "MSELoss", "RatioLoss", "ppo"]
+__all__ = ["ClipLoss", "MSELoss", "RatioLoss", "PPOClipLoss", "ValueClipLoss"]

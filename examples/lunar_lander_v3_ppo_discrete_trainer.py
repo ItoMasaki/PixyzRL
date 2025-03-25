@@ -9,7 +9,7 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 from pixyzrl.utils import print_latex
 
-env = Env("CartPole-v1", 2, render_mode="rgb_array")
+env = Env("LunarLander-v3", 2, render_mode="rgb_array")
 action_dim = env.action_space
 obs_dim = env.observation_space
 
@@ -115,8 +115,8 @@ buffer = RolloutBuffer(
     gamma=0.99,
 )
 
-logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
+logger = Logger("lunar_lander_v3_ppo_discrete_trainer", log_types=["print"])
 
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
 # trainer.load_model("cartpole_v1_ppo_discrete_trainer/model_1200.pt")
-trainer.train(1000000, 32, 10, save_interval=50, test_interval=1)
+trainer.train(1000000, 32, 10, save_interval=50, test_interval=10)

@@ -45,7 +45,7 @@ class Logger:
         Examples:
             >>> logger = Logger(log_dir="logs", log_types=["print", "file"])
         """
-        self.log_dir = log_dir
+        self._log_dir = log_dir
         Path(log_dir).mkdir(parents=True, exist_ok=True)
 
         if log_types is None:
@@ -186,3 +186,12 @@ class Logger:
         with self.lock:
             if self.writer:
                 self.writer.close()
+
+    @property
+    def log_dir(self) -> str:
+        """Return the log directory.
+
+        Returns:
+            str: Log directory.
+        """
+        return self._log_dir
