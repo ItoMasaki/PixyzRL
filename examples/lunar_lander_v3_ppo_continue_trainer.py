@@ -1,5 +1,5 @@
 import torch
-from pixyz.distributions import Categorical, Deterministic
+from pixyz.distributions import Deterministic, Normal
 from torch import nn
 
 from pixyzrl.environments import Env
@@ -9,78 +9,79 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 from pixyzrl.utils import print_latex
 
-env = Env("CartPole-v1", 2, render_mode="rgb_array")
+env = Env("LunarLander-v3", 10, render_mode="rgb_array", continuous=True)
 action_dim = env.action_space
 obs_dim = env.observation_space
 
 
-class FeatureExtractor(Deterministic):
+class Actor(Normal):
     def __init__(self):
-        super().__init__(var=["s"], cond_var=["o"])
+        super().__init__(var=["a"], cond_var=["o"], name="p")
 
-        self._net = nn.Sequential(
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.LazyLinear(64),
-            nn.ReLU(),
+        self.feature_extract = nn.Sequential(
+            nn.LazyLinear(256),
+            nn.SiLU(),
+            nn.LazyLinear(256),
+            nn.SiLU(),
+        )
+
+        self._loc = nn.Sequential(
+            nn.LazyLinear(256),
+            nn.Tanh(),
+            nn.LazyLinear(action_dim),
+            nn.Tanh(),
+        )
+
+        self._scale = nn.Sequential(
+            nn.LazyLinear(256),
+            nn.Tanh(),
+            nn.LazyLinear(action_dim),
+            nn.Softplus(),
         )
 
     def forward(self, o: torch.Tensor):
-        return {"s": self._net(o)}
-
-
-class Actor(Categorical):
-    def __init__(self):
-        super().__init__(var=["a"], cond_var=["s"], name="p")
-
-        self._prob = nn.Sequential(
-            nn.Linear(64, 64),
-            nn.Tanh(),
-            nn.Linear(64, action_dim),
-            nn.Softmax(dim=-1),
-        )
-
-    def forward(self, s: torch.Tensor):
-        probs = self._prob(s)
-        return {"probs": probs}
+        h = self.feature_extract(o)
+        loc = self._loc(h)
+        scale = self._scale(h) + 1e-5
+        return {"loc": loc, "scale": scale}
 
 
 class Critic(Deterministic):
     def __init__(self):
-        super().__init__(var=["v"], cond_var=["s"], name="f")
+        super().__init__(var=["v"], cond_var=["o"], name="f")
 
         self.net = nn.Sequential(
-            nn.Linear(64, 64),
-            nn.Tanh(),
-            nn.Linear(64, 1),
+            nn.LazyLinear(256),
+            nn.SiLU(),
+            nn.LazyLinear(256),
+            nn.SiLU(),
+            nn.LazyLinear(256),
+            nn.SiLU(),
+            nn.LazyLinear(1),
         )
 
-    def forward(self, s: torch.Tensor):
-        v = self.net(s)
+    def forward(self, o: torch.Tensor):
+        v = self.net(o)
         return {"v": v}
 
 
 actor = Actor()
 critic = Critic()
-extractor = FeatureExtractor()
 
 ppo = PPO(
     actor,
     critic,
-    extractor,
     entropy_coef=0.01,
     mse_coef=0.5,
-    lr_actor=1e-4,
-    lr_critic=3e-4,
+    lr_actor=0.00003,
+    lr_critic=0.0001,
     device="mps",
     # clip_grad_norm=0.5,
 )
 print_latex(ppo)
 
 buffer = RolloutBuffer(
-    1024,
+    10240,
     {
         "obs": {
             "shape": (*obs_dim,),
@@ -109,14 +110,14 @@ buffer = RolloutBuffer(
             "map": "A",
         },
     },
-    2,
+    10,
     advantage_normalization=True,
     lam=0.95,
     gamma=0.99,
 )
 
-logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
+logger = Logger("lunar_lander_v3_ppo_continue_trainer", log_types=["print"])
 
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
 # trainer.load_model("cartpole_v1_ppo_discrete_trainer/model_1200.pt")
-trainer.train(1000000, 32, 10, save_interval=50, test_interval=1)
+trainer.train(1000000, 1024, 10, save_interval=50, test_interval=10)

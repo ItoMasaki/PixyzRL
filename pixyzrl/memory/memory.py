@@ -1,15 +1,22 @@
+import re
 from abc import abstractmethod
 from typing import Any
 
 import numpy as np
 import torch
-from numpy.typing import NDArray
+from more_itertools import last
+from pixyz.distributions import Distribution
+from torch.utils.data import Dataset
+
+import pixyzrl
 
 
-class BaseBuffer:
+class BaseBuffer(Dataset):
     """Base class for replay buffers."""
 
-    def __init__(self, buffer_size: int, env_dict: dict[str, Any], n_envs: int = 1) -> None:
+    def __init__(
+        self, buffer_size: int, env_dict: dict[str, Any], n_envs: int = 1
+    ) -> None:
         """
         Initialize the replay buffer with flexible env_dict settings.
 
@@ -25,7 +32,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
         """
         self.buffer = {}
 
@@ -54,7 +61,11 @@ class BaseBuffer:
             >>> buffer.setup_buffer("cpu")
         """
         for k, v in self.env_dict.items():
-            self.buffer[k] = torch.ones((self.buffer_size, self.n_envs, *v["shape"]), dtype=v.get("dtype", torch.float32), device=device)
+            self.buffer[k] = torch.ones(
+                (self.buffer_size, self.n_envs, *v["shape"]),
+                dtype=v.get("dtype", torch.float32),
+                device=device,
+            )
 
     def __len__(self) -> int:
         """Return the number of stored experiences.
@@ -68,7 +79,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
             >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
@@ -77,6 +88,38 @@ class BaseBuffer:
             2
         """
         return self.pos * self.n_envs
+
+    def __getitem__(self, idx: int) -> dict[str, torch.Tensor]:
+        """Get a specific experience from the buffer.
+
+        Args:
+            idx (int): Index of the experience to retrieve.
+
+        Returns:
+            dict[str, torch.Tensor]: Retrieved experience.
+
+        Example:
+            >>> buffer = BaseBuffer(1000, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"}
+            ... }, 1)
+            >>>
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
+            >>>
+            >>> buffer[0]
+        """
+
+        mini_batch = {}
+        for k, v in self.buffer.items():
+            if k in self.key_mapping:
+                mini_batch[self.key_mapping[k]] = v.reshape(
+                    -1, *self.env_dict[k]["shape"]
+                )[idx]
+
+        return mini_batch
 
     def add(self, **kwargs: dict[str, torch.Tensor]) -> None:
         """Add a new experience to the buffer.
@@ -90,7 +133,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>> obs = np.random.rand(4)
             >>> action = np.random.rand(1)
             >>> reward = np.random.rand(1)
@@ -100,39 +143,18 @@ class BaseBuffer:
         self.pos = self.pos % self.buffer_size
         for k, v in kwargs.items():
             if isinstance(v, np.ndarray):
-                v = torch.from_numpy(v).to(self.device)
+                tensor_v: torch.Tensor = torch.from_numpy(v).to(self.device)
+            else:
+                tensor_v: torch.Tensor = v
 
-            self.buffer[k][self.pos] = v.reshape(self.n_envs, *self.env_dict[k]["shape"]).to(self.device)
+            if "transform" in self.env_dict[k]:
+                tensor_v: torch.Tensor = self.env_dict[k]["transform"](tensor_v)
+
+            self.buffer[k][self.pos] = tensor_v.reshape(
+                self.n_envs, *self.env_dict[k]["shape"]
+            ).to(self.device)
 
         self.pos += 1
-
-    def sample(self, batch_size: int) -> dict[str, Any]:
-        """Sample a batch of experiences.
-
-        Args:
-            batch_size (int): Number of samples per batch.
-
-        Returns:
-            dict[str, Any]: Sampled batch of experiences.
-
-        Example:
-            >>> buffer = BaseBuffer(1000, {
-            ...     "obs": {"shape": (4,), "map": "o"},
-            ...     "action": {"shape": (1,), "map": "a"},
-            ...     "reward": {"shape": (1,), "map": "r"},
-            ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
-            >>>
-            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
-            >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
-            >>>
-            >>> batch = buffer.sample(1)
-            >>> len(batch["o"])
-            1
-        """
-        idx = torch.randint(0, self.pos - 1, (batch_size,), device=self.device)
-        env_idx = torch.randint(0, self.n_envs, (batch_size,), device=self.device)
-        return {self.key_mapping[k]: v[idx, env_idx].reshape(batch_size, *self.env_dict[k]["shape"]).to(self.device).detach() for k, v in self.buffer.items()}
 
     def clear(self) -> None:
         """Clear the buffer.
@@ -143,7 +165,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.clear()
         """
@@ -169,7 +191,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
             >>> buffer.compute_returns_and_advantages_gae()
@@ -192,7 +214,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
             >>> last_value = torch.zeros(1)
@@ -202,7 +224,9 @@ class BaseBuffer:
         ...
 
     @abstractmethod
-    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_n_step(
+        self, gamma: float, n_step: int
+    ) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -218,7 +242,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1))
             >>> last_value = torch.zeros(1)
@@ -244,7 +268,7 @@ class BaseBuffer:
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.device = "cpu"
         """
@@ -260,7 +284,6 @@ class RolloutBuffer(BaseBuffer):
         buffer_size: int,
         env_dict: dict[str, Any],
         n_envs: int = 1,
-        reward_normalization: bool = False,
         advantage_normalization: bool = False,
         gamma: float = 0.99,
         lam: float = 0.95,
@@ -280,11 +303,9 @@ class RolloutBuffer(BaseBuffer):
             ...     "action": {"shape": (1,), "map": "a"},
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"}
-            ... }, "cpu", 1)
+            ... }, 1)
         """
         super().__init__(buffer_size, env_dict, n_envs)
-
-        self.reward_normalization = reward_normalization
         self.advantage_normalization = advantage_normalization
         self.gamma = gamma
         self.lam = lam
@@ -310,7 +331,7 @@ class RolloutBuffer(BaseBuffer):
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"},
             ...     "value": {"shape": (1,), "map": "v"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
@@ -321,23 +342,41 @@ class RolloutBuffer(BaseBuffer):
             >>> "returns" in return_advantage and "advantages" in return_advantage
             True
         """
+        for key, value in self.buffer.items():
+            self.buffer[key] = value[0 : self.pos]
+
+        # Normalize rewards (batch, n_envs, 1)
+        self.buffer["reward"] = (
+            self.buffer["reward"] - self.buffer["reward"].mean()
+        ) / (self.buffer["reward"].std() + 1e-8)
+
         advantages = torch.zeros_like(self.buffer["reward"])
         returns = torch.zeros_like(self.buffer["reward"])
 
-        self.buffer["value"][-1] = 0.0
-        self.buffer["reward"][-1] = 0.0
-
         # GAE の再帰計算
-        for i in reversed(range(self.buffer_size - 1)):
+        for i in reversed(range(self.pos - 1)):
             # E(t) = r(t) + gamma * V(t+1) * (1 - done) - V(t)
-            delta = self.buffer["reward"][i] + self.gamma * self.buffer["value"][i + 1] * (1 - self.buffer["done"][i]) - self.buffer["value"][i]
-            advantages[i] = delta + self.gamma * self.lam * (1 - self.buffer["done"][i]) * advantages[i + 1]
+            delta = (
+                self.buffer["reward"][i]
+                + self.gamma
+                * self.buffer["value"][i + 1]
+                * (1 - self.buffer["done"][i])
+                - self.buffer["value"][i]
+            )
+            advantages[i] = (
+                delta
+                + self.gamma
+                * self.lam
+                * (1 - self.buffer["done"][i])
+                * advantages[i + 1]
+            )
             returns[i] = advantages[i] + self.buffer["value"][i]
 
         # 価値関数の値を加えてリターンを計算
         returns = advantages + self.buffer["value"]
 
-        # 必要に応じて正規化
+        # returns = (returns - returns.mean()) / (returns.std() + 1e-8)
+
         if self.advantage_normalization:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
@@ -360,7 +399,7 @@ class RolloutBuffer(BaseBuffer):
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"},
             ...     "value": {"shape": (1,), "map": "v"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
@@ -371,24 +410,32 @@ class RolloutBuffer(BaseBuffer):
             >>> "returns" in return_advantage and "advantages" in return_advantage
             True
         """
-        returns = torch.zeros(self.buffer_size, self.n_envs, device=self.device)
-        discounted_return = torch.zeros(self.n_envs, device=self.device)
+        for key, value in self.buffer.items():
+            self.buffer[key] = value[0 : self.pos]
 
-        for i in reversed(range(self.buffer_size)):
+        returns = torch.zeros_like(self.buffer["reward"])
+        discounted_return = torch.zeros(
+            self.buffer["reward"].shape[-1], device=self.device
+        )
+
+        for i in reversed(range(self.pos)):
             # E(t) = r(t) + gamma * V(t+1) * (1 - done) - V(t)
-            discounted_return = self.buffer["reward"][i] + self.gamma * discounted_return * (1 - self.buffer["done"][i])
+            discounted_return = self.buffer["reward"][
+                i
+            ] + self.gamma * discounted_return * (1 - self.buffer["done"][i])
             returns[i] = discounted_return
 
-        returns = (returns - returns.mean()) / (returns.std() + 1e-8)
-
         advantages = returns - self.buffer["value"]
+
         if self.advantage_normalization:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
         self.buffer |= {"returns": returns.detach(), "advantages": advantages.detach()}
         return {"returns": returns, "advantages": advantages}
 
-    def compute_returns_and_advantages_n_step(self, gamma: float, n_step: int) -> dict[str, torch.Tensor]:
+    def compute_returns_and_advantages_n_step(
+        self, gamma: float, n_step: int
+    ) -> dict[str, torch.Tensor]:
         """Compute returns and advantages for the stored trajectories.
 
         Args:
@@ -405,7 +452,7 @@ class RolloutBuffer(BaseBuffer):
             ...     "reward": {"shape": (1,), "map": "r"},
             ...     "done": {"shape": (1,), "map": "d"},
             ...     "value": {"shape": (1,), "map": "v"}
-            ... }, "cpu", 1)
+            ... }, 1)
             >>>
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
@@ -419,12 +466,16 @@ class RolloutBuffer(BaseBuffer):
             discounted_return = torch.zeros(self.n_envs, device=self.device)
             for step in range(n_step):
                 idx = min(i + step, self.buffer_size - 1)
-                discounted_return += (gamma**step) * self.buffer["reward"][idx].squeeze(-1)
+                discounted_return += (gamma**step) * self.buffer["reward"][idx].squeeze(
+                    -1
+                )
                 if self.buffer["done"][idx]:
                     break
             next_idx = min(i + n_step, self.buffer_size - 1)
             if not self.buffer["done"][next_idx]:
-                discounted_return += (gamma**n_step) * self.buffer["value"][next_idx].squeeze(-1)
+                discounted_return += (gamma**n_step) * self.buffer["value"][
+                    next_idx
+                ].squeeze(-1)
             returns[i] = discounted_return
         advantages = returns - self.buffer["value"]
 
@@ -435,15 +486,41 @@ class RolloutBuffer(BaseBuffer):
 class ExperienceReplay(BaseBuffer):
     """Standard Experience Replay Buffer for DQN."""
 
-    def __init__(self, state_shape: tuple, action_shape: tuple, buffer_size: int = 10000, batch_size: int = 64, device: str = "cpu"):
+    def __init__(
+        self,
+        state_shape: tuple,
+        action_shape: tuple,
+        buffer_size: int = 10000,
+        batch_size: int = 64,
+        device: str = "cpu",
+    ):
         """Initialize the buffer."""
-        env_dict = {"states": {"shape": state_shape}, "actions": {"shape": action_shape}, "rewards": {"shape": (1,)}, "next_states": {"shape": state_shape}, "dones": {"shape": (1,), "dtype": torch.bool}}
+        env_dict = {
+            "states": {"shape": state_shape},
+            "actions": {"shape": action_shape},
+            "rewards": {"shape": (1,)},
+            "next_states": {"shape": state_shape},
+            "dones": {"shape": (1,), "dtype": torch.bool},
+        }
         super().__init__(buffer_size, env_dict, None, device)
         self.batch_size = batch_size
 
-    def add(self, state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, done: bool) -> None:
+    def add(
+        self,
+        state: np.ndarray,
+        action: np.ndarray,
+        reward: float,
+        next_state: np.ndarray,
+        done: bool,
+    ) -> None:
         """Add an experience to the buffer."""
-        super().add(states=state, actions=action, rewards=reward, next_states=next_state, dones=done)
+        super().add(
+            states=state,
+            actions=action,
+            rewards=reward,
+            next_states=next_state,
+            dones=done,
+        )
 
     def sample(self) -> dict[str, torch.Tensor]:
         """Sample a batch of experiences."""
@@ -457,27 +534,66 @@ class ExperienceReplay(BaseBuffer):
 class PrioritizedExperienceReplay(BaseBuffer):
     """Prioritized Experience Replay Buffer for DQN."""
 
-    def __init__(self, state_shape: tuple, action_shape: tuple, buffer_size: int = 10000, batch_size: int = 64, device: str = "cpu", alpha: float = 0.6, beta: float = 0.4):
+    def __init__(
+        self,
+        state_shape: tuple,
+        action_shape: tuple,
+        buffer_size: int = 10000,
+        batch_size: int = 64,
+        device: str = "cpu",
+        alpha: float = 0.6,
+        beta: float = 0.4,
+    ):
         """Initialize the buffer with prioritization."""
-        env_dict = {"states": {"shape": state_shape}, "actions": {"shape": action_shape}, "rewards": {"shape": (1,)}, "next_states": {"shape": state_shape}, "dones": {"shape": (1,), "dtype": torch.bool}, "priorities": {"shape": (1,), "dtype": torch.float32}}
+        env_dict = {
+            "states": {"shape": state_shape},
+            "actions": {"shape": action_shape},
+            "rewards": {"shape": (1,)},
+            "next_states": {"shape": state_shape},
+            "dones": {"shape": (1,), "dtype": torch.bool},
+            "priorities": {"shape": (1,), "dtype": torch.float32},
+        }
         super().__init__(buffer_size, env_dict, None, device)
         self.batch_size = batch_size
         self.alpha = alpha
         self.beta = beta
 
-    def add(self, state: np.ndarray, action: np.ndarray, reward: float, next_state: np.ndarray, done: bool, priority: float = 1.0) -> None:
+    def add(
+        self,
+        state: np.ndarray,
+        action: np.ndarray,
+        reward: float,
+        next_state: np.ndarray,
+        done: bool,
+        priority: float = 1.0,
+    ) -> None:
         """Add an experience to the buffer with priority."""
-        super().add(states=state, actions=action, rewards=reward, next_states=next_state, dones=done, priorities=priority**self.alpha)
+        super().add(
+            states=state,
+            actions=action,
+            rewards=reward,
+            next_states=next_state,
+            dones=done,
+            priorities=priority**self.alpha,
+        )
 
     def sample(self) -> dict[str, torch.Tensor]:
         """Sample a batch of experiences with prioritization."""
-        priorities = self.buffer["priorities"][: self.pos] if not self.full else self.buffer["priorities"]
+        priorities = (
+            self.buffer["priorities"][: self.pos]
+            if not self.full
+            else self.buffer["priorities"]
+        )
         probabilities = priorities / priorities.sum()
-        indices = np.random.choice(len(probabilities), self.batch_size, p=probabilities.numpy(), replace=False)
+        indices = np.random.choice(
+            len(probabilities), self.batch_size, p=probabilities.numpy(), replace=False
+        )
         weights = (len(probabilities) * probabilities[indices]) ** (-self.beta)
         weights /= weights.max()
         batch = {k: v[indices] for k, v in self.buffer.items() if k != "priorities"}
-        batch["weights"] = torch.tensor(weights, dtype=torch.float32, device=self.device)
+        batch["weights"] = torch.tensor(
+            weights, dtype=torch.float32, device=self.device
+        )
         return batch
 
     def clear(self) -> None:

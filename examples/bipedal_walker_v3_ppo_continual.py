@@ -9,100 +9,110 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 from pixyzrl.utils import print_latex
 
-env = Env("BipedalWalker-v3", 10, render_mode="")
-# action_dim = env.action_space.shape[0]
-
-
-class Extractor(Deterministic):
-    def __init__(self):
-        super().__init__(var=["s"], cond_var=["o"], name="f")
-
-        self.feature_extract = nn.Sequential(
-            nn.LazyLinear(14),
-            nn.ReLU(),
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.Flatten(),
-        )
-
-    def forward(self, o: torch.Tensor):
-        return {"s": self.feature_extract(o)}
+env = Env("BipedalWalker-v3", 8, render_mode="rgb_array")
+action_dim = env.action_space
+obs_dim = env.observation_space
 
 
 class Actor(Normal):
     def __init__(self):
-        super().__init__(var=["a"], cond_var=["s"], name="p")
+        super().__init__(var=["a"], cond_var=["o"], name="p")
+
+        self.feature_extract = nn.Sequential(
+            nn.Linear(*obs_dim, 64),
+            nn.Tanh(),
+            nn.Linear(64, 64),
+            nn.Tanh(),
+        )
 
         self._loc = nn.Sequential(
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.LazyLinear(32),
-            nn.ReLU(),
-            nn.LazyLinear(4),
+            nn.Linear(64, action_dim),
             nn.Tanh(),
         )
 
         self._scale = nn.Sequential(
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.LazyLinear(32),
-            nn.ReLU(),
-            nn.LazyLinear(4),
+            nn.Linear(64, action_dim),
             nn.Softplus(),
         )
 
-    def forward(self, s: torch.Tensor):
-        loc = self._loc(s)
-        scale = self._scale(s) + 1e-5
+    def forward(self, o: torch.Tensor):
+        h = self.feature_extract(o)
+        loc = self._loc(h)
+        scale = self._scale(h) + 1e-5
         return {"loc": loc, "scale": scale}
 
 
 class Critic(Deterministic):
     def __init__(self):
-        super().__init__(var=["v"], cond_var=["s"], name="f")
+        super().__init__(var=["v"], cond_var=["o"], name="f")
 
         self.net = nn.Sequential(
-            nn.LazyLinear(64),
+            nn.Linear(*obs_dim, 64),
             nn.ReLU(),
-            nn.LazyLinear(32),
+            nn.Linear(64, 64),
             nn.ReLU(),
-            nn.LazyLinear(1),
-            # nn.LayerNorm(1),
+            nn.Linear(64, 1),
         )
 
-    def forward(self, s: torch.Tensor):
-        v = self.net(s)
+    def forward(self, o: torch.Tensor):
+        v = self.net(o)
         return {"v": v}
 
 
-actor = Actor().to("mps")
-critic = Critic().to("mps")
-extractor = Extractor().to("mps")
+actor = Actor()
+critic = Critic()
 
-ppo = PPO(actor, critic, extractor, entropy_coef=0.01, mse_coef=0.5, lr_actor=1e-4, lr_critic=3e-4)
+ppo = PPO(
+    actor,
+    critic,
+    entropy_coef=0.01,
+    mse_coef=1.0,
+    lr_actor=1e-4,
+    lr_critic=3e-4,
+    device="mps",
+    clip_grad_norm=0.5,
+)
 print_latex(ppo)
 
 buffer = RolloutBuffer(
-    10240,
+    8192,
     {
         "obs": {
-            "shape": (24,),
+            "shape": (*obs_dim,),
             "map": "o",
         },
-        "value": {"shape": (1,), "map": "v"},
-        "action": {"shape": (4,), "map": "a"},
-        "reward": {"shape": (1,)},
-        "done": {"shape": (1,)},
-        "returns": {"shape": (1,), "map": "r"},
-        "advantages": {"shape": (1,), "map": "A"},
+        "value": {
+            "shape": (1,),
+            "map": "v",
+        },
+        "action": {
+            "shape": (action_dim,),
+            "map": "a",
+        },
+        "reward": {
+            "shape": (1,),
+            "transform": lambda x: torch.clamp(x, -10, 10),
+        },
+        "done": {
+            "shape": (1,),
+        },
+        "returns": {
+            "shape": (1,),
+            "map": "r",
+        },
+        "advantages": {
+            "shape": (1,),
+            "map": "A",
+        },
     },
-    "mps",
-    10,
+    8,
+    advantage_normalization=True,
+    gamma=0.99,
+    lam=0.95,
 )
 
-logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
+logger = Logger("bipedal_walker_v3_ppo_continual", log_types=["print"])
 
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
-trainer.train(10000, 1024, 10)
+# trainer.load_model("cartpole_v1_ppo_discrete_trainer/model_1200.pt")
+trainer.train(1000000, 1024, 10, save_interval=50, test_interval=10)

@@ -11,6 +11,7 @@ from pixyzrl.utils import print_latex
 
 env = Env("CarRacing-v3", 8, render_mode="")
 action_dim = env.action_space
+obs_dim = env.observation_space[::-1]
 
 
 class Extractor(Deterministic):
@@ -87,21 +88,21 @@ buffer = RolloutBuffer(
     5120,
     {
         "obs": {
-            "shape": (3, 96, 96),
+            "shape": (*obs_dim,),
             "map": "o",
         },
         "value": {"shape": (1,), "map": "v"},
-        "action": {"shape": (3,), "map": "a"},
+        "action": {"shape": (action_dim,), "map": "a"},
         "reward": {"shape": (1,)},
         "done": {"shape": (1,)},
         "returns": {"shape": (1,), "map": "r"},
         "advantages": {"shape": (1,), "map": "A"},
     },
     8,
-    reward_normalization=False,
+    reward_normalization=True,
     advantage_normalization=True,
 )
 
 logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
-trainer.train(1000, 64, 40)
+trainer.train(100000, 64, 40)
