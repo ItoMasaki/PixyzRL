@@ -119,4 +119,4 @@ logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
 
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
 # trainer.load_model("cartpole_v1_ppo_discrete_trainer/model_1200.pt")
-trainer.train(1000000, 32, 10, save_interval=50, test_interval=1)
+trainer.train(1000000, 32, 10, save_interval=50, test_interval=20)
