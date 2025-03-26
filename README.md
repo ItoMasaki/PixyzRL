@@ -11,6 +11,16 @@
 
 [Documentation](https://docs.pixyz.io) | [Examples](https://github.com/ItoMasaki/PixyzRL/tree/main/examples) | [GitHub](https://github.com/ItoMasaki/PixyzRL)
 
+## What is PixyzRL?
+
+[**PixyzRL**](https://github.com/ItoMasaki/PixyzRL) is a reinforcement learning (RL) framework based on **probabilistic generative models** and **Bayesian theory**. Built on top of the [Pixyz](https://github.com/masa-su/pixyz) library, it provides a modular and flexible design to enable uncertainty-aware decision-making and improve sample efficiency. PixyzRL supports:
+- **Probabilistic Policy Optimization** (e.g., PPO, A2C)
+- **On-policy and Off-policy Learning**
+- **Memory Management for RL (Replay Buffer, Rollout Buffer)**
+- **Integration with Gymnasium environments**
+- **Logging and Model Training Utilities**
+
+
 |CartPole-v1|CarRacing-v3|
 |:-:|:-:|
 |<video src="https://github.com/user-attachments/assets/38958b35-a910-4db4-acda-bcda04ac1da8"/>|<video src="https://github.com/user-attachments/assets/4ae38471-dab5-464f-97d3-d986cdc40247"/>|
@@ -19,17 +29,6 @@
 <video src="https://github.com/user-attachments/assets/72045515-8c56-4308-acd8-6aca48915024"/>|<video src="https://github.com/user-attachments/assets/aba4af68-1ded-4578-b463-529f0f6d0cde"/>|
 |examples/bipedal_walker_v3_ppo_continual.py|examples/lunar_lander_v3_ppo_continue_trainer.py|
 
-
-
-## What is PixyzRL?
-
-[**PixyzRL**](https://github.com/ItoMasaki/PixyzRL) is a reinforcement learning (RL) framework based on **probabilistic generative models** and **Bayesian theory**. Built on top of the [Pixyz](https://github.com/masa-su/pixyz) library, it provides a modular and flexible design to enable uncertainty-aware decision-making and improve sample efficiency. PixyzRL supports:
-
-- **Probabilistic Policy Optimization** (e.g., PPO, A2C)
-- **On-policy and Off-policy Learning**
-- **Memory Management for RL (Replay Buffer, Rollout Buffer)**
-- **Integration with Gymnasium environments**
-- **Logging and Model Training Utilities**
 
 ## Installation
 
