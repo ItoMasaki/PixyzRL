@@ -43,7 +43,7 @@
 #### Using `pip`
 
 ```bash
-pip install torch torchvision torchaudio pixyz gymnasium[box2d] torchrl
+pip install pixyzrl
 ```
 
 #### Install from Source
