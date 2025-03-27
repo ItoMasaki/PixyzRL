@@ -8,6 +8,7 @@
 ![workflow](https://github.com/ItoMasaki/PixyzRL/actions/workflows/ci.yml/badge.svg)
 [![codecov](https://codecov.io/gh/ItoMasaki/PixyzRL/branch/main/graph/badge.svg?token=V1704I8BQT)](https://codecov.io/gh/ItoMasaki/PixyzRL)
 [![Open in Visual Studio Code](https://img.shields.io/static/v1?logo=visualstudiocode&label=&message=Open%20in%20Visual%20Studio%20Code&labelColor=2c2c32&color=007acc&logoColor=007acc)](https://vscode.dev/github/ItoMasaki/PixyzRL)
+[![PyPI Downloads](https://static.pepy.tech/badge/pixyzrl)](https://pepy.tech/projects/pixyzrl)
 
 [Documentation](https://docs.pixyz.io) | [Examples](https://github.com/ItoMasaki/PixyzRL/tree/main/examples) | [GitHub](https://github.com/ItoMasaki/PixyzRL)
 
