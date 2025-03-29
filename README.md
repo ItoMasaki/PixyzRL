@@ -64,34 +64,39 @@ pip install -e .
 ### 1. Set Up Environment
 
 ```python
-from pixyzrl.environments import Env
+import torch
+from pixyz.distributions import Categorical, Deterministic
+from torch import nn
 
-env = Env("CartPole-v1")
-state_dim = env.observation_space.shape[0]
-action_dim = env.action_space.n
+from pixyzrl.environments import Env
+from pixyzrl.logger import Logger
+from pixyzrl.memory import RolloutBuffer
+from pixyzrl.models import PPO
+from pixyzrl.trainer import OnPolicyTrainer
+from pixyzrl.utils import print_latex
+
+env = Env("CartPole-v1", 2, render_mode="rgb_array")
+action_dim = env.action_space
+obs_dim = env.observation_space
 ```
 
 ### 2. Define Actor and Critic Networks
 
 ```python
-import torch
-from pixyz.distributions import Categorical, Deterministic
-from torch import nn
-
 class Actor(Categorical):
     def __init__(self):
-        super().__init__(var=["a"], cond_var=["o"], name="p")
-        self.net = nn.Sequential(
-            nn.Linear(state_dim, 64),
-            nn.ReLU(),
+        super().__init__(var=["a"], cond_var=["s"], name="p")
+
+        self._prob = nn.Sequential(
             nn.Linear(64, 64),
-            nn.ReLU(),
+            nn.Tanh(),
             nn.Linear(64, action_dim),
-            nn.Softmax(dim=-1)
+            nn.Softmax(dim=-1),
         )
 
-    def forward(self, o: torch.Tensor):
-        return {"probs": self.net(o)}
+    def forward(self, s: torch.Tensor):
+        probs = self._prob(s)
+        return {"probs": probs}
 
 class Critic(Deterministic):
     def __init__(self):
@@ -124,25 +129,50 @@ f(v|o)
 ### 3. Prepare PPO and Buffer
 
 ```python
-from pixyzrl.models import PPO
-from pixyzrl.memory import RolloutBuffer
-from pixyzrl.trainer import OnPolicyTrainer
-
-agent = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+ppo = PPO(
+    actor,
+    critic,
+    entropy_coef=0.01,
+    mse_coef=0.5,
+    lr_actor=1e-4,
+    lr_critic=3e-4,
+    device="mps",
+)
 
 buffer = RolloutBuffer(
-    2048,
+    1024,
     {
-        "obs": {"shape": (4,), "map": "o"},
-        "value": {"shape": (1,), "map": "v"},
-        "action": {"shape": (2,), "map": "a"},
-        "reward": {"shape": (1,)},
-        "done": {"shape": (1,)},
-        "returns": {"shape": (1,), "map": "r"},
-        "advantages": {"shape": (1,), "map": "A"},
+        "obs": {
+            "shape": (*obs_dim,),
+            "map": "o",
+        },
+        "value": {
+            "shape": (1,),
+            "map": "v",
+        },
+        "action": {
+            "shape": (action_dim,),
+            "map": "a",
+        },
+        "reward": {
+            "shape": (1,),
+        },
+        "done": {
+            "shape": (1,),
+        },
+        "returns": {
+            "shape": (1,),
+            "map": "r",
+        },
+        "advantages": {
+            "shape": (1,),
+            "map": "A",
+        },
     },
-    "cpu",
-    1,
+    2,
+    advantage_normalization=True,
+    lam=0.95,
+    gamma=0.99,
 )
 ```
 
@@ -158,8 +188,10 @@ mean \left(1.0 MSE(f(v|o), r) - min \left(A clip(\frac{p(a|o)}{old(a|o)}, 0.8, 1
 ### 4. Training with Trainer
 
 ```python
-trainer = OnPolicyTrainer(env, buffer, agent, "cpu")
-trainer.train(1000)
+logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
+trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
+trainer.train(1000000, 32, 10, save_interval=50, test_interval=20)
+
 ```
 
 
