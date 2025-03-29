@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.5">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>pixyzrl.losses API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -49,25 +49,6 @@ el.replaceWith(d);
 <section>
 </section>
 <section>
-<h2 class="section-title" id="header-functions">Functions</h2>
-<dl>
-<dt id="pixyzrl.losses.ppo"><code class="name flex">
-<span>def <span class="ident">ppo</span></span>(<span>actor: pixyz.distributions.distributions.Distribution,<br>actor_old: pixyz.distributions.distributions.Distribution,<br>clip_param: float = 0.2) ‑> pixyz.losses.losses.NegLoss</span>
-</code></dt>
-<dd>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def ppo(actor: Distribution, actor_old: Distribution, clip_param: float = 0.2) -&gt; NegLoss:
-    &#34;&#34;&#34;Proximal Policy Optimization.&#34;&#34;&#34;
-    surr1 = RatioLoss(actor, actor_old) * Parameter(&#34;A&#34;)
-    surr2 = ClipLoss(RatioLoss(actor, actor_old), 1 - clip_param, 1 + clip_param) * Parameter(&#34;A&#34;)
-    return -MinLoss(surr1, surr2)</code></pre>
-</details>
-<div class="desc"><p>Proximal Policy Optimization.</p></div>
-</dd>
-</dl>
 </section>
 <section>
 <h2 class="section-title" id="header-classes">Classes</h2>
@@ -119,7 +100,9 @@ el.replaceWith(d);
     def _symbol(self) -&gt; sympy.Symbol:
         return sympy.Symbol(f&#34;clip({self.loss1.loss_text}, {self.min}, {self.max})&#34;)
 
-    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+    ) -&gt; tuple[torch.Tensor, dict[str, Any]]:
         loss, x_dict = self.loss1(x_dict, **kwargs)
         loss = torch.clamp(loss, self.min, self.max)
 
@@ -171,7 +154,9 @@ because these depend on the given distributions and each loss function.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+<pre><code class="python">def forward(
+    self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+) -&gt; tuple[torch.Tensor, dict[str, Any]]:
     loss, x_dict = self.loss1(x_dict, **kwargs)
     loss = torch.clamp(loss, self.min, self.max)
 
@@ -236,7 +221,9 @@ deterministically calcurated loss and updated all samples.</p></div>
         &#34;&#34;&#34;Return the symbol of the loss.&#34;&#34;&#34;
         return sympy.Symbol(f&#34;MSE({self.p.prob_text}, {self.var})&#34;)
 
-    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]
+    ) -&gt; tuple[torch.Tensor, dict[str, Any]]:
         &#34;&#34;&#34;Forward pass.&#34;&#34;&#34;
         pred = self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze()
         loss = self.mse(pred, x_dict[self.var].squeeze())
@@ -278,13 +265,137 @@ torch.Size([])
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+<pre><code class="python">def forward(
+    self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]
+) -&gt; tuple[torch.Tensor, dict[str, Any]]:
     &#34;&#34;&#34;Forward pass.&#34;&#34;&#34;
     pred = self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze()
     loss = self.mse(pred, x_dict[self.var].squeeze())
     return loss, {}</code></pre>
 </details>
 <div class="desc"><p>Forward pass.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="pixyzrl.losses.PPOClipLoss"><code class="flex name class">
+<span>class <span class="ident">PPOClipLoss</span></span>
+<span>(</span><span>p: pixyz.distributions.distributions.Distribution,<br>q: pixyz.distributions.distributions.Distribution,<br>clip: float,<br>adv_var: str = 'A')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PPOClipLoss(Loss):
+    &#34;&#34;&#34;PPO clip loss.
+
+    Examples
+    --------
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from pixyz.distributions import Normal
+    &gt;&gt;&gt; from pixyz.losses import PPOClipLoss
+    ...
+    &gt;&gt;&gt; class P(Normal):
+    ...
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;z&#34;], cond_var=[&#34;x&#34;], name=&#34;p&#34;)
+    ...
+    ...     def forward(self, x):
+    ...         return {&#34;loc&#34;: x, &#34;scale&#34;: torch.nn.functional.softplus(x)}
+    ...
+    &gt;&gt;&gt; p = P()
+    &gt;&gt;&gt; ppo_clip_loss = PPOClipLoss(p, 0.2)
+    &gt;&gt;&gt; x = torch.zeros(1, 128)
+    &gt;&gt;&gt; z = torch.zeros(1, 128)
+    &gt;&gt;&gt; ppo_clip_loss.eval({&#34;z&#34;: z, &#34;x&#34;: x})
+    tensor(0.)  # Expected output
+    &#34;&#34;&#34;
+
+    def __init__(
+        self, p: Distribution, q: Distribution, clip: float, adv_var: str = &#34;A&#34;
+    ) -&gt; None:
+        super().__init__([*p.cond_var, *p.var, adv_var])
+
+        self.p = p
+        self.q = q
+        self.clip = clip
+        self.adv_var = adv_var
+
+        surrogate1 = RatioLoss(p, q) * Parameter(adv_var)
+        surrogate2 = ClipLoss(RatioLoss(p, q), 1 - clip, 1 + clip) * Parameter(adv_var)
+        self.loss = -MinLoss(surrogate1, surrogate2)
+
+    @property
+    def _symbol(self) -&gt; sympy.Symbol:
+        return sympy.Symbol(
+            f&#34;-min(\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}, clip(\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}, 1-{self.clip}, 1+{self.clip}))&#34;
+        )
+
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+    ) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+        clip_loss, x_dict = self.loss(x_dict, **kwargs)
+
+        return clip_loss, {}</code></pre>
+</details>
+<div class="desc"><p>PPO clip loss.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from pixyz.distributions import Normal
+&gt;&gt;&gt; from pixyz.losses import PPOClipLoss
+...
+&gt;&gt;&gt; class P(Normal):
+...
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;], cond_var=[&quot;x&quot;], name=&quot;p&quot;)
+...
+...     def forward(self, x):
+...         return {&quot;loc&quot;: x, &quot;scale&quot;: torch.nn.functional.softplus(x)}
+...
+&gt;&gt;&gt; p = P()
+&gt;&gt;&gt; ppo_clip_loss = PPOClipLoss(p, 0.2)
+&gt;&gt;&gt; x = torch.zeros(1, 128)
+&gt;&gt;&gt; z = torch.zeros(1, 128)
+&gt;&gt;&gt; ppo_clip_loss.eval({&quot;z&quot;: z, &quot;x&quot;: x})
+tensor(0.)  # Expected output
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>input_var</code></strong> :&ensp;<code>:obj:</code>list<code><code>of &lt;/code&gt;:obj:&lt;code&gt;str&lt;/code&gt;, defaults to None</code></dt>
+<dd>Input variables of this loss function.
+In general, users do not need to set them explicitly
+because these depend on the given distributions and each loss function.</dd>
+</dl></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pixyz.losses.losses.Loss</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.losses.PPOClipLoss.forward"><code class="name flex">
+<span>def <span class="ident">forward</span></span>(<span>self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, typing.Any]) ‑> tuple[torch.Tensor, dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def forward(
+    self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+    clip_loss, x_dict = self.loss(x_dict, **kwargs)
+
+    return clip_loss, {}</code></pre>
+</details>
+<div class="desc"><h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Input variables.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>a tuple of :class:<code>pixyz.losses.Loss</code> and dict
+deterministically calcurated loss and updated all samples.</p></div>
 </dd>
 </dl>
 </dd>
@@ -329,7 +440,13 @@ torch.Size([])
 
     &#34;&#34;&#34;
 
-    def __init__(self, p: Distribution, q: Distribution, sum_features: bool = False, feature_dims: int | None = None) -&gt; None:
+    def __init__(
+        self,
+        p: Distribution,
+        q: Distribution,
+        sum_features: bool = False,
+        feature_dims: int | None = None,
+    ) -&gt; None:
         super().__init__(p.var + p.input_var + q.var + q.input_var)
 
         self.sum_features = sum_features
@@ -342,17 +459,29 @@ torch.Size([])
         self.p = p
         self.q = q
 
-        self.q.requires_grad = False
-
     @property
     def _symbol(self) -&gt; sympy.Symbol:
         return sympy.Symbol(f&#34;\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}&#34;)
 
-    def forward(self, x_dict: dict[str, Any], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[None, None]]:
-        p_log_prob = self.p.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
-        q_log_prob = self.q.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+    def forward(
+        self, x_dict: dict[str, Any], **kwargs: dict[str, Any]
+    ) -&gt; tuple[torch.Tensor, dict[None, None]]:
+        p_log_prob = (
+            self.p.log_prob(
+                sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs
+            )
+            .eval(x_dict)
+            .sum(dim=-1)
+        )
+        q_log_prob = (
+            self.q.log_prob(
+                sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs
+            )
+            .eval(x_dict)
+            .sum(dim=-1)
+        )
 
-        ratio = torch.exp(p_log_prob - q_log_prob.detach())
+        ratio = torch.exp(p_log_prob - q_log_prob.detach()).reshape(-1, 1)
 
         return ratio, {}</code></pre>
 </details>
@@ -405,13 +534,160 @@ because these depend on the given distributions and each loss function.</dd>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def forward(self, x_dict: dict[str, Any], **kwargs: dict[str, Any]) -&gt; tuple[torch.Tensor, dict[None, None]]:
-    p_log_prob = self.p.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
-    q_log_prob = self.q.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+<pre><code class="python">def forward(
+    self, x_dict: dict[str, Any], **kwargs: dict[str, Any]
+) -&gt; tuple[torch.Tensor, dict[None, None]]:
+    p_log_prob = (
+        self.p.log_prob(
+            sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs
+        )
+        .eval(x_dict)
+        .sum(dim=-1)
+    )
+    q_log_prob = (
+        self.q.log_prob(
+            sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs
+        )
+        .eval(x_dict)
+        .sum(dim=-1)
+    )
 
-    ratio = torch.exp(p_log_prob - q_log_prob.detach())
+    ratio = torch.exp(p_log_prob - q_log_prob.detach()).reshape(-1, 1)
 
     return ratio, {}</code></pre>
+</details>
+<div class="desc"><h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>x_dict</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Input variables.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>a tuple of :class:<code>pixyz.losses.Loss</code> and dict
+deterministically calcurated loss and updated all samples.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="pixyzrl.losses.ValueClipLoss"><code class="flex name class">
+<span>class <span class="ident">ValueClipLoss</span></span>
+<span>(</span><span>p: pixyz.distributions.distributions.Distribution,<br>vtarget_var: str,<br>clip: float)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ValueClipLoss(Loss):
+    &#34;&#34;&#34;Value clip loss.
+
+    Examples
+    --------
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from pixyz.distributions import Normal
+    &gt;&gt;&gt; from pixyz.losses import ValueClipLoss
+    ...
+    &gt;&gt;&gt; class P(Normal):
+    ...
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;z&#34;], cond_var=[&#34;x&#34;], name=&#34;p&#34;)
+    ...
+    ...     def forward(self, x):
+    ...         return {&#34;loc&#34;: x, &#34;scale&#34;: torch.nn.functional.softplus(x)}
+    ...
+    &gt;&gt;&gt; p = P()
+    &gt;&gt;&gt; value_clip_loss = ValueClipLoss(p, 0.2)
+    &gt;&gt;&gt; x = torch.zeros(1, 128)
+    &gt;&gt;&gt; z = torch.zeros(1, 128)
+    &gt;&gt;&gt; value_clip_loss.eval({&#34;z&#34;: z, &#34;x&#34;: x})
+    tensor(0.)  # Expected output
+    &#34;&#34;&#34;
+
+    def __init__(self, p: Distribution, vtarget_var: str, clip: float) -&gt; None:
+        super().__init__([*p.cond_var, *p.var, vtarget_var])
+
+        self.p = p
+        self.clip = clip
+        self.vtarget_var = vtarget_var
+
+    @property
+    def _symbol(self) -&gt; sympy.Symbol:
+        return sympy.Symbol(
+            f&#34;max(|{self.p.prob_text} - {self.vtarget_var}|^2, |clip({self.p.prob_text}, -{self.clip}, {self.clip}) - {self.vtarget_var}|^2)&#34;
+        )
+
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+    ) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+        old_value_prediction = self.p.sample(x_dict)[self.p.var[0]].detach()
+        value_prediction = self.p.sample(x_dict)[self.p.var[0]]
+
+        value_prediction_clipped = old_value_prediction + torch.clamp(
+            value_prediction - old_value_prediction, -self.clip, self.clip
+        )
+        loss = torch.max(
+            torch.square(x_dict[self.vtarget_var] - value_prediction),
+            torch.square(x_dict[self.vtarget_var] - value_prediction_clipped),
+        )
+
+        return loss, {}</code></pre>
+</details>
+<div class="desc"><p>Value clip loss.</p>
+<h2 id="examples">Examples</h2>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from pixyz.distributions import Normal
+&gt;&gt;&gt; from pixyz.losses import ValueClipLoss
+...
+&gt;&gt;&gt; class P(Normal):
+...
+...     def __init__(self):
+...         super().__init__(var=[&quot;z&quot;], cond_var=[&quot;x&quot;], name=&quot;p&quot;)
+...
+...     def forward(self, x):
+...         return {&quot;loc&quot;: x, &quot;scale&quot;: torch.nn.functional.softplus(x)}
+...
+&gt;&gt;&gt; p = P()
+&gt;&gt;&gt; value_clip_loss = ValueClipLoss(p, 0.2)
+&gt;&gt;&gt; x = torch.zeros(1, 128)
+&gt;&gt;&gt; z = torch.zeros(1, 128)
+&gt;&gt;&gt; value_clip_loss.eval({&quot;z&quot;: z, &quot;x&quot;: x})
+tensor(0.)  # Expected output
+</code></pre>
+<h2 id="parameters">Parameters</h2>
+<dl>
+<dt><strong><code>input_var</code></strong> :&ensp;<code>:obj:</code>list<code><code>of &lt;/code&gt;:obj:&lt;code&gt;str&lt;/code&gt;, defaults to None</code></dt>
+<dd>Input variables of this loss function.
+In general, users do not need to set them explicitly
+because these depend on the given distributions and each loss function.</dd>
+</dl></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pixyz.losses.losses.Loss</li>
+<li>torch.nn.modules.module.Module</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.losses.ValueClipLoss.forward"><code class="name flex">
+<span>def <span class="ident">forward</span></span>(<span>self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, typing.Any]) ‑> tuple[torch.Tensor, dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def forward(
+    self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+) -&gt; tuple[torch.Tensor, dict[str, Any]]:
+    old_value_prediction = self.p.sample(x_dict)[self.p.var[0]].detach()
+    value_prediction = self.p.sample(x_dict)[self.p.var[0]]
+
+    value_prediction_clipped = old_value_prediction + torch.clamp(
+        value_prediction - old_value_prediction, -self.clip, self.clip
+    )
+    loss = torch.max(
+        torch.square(x_dict[self.vtarget_var] - value_prediction),
+        torch.square(x_dict[self.vtarget_var] - value_prediction_clipped),
+    )
+
+    return loss, {}</code></pre>
 </details>
 <div class="desc"><h2 id="parameters">Parameters</h2>
 <dl>
@@ -442,11 +718,6 @@ deterministically calcurated loss and updated all samples.</p></div>
 <li><code><a title="pixyzrl.losses.losses" href="losses.html">pixyzrl.losses.losses</a></code></li>
 </ul>
 </li>
-<li><h3><a href="#header-functions">Functions</a></h3>
-<ul class="">
-<li><code><a title="pixyzrl.losses.ppo" href="#pixyzrl.losses.ppo">ppo</a></code></li>
-</ul>
-</li>
 <li><h3><a href="#header-classes">Classes</a></h3>
 <ul>
 <li>
@@ -462,9 +733,21 @@ deterministically calcurated loss and updated all samples.</p></div>
 </ul>
 </li>
 <li>
+<h4><code><a title="pixyzrl.losses.PPOClipLoss" href="#pixyzrl.losses.PPOClipLoss">PPOClipLoss</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.losses.PPOClipLoss.forward" href="#pixyzrl.losses.PPOClipLoss.forward">forward</a></code></li>
+</ul>
+</li>
+<li>
 <h4><code><a title="pixyzrl.losses.RatioLoss" href="#pixyzrl.losses.RatioLoss">RatioLoss</a></code></h4>
 <ul class="">
 <li><code><a title="pixyzrl.losses.RatioLoss.forward" href="#pixyzrl.losses.RatioLoss.forward">forward</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pixyzrl.losses.ValueClipLoss" href="#pixyzrl.losses.ValueClipLoss">ValueClipLoss</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.losses.ValueClipLoss.forward" href="#pixyzrl.losses.ValueClipLoss.forward">forward</a></code></li>
 </ul>
 </li>
 </ul>
@@ -473,7 +756,7 @@ deterministically calcurated loss and updated all samples.</p></div>
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

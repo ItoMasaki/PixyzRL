@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.5">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>pixyzrl.trainer.base_trainer API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -78,29 +78,28 @@ el.replaceWith(d);
             self.logger.log(&#34;Trainer initialized.&#34;)
 
     @abstractmethod
-    def collect_experiences(self) -&gt; None:
-        &#34;&#34;&#34;Collect experiences from the environment.&#34;&#34;&#34;
-        ...
+    def collect_experiences(self) -&gt; None: ...
 
     @abstractmethod
-    def train_model(self) -&gt; None:
-        &#34;&#34;&#34;Perform a single training step.&#34;&#34;&#34;
-        ...
+    def train_model(self) -&gt; None: ...
 
     def save_model(self, path: str) -&gt; None:
-        &#34;&#34;&#34;Save the trained model.&#34;&#34;&#34;
-        dists = [dist.state_dict() for dist in self.agent.distributions]
-        torch.save({&#34;model&#34;: dists, &#34;optimizer&#34;: self.agent.optimizer.state_dict()}, path)
+        &#34;&#34;&#34;Save the trained model.
+
+        Args:
+            path (str): Path to save
+        &#34;&#34;&#34;
+        self.agent.save(path)
         if self.logger:
-            self.logger.log(f&#34;Model saved at {path}.&#34;)
+            self.logger.log(f&#34;Model saved to {path}.&#34;)
 
     def load_model(self, path: str) -&gt; None:
-        &#34;&#34;&#34;Load a trained model.&#34;&#34;&#34;
-        checkpoint = torch.load(path)
-        dists = [dist.state_dict() for dist in self.agent.distributions]
-        for dist, state_dict in zip(dists, checkpoint[&#34;model&#34;], strict=False):
-            dist.load_state_dict(state_dict)
-        self.agent.optimizer.load_state_dict(checkpoint[&#34;optimizer&#34;])
+        &#34;&#34;&#34;Load a trained model.
+
+        Args:
+            path (str): Path to load
+        &#34;&#34;&#34;
+        self.agent.load(path)
 
         if self.logger:
             self.logger.log(f&#34;Model loaded from {path}.&#34;)</code></pre>
@@ -140,11 +139,9 @@ el.replaceWith(d);
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def collect_experiences(self) -&gt; None:
-    &#34;&#34;&#34;Collect experiences from the environment.&#34;&#34;&#34;
-    ...</code></pre>
+def collect_experiences(self) -&gt; None: ...</code></pre>
 </details>
-<div class="desc"><p>Collect experiences from the environment.</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="pixyzrl.trainer.base_trainer.BaseTrainer.load_model"><code class="name flex">
 <span>def <span class="ident">load_model</span></span>(<span>self, path: str) ‑> None</span>
@@ -155,17 +152,22 @@ def collect_experiences(self) -&gt; None:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def load_model(self, path: str) -&gt; None:
-    &#34;&#34;&#34;Load a trained model.&#34;&#34;&#34;
-    checkpoint = torch.load(path)
-    dists = [dist.state_dict() for dist in self.agent.distributions]
-    for dist, state_dict in zip(dists, checkpoint[&#34;model&#34;], strict=False):
-        dist.load_state_dict(state_dict)
-    self.agent.optimizer.load_state_dict(checkpoint[&#34;optimizer&#34;])
+    &#34;&#34;&#34;Load a trained model.
+
+    Args:
+        path (str): Path to load
+    &#34;&#34;&#34;
+    self.agent.load(path)
 
     if self.logger:
         self.logger.log(f&#34;Model loaded from {path}.&#34;)</code></pre>
 </details>
-<div class="desc"><p>Load a trained model.</p></div>
+<div class="desc"><p>Load a trained model.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to load</dd>
+</dl></div>
 </dd>
 <dt id="pixyzrl.trainer.base_trainer.BaseTrainer.save_model"><code class="name flex">
 <span>def <span class="ident">save_model</span></span>(<span>self, path: str) ‑> None</span>
@@ -176,13 +178,21 @@ def collect_experiences(self) -&gt; None:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def save_model(self, path: str) -&gt; None:
-    &#34;&#34;&#34;Save the trained model.&#34;&#34;&#34;
-    dists = [dist.state_dict() for dist in self.agent.distributions]
-    torch.save({&#34;model&#34;: dists, &#34;optimizer&#34;: self.agent.optimizer.state_dict()}, path)
+    &#34;&#34;&#34;Save the trained model.
+
+    Args:
+        path (str): Path to save
+    &#34;&#34;&#34;
+    self.agent.save(path)
     if self.logger:
-        self.logger.log(f&#34;Model saved at {path}.&#34;)</code></pre>
+        self.logger.log(f&#34;Model saved to {path}.&#34;)</code></pre>
 </details>
-<div class="desc"><p>Save the trained model.</p></div>
+<div class="desc"><p>Save the trained model.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to save</dd>
+</dl></div>
 </dd>
 <dt id="pixyzrl.trainer.base_trainer.BaseTrainer.train_model"><code class="name flex">
 <span>def <span class="ident">train_model</span></span>(<span>self) ‑> None</span>
@@ -193,11 +203,9 @@ def collect_experiences(self) -&gt; None:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def train_model(self) -&gt; None:
-    &#34;&#34;&#34;Perform a single training step.&#34;&#34;&#34;
-    ...</code></pre>
+def train_model(self) -&gt; None: ...</code></pre>
 </details>
-<div class="desc"><p>Perform a single training step.</p></div>
+<div class="desc"></div>
 </dd>
 </dl>
 </dd>
@@ -231,7 +239,7 @@ def train_model(self) -&gt; None:
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

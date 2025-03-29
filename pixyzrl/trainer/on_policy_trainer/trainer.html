@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.5">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>pixyzrl.trainer.on_policy_trainer.trainer API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -58,7 +58,16 @@ el.replaceWith(d);
 <pre><code class="python">class OnPolicyTrainer(BaseTrainer):
     &#34;&#34;&#34;Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C).&#34;&#34;&#34;
 
-    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, value_estimate: str = &#34;gae&#34;, device: torch.device | str = &#34;cpu&#34;, logger: Logger | None = None, transform: Compose | None = None) -&gt; None:
+    def __init__(
+        self,
+        env: BaseEnv,
+        memory: BaseBuffer,
+        agent: RLModel,
+        value_estimate: str = &#34;gae&#34;,
+        device: torch.device | str = &#34;cpu&#34;,
+        logger: Logger | None = None,
+        transform: Compose | None = None,
+    ) -&gt; None:
         &#34;&#34;&#34;Initialize the on-policy trainer.
 
         Args:
@@ -80,7 +89,7 @@ el.replaceWith(d);
         &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
 
         &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
-        &gt;&gt;&gt; action_dim = env.action_space.n
+        &gt;&gt;&gt; action_dim = env.action_space
 
         &gt;&gt;&gt; class Actor(Categorical):
         ...     def __init__(self):
@@ -129,6 +138,12 @@ el.replaceWith(d);
         self.value_estimate = value_estimate
         self.transform = transform
         memory.device = device
+        self.episode = 0
+        self.log_dir = (
+            logger.log_dir
+            if logger
+            else f&#34;logs/{datetime.now(datetime.now().astimezone().tzinfo).strftime(&#39;%Y%m%d-%H%M%S&#39;)}&#34;
+        )
 
     def collect_experiences(self) -&gt; None:
         &#34;&#34;&#34;Collect experiences from the environment.
@@ -194,42 +209,46 @@ el.replaceWith(d);
         obs, info = self.env.reset()
         done = False
         total_reward = 0
+        total_rewards = []
+        idx = 1
 
         with torch.no_grad():
             # Collect on-policy experiences
             while len(self.memory) &lt; self.memory.buffer_size - 1:
-                if len(obs[0].shape) == 1:
-                    obs = obs.unsqueeze(0)
-                elif len(obs[0].shape) == 3:
+                idx += 1
+
+                if len(obs[0].shape) == 3:
                     obs = obs.permute(0, 3, 1, 2) / 255.0
 
                 action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
-                next_obs, reward, truncated, terminated, info = self.env.step(action[self.agent.action_var].cpu().squeeze().numpy())
-                done = torch.logical_or(truncated, terminated)
+                next_obs, reward, terminated, truncated, info = self.env.step(
+                    action[self.agent.action_var].cpu()
+                )
+                done = torch.logical_or(terminated, truncated)
 
-                self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done, value=action[self.agent.critic.var[0]].cpu().detach())
+                self.memory.add(
+                    obs=obs.detach(),
+                    action=action[self.agent.action_var].detach(),
+                    reward=reward.detach(),
+                    done=done.detach(),
+                    value=action[self.agent.critic.var[0]].cpu().detach(),
+                )
                 obs = next_obs
-
                 total_reward += reward.detach().numpy().astype(float)
-                if self.logger:
-                    self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.squeeze().round(1)}&#34;)
+
+                if done.any():
+                    for _reward in total_reward[done]:
+                        total_rewards.append(np.round(_reward.item(), 1))
 
                 total_reward *= 1 - done.detach().numpy().astype(bool)
-
-                if done.detach().numpy().astype(bool).any() and self.env.num_envs == 1:
-                    obs, info = self.env.reset(reset_mask=done.detach().numpy().astype(bool))
 
                 if self.env.render_mode == &#34;rgb_array&#34;:
                     self.env.render()
 
-            # Preprocess the collected experiences
-            # if self.transform:
-            #     obs = self.transform
+            total_rewards += np.round(total_reward.reshape(-1), 1).tolist()
 
-            # if len(obs[1:].shape) == 1:
-            #     obs = obs.unsqueeze(0)
-            # elif len(obs[1:].shape) == 3:
-            #     obs = obs.permute(0, 3, 1, 2) / 255.0
+            if self.logger:
+                self.logger.log(f&#34;Rewards: {&#39; &#39;.join([str(r) for r in total_rewards])}&#34;)
 
             if self.value_estimate == &#34;gae&#34;:
                 if self.logger:
@@ -239,6 +258,10 @@ el.replaceWith(d);
                 if self.logger:
                     self.logger.log(&#34;Computing Monte Carlo returns and advantages.&#34;)
                 self.memory.compute_returns_and_advantages_mc()
+            elif self.value_estimate == &#34;grpo&#34;:
+                if self.logger:
+                    self.logger.log(&#34;Computing GRPO returns and advantages.&#34;)
+                self.memory.compute_advantages_grpo()
             else:
                 if self.logger:
                     self.logger.log(&#34;Invalid value estimate method. Using GAE instead.&#34;)
@@ -313,23 +336,146 @@ el.replaceWith(d);
         if len(self.memory) &lt; self.memory.buffer_size - 1:
             return
 
-        total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
+        total_loss = 0
+        for _ in range(num_epochs):
+            total_loss += self.agent.train_step(self.memory, batch_size)
+
+        self.agent.transfer_state_dict()
 
         if self.logger:
-            self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss}&#34;)
+            self.logger.log(
+                f&#34;On-policy training step completed. Loss: {total_loss/num_epochs}&#34;
+            )
 
-    def save_model(self, path: str) -&gt; None:
-        &#34;&#34;&#34;Save the trained model.
+    def test(self) -&gt; None:
+        &#34;&#34;&#34;Test the agent.
 
         Args:
-            path (str): Path to save the model.
+            num_episodes (int, optional): Number of episodes to test. Defaults to 10.
+
+        Example:
+        &gt;&gt;&gt; import torch
+        &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+        &gt;&gt;&gt; from torch import nn
+
+        &gt;&gt;&gt; from pixyzrl.environments import Env
+        &gt;&gt;&gt; from pixyzrl.logger import Logger
+        &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+        &gt;&gt;&gt; from pixyzrl.models import PPO
+        &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+        &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+        &gt;&gt;&gt; action_dim = env.action_space.n
+
+        &gt;&gt;&gt; class Actor(Categorical):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(action_dim),
+        ...             nn.Softmax(dim=-1),
+        ...         )
+        ...     def forward(self, o: torch.Tensor):
+        ...         probs = self.net(o)
+        ...         return {&#34;probs&#34;: probs}
+
+        &gt;&gt;&gt; class Critic(Deterministic):
+        ...     def __init__(self):
+        ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+        ...         self.net = nn.Sequential(
+        ...             nn.LazyLinear(1),
+        ...         )
+        ...     def forward(self, o: torch.Tensor):
+        ...         v = self.net(o)
+        ...         return {&#34;v&#34;: v}
+
+        &gt;&gt;&gt; actor = Actor()
+        &gt;&gt;&gt; critic = Critic()
+
+        &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+        &gt;&gt;&gt; buffer = RolloutBuffer(
+        ...     100,
+        ...     {
+        ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+        ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+        ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+        ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+        ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+        ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;:
+        ...     },
+        ...     &#34;cpu&#34;,
+        ...     1,
+        ... )
+        &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+        &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
+        &gt;&gt;&gt; trainer.test(10)
         &#34;&#34;&#34;
+        total_reward = 0
+        total_rewards = []
 
-        self.agent.save(path)
+        obs, info = self.env.reset()
+        idx = 0
+        self.frames = []
+
+        with torch.no_grad():
+            for _ in range(5):
+                done = [False]
+
+                while not done[0]:
+                    idx += 1
+
+                    if len(obs[0].shape) == 3:
+                        obs = obs.permute(0, 3, 1, 2) / 255.0
+
+                    action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+                    next_obs, reward, terminated, truncated, _ = self.env.step(
+                        action[self.agent.action_var].cpu().numpy()
+                    )
+                    done = torch.logical_or(terminated, truncated)
+
+                    obs = next_obs
+
+                    total_reward += reward.detach().numpy().astype(float)
+
+                    if done[0]:
+                        idx = 0
+                        self.frames.append(np.zeros_like(self.frames[-1]))
+                        total_rewards.append(np.round(total_reward[0].item(), 1))
+                        total_reward *= 1 - done[0].detach().numpy()
+                        break
+
+                    self.frames.append(self.env.render(return_frame=True)[0])
+
+        fig = plt.figure()
+        fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+        Thread(target=self.save_video, args=(fig, self.frames)).start()
+
         if self.logger:
-            self.logger.log(f&#34;Model saved at {path}.&#34;)
+            self.logger.log(f&#34;Testing completed. Total reward: {total_rewards}&#34;)
 
-    def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
+    def save_video(self, fig: plt.Figure, frames: list[Any]) -&gt; None:
+        &#34;&#34;&#34;Save the test video.&#34;&#34;&#34;
+        ims = []
+        for frame in frames:
+            plt.axis(&#34;off&#34;)
+            im = plt.imshow(frame)
+            ims.append([im])
+
+        ani = animation.ArtistAnimation(
+            fig, ims, interval=50, blit=True, repeat_delay=1000
+        )
+        ani.save(f&#34;{self.log_dir}/test_{self.episode - 1}.mp4&#34;)
+        fig.clear()
+
+    def train(
+        self,
+        num_iterations: int,
+        batch_size: int = 128,
+        num_epochs: int = 40,
+        test_interval: int = 100,
+        save_interval: int = 10,
+    ) -&gt; None:
         &#34;&#34;&#34;Train the agent.
 
         Args:
@@ -402,14 +548,22 @@ el.replaceWith(d);
         &#34;&#34;&#34;
 
         for iteration in range(num_iterations):
+            self.episode += 1
+
             self.collect_experiences()
             self.train_model(batch_size, num_epochs)
             self.memory.clear()
-            if self.logger:
-                self.logger.log(f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)
 
-            if iteration % 10 == 0:
-                self.save_model(f&#34;model_{iteration}.pt&#34;)</code></pre>
+            if self.logger:
+                self.logger.log(
+                    f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;
+                )
+
+            if (iteration + 1) % test_interval == 0:
+                self.test()
+
+            if (iteration + 1) % save_interval == 0:
+                self.save_model(f&#34;{self.log_dir}/model_{iteration + 1}.pt&#34;)</code></pre>
 </details>
 <div class="desc"><p>Trainer class for on-policy reinforcement learning methods (e.g., PPO, A2C).</p>
 <p>Initialize the on-policy trainer.</p>
@@ -438,7 +592,7 @@ el.replaceWith(d);
 &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
 </code></pre>
 <pre><code class="language-python-repl">&gt;&gt;&gt; env = Env(&quot;CartPole-v1&quot;)
-&gt;&gt;&gt; action_dim = env.action_space.n
+&gt;&gt;&gt; action_dim = env.action_space
 </code></pre>
 <pre><code class="language-python-repl">&gt;&gt;&gt; class Actor(Categorical):
 ...     def __init__(self):
@@ -562,42 +716,46 @@ el.replaceWith(d);
     obs, info = self.env.reset()
     done = False
     total_reward = 0
+    total_rewards = []
+    idx = 1
 
     with torch.no_grad():
         # Collect on-policy experiences
         while len(self.memory) &lt; self.memory.buffer_size - 1:
-            if len(obs[0].shape) == 1:
-                obs = obs.unsqueeze(0)
-            elif len(obs[0].shape) == 3:
+            idx += 1
+
+            if len(obs[0].shape) == 3:
                 obs = obs.permute(0, 3, 1, 2) / 255.0
 
             action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
-            next_obs, reward, truncated, terminated, info = self.env.step(action[self.agent.action_var].cpu().squeeze().numpy())
-            done = torch.logical_or(truncated, terminated)
+            next_obs, reward, terminated, truncated, info = self.env.step(
+                action[self.agent.action_var].cpu()
+            )
+            done = torch.logical_or(terminated, truncated)
 
-            self.memory.add(obs=obs.detach(), action=action[self.agent.action_var].detach(), reward=reward.detach(), done=done, value=action[self.agent.critic.var[0]].cpu().detach())
+            self.memory.add(
+                obs=obs.detach(),
+                action=action[self.agent.action_var].detach(),
+                reward=reward.detach(),
+                done=done.detach(),
+                value=action[self.agent.critic.var[0]].cpu().detach(),
+            )
             obs = next_obs
-
             total_reward += reward.detach().numpy().astype(float)
-            if self.logger:
-                self.logger.log(f&#34;Collected on-policy experiences. Total reward: {total_reward.squeeze().round(1)}&#34;)
+
+            if done.any():
+                for _reward in total_reward[done]:
+                    total_rewards.append(np.round(_reward.item(), 1))
 
             total_reward *= 1 - done.detach().numpy().astype(bool)
-
-            if done.detach().numpy().astype(bool).any() and self.env.num_envs == 1:
-                obs, info = self.env.reset(reset_mask=done.detach().numpy().astype(bool))
 
             if self.env.render_mode == &#34;rgb_array&#34;:
                 self.env.render()
 
-        # Preprocess the collected experiences
-        # if self.transform:
-        #     obs = self.transform
+        total_rewards += np.round(total_reward.reshape(-1), 1).tolist()
 
-        # if len(obs[1:].shape) == 1:
-        #     obs = obs.unsqueeze(0)
-        # elif len(obs[1:].shape) == 3:
-        #     obs = obs.permute(0, 3, 1, 2) / 255.0
+        if self.logger:
+            self.logger.log(f&#34;Rewards: {&#39; &#39;.join([str(r) for r in total_rewards])}&#34;)
 
         if self.value_estimate == &#34;gae&#34;:
             if self.logger:
@@ -607,6 +765,10 @@ el.replaceWith(d);
             if self.logger:
                 self.logger.log(&#34;Computing Monte Carlo returns and advantages.&#34;)
             self.memory.compute_returns_and_advantages_mc()
+        elif self.value_estimate == &#34;grpo&#34;:
+            if self.logger:
+                self.logger.log(&#34;Computing GRPO returns and advantages.&#34;)
+            self.memory.compute_advantages_grpo()
         else:
             if self.logger:
                 self.logger.log(&#34;Invalid value estimate method. Using GAE instead.&#34;)
@@ -672,41 +834,226 @@ el.replaceWith(d);
 &gt;&gt;&gt; trainer.collect_experiences()
 </code></pre></div>
 </dd>
-<dt id="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.save_model"><code class="name flex">
-<span>def <span class="ident">save_model</span></span>(<span>self, path: str) ‑> None</span>
+<dt id="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.save_video"><code class="name flex">
+<span>def <span class="ident">save_video</span></span>(<span>self, fig: matplotlib.figure.Figure, frames: list[typing.Any]) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def save_model(self, path: str) -&gt; None:
-    &#34;&#34;&#34;Save the trained model.
+<pre><code class="python">def save_video(self, fig: plt.Figure, frames: list[Any]) -&gt; None:
+    &#34;&#34;&#34;Save the test video.&#34;&#34;&#34;
+    ims = []
+    for frame in frames:
+        plt.axis(&#34;off&#34;)
+        im = plt.imshow(frame)
+        ims.append([im])
+
+    ani = animation.ArtistAnimation(
+        fig, ims, interval=50, blit=True, repeat_delay=1000
+    )
+    ani.save(f&#34;{self.log_dir}/test_{self.episode - 1}.mp4&#34;)
+    fig.clear()</code></pre>
+</details>
+<div class="desc"><p>Save the test video.</p></div>
+</dd>
+<dt id="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.test"><code class="name flex">
+<span>def <span class="ident">test</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def test(self) -&gt; None:
+    &#34;&#34;&#34;Test the agent.
 
     Args:
-        path (str): Path to save the model.
-    &#34;&#34;&#34;
+        num_episodes (int, optional): Number of episodes to test. Defaults to 10.
 
-    self.agent.save(path)
+    Example:
+    &gt;&gt;&gt; import torch
+    &gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+    &gt;&gt;&gt; from torch import nn
+
+    &gt;&gt;&gt; from pixyzrl.environments import Env
+    &gt;&gt;&gt; from pixyzrl.logger import Logger
+    &gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+    &gt;&gt;&gt; from pixyzrl.models import PPO
+    &gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+
+    &gt;&gt;&gt; env = Env(&#34;CartPole-v1&#34;)
+    &gt;&gt;&gt; action_dim = env.action_space.n
+
+    &gt;&gt;&gt; class Actor(Categorical):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;a&#34;], cond_var=[&#34;o&#34;], name=&#34;p&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(action_dim),
+    ...             nn.Softmax(dim=-1),
+    ...         )
+    ...     def forward(self, o: torch.Tensor):
+    ...         probs = self.net(o)
+    ...         return {&#34;probs&#34;: probs}
+
+    &gt;&gt;&gt; class Critic(Deterministic):
+    ...     def __init__(self):
+    ...         super().__init__(var=[&#34;v&#34;], cond_var=[&#34;o&#34;], name=&#34;f&#34;)
+    ...         self.net = nn.Sequential(
+    ...             nn.LazyLinear(1),
+    ...         )
+    ...     def forward(self, o: torch.Tensor):
+    ...         v = self.net(o)
+    ...         return {&#34;v&#34;: v}
+
+    &gt;&gt;&gt; actor = Actor()
+    &gt;&gt;&gt; critic = Critic()
+
+    &gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+
+    &gt;&gt;&gt; buffer = RolloutBuffer(
+    ...     100,
+    ...     {
+    ...         &#34;obs&#34;: {&#34;shape&#34;: (4,), &#34;map&#34;: &#34;o&#34;},
+    ...         &#34;value&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;v&#34;},
+    ...         &#34;action&#34;: {&#34;shape&#34;: (2,), &#34;map&#34;: &#34;a&#34;},
+    ...         &#34;reward&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;done&#34;: {&#34;shape&#34;: (1,)},
+    ...         &#34;returns&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;: &#34;r&#34;},
+    ...         &#34;advantages&#34;: {&#34;shape&#34;: (1,), &#34;map&#34;:
+    ...     },
+    ...     &#34;cpu&#34;,
+    ...     1,
+    ... )
+    &gt;&gt;&gt; logger = Logger(&#34;logs&#34;)
+    &gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &#34;cpu&#34;)
+    &gt;&gt;&gt; trainer.test(10)
+    &#34;&#34;&#34;
+    total_reward = 0
+    total_rewards = []
+
+    obs, info = self.env.reset()
+    idx = 0
+    self.frames = []
+
+    with torch.no_grad():
+        for _ in range(5):
+            done = [False]
+
+            while not done[0]:
+                idx += 1
+
+                if len(obs[0].shape) == 3:
+                    obs = obs.permute(0, 3, 1, 2) / 255.0
+
+                action = self.agent.select_action({&#34;o&#34;: obs.to(self.device)})
+                next_obs, reward, terminated, truncated, _ = self.env.step(
+                    action[self.agent.action_var].cpu().numpy()
+                )
+                done = torch.logical_or(terminated, truncated)
+
+                obs = next_obs
+
+                total_reward += reward.detach().numpy().astype(float)
+
+                if done[0]:
+                    idx = 0
+                    self.frames.append(np.zeros_like(self.frames[-1]))
+                    total_rewards.append(np.round(total_reward[0].item(), 1))
+                    total_reward *= 1 - done[0].detach().numpy()
+                    break
+
+                self.frames.append(self.env.render(return_frame=True)[0])
+
+    fig = plt.figure()
+    fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
+    Thread(target=self.save_video, args=(fig, self.frames)).start()
+
     if self.logger:
-        self.logger.log(f&#34;Model saved at {path}.&#34;)</code></pre>
+        self.logger.log(f&#34;Testing completed. Total reward: {total_rewards}&#34;)</code></pre>
 </details>
-<div class="desc"><p>Save the trained model.</p>
+<div class="desc"><p>Test the agent.</p>
 <h2 id="args">Args</h2>
 <dl>
-<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
-<dd>Path to save the model.</dd>
-</dl></div>
+<dt><strong><code>num_episodes</code></strong> :&ensp;<code>int</code>, optional</dt>
+<dd>Number of episodes to test. Defaults to 10.</dd>
+</dl>
+<p>Example:</p>
+<pre><code class="language-python-repl">&gt;&gt;&gt; import torch
+&gt;&gt;&gt; from pixyz.distributions import Categorical, Deterministic
+&gt;&gt;&gt; from torch import nn
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; from pixyzrl.environments import Env
+&gt;&gt;&gt; from pixyzrl.logger import Logger
+&gt;&gt;&gt; from pixyzrl.memory import RolloutBuffer
+&gt;&gt;&gt; from pixyzrl.models import PPO
+&gt;&gt;&gt; from pixyzrl.trainer import OnPolicyTrainer
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; env = Env(&quot;CartPole-v1&quot;)
+&gt;&gt;&gt; action_dim = env.action_space.n
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Actor(Categorical):
+...     def __init__(self):
+...         super().__init__(var=[&quot;a&quot;], cond_var=[&quot;o&quot;], name=&quot;p&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(action_dim),
+...             nn.Softmax(dim=-1),
+...         )
+...     def forward(self, o: torch.Tensor):
+...         probs = self.net(o)
+...         return {&quot;probs&quot;: probs}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; class Critic(Deterministic):
+...     def __init__(self):
+...         super().__init__(var=[&quot;v&quot;], cond_var=[&quot;o&quot;], name=&quot;f&quot;)
+...         self.net = nn.Sequential(
+...             nn.LazyLinear(1),
+...         )
+...     def forward(self, o: torch.Tensor):
+...         v = self.net(o)
+...         return {&quot;v&quot;: v}
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; actor = Actor()
+&gt;&gt;&gt; critic = Critic()
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; ppo = PPO(actor, critic, entropy_coef=0.0, mse_coef=1.0)
+</code></pre>
+<pre><code class="language-python-repl">&gt;&gt;&gt; buffer = RolloutBuffer(
+...     100,
+...     {
+...         &quot;obs&quot;: {&quot;shape&quot;: (4,), &quot;map&quot;: &quot;o&quot;},
+...         &quot;value&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;v&quot;},
+...         &quot;action&quot;: {&quot;shape&quot;: (2,), &quot;map&quot;: &quot;a&quot;},
+...         &quot;reward&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;done&quot;: {&quot;shape&quot;: (1,)},
+...         &quot;returns&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;: &quot;r&quot;},
+...         &quot;advantages&quot;: {&quot;shape&quot;: (1,), &quot;map&quot;:
+...     },
+...     &quot;cpu&quot;,
+...     1,
+... )
+&gt;&gt;&gt; logger = Logger(&quot;logs&quot;)
+&gt;&gt;&gt; trainer = OnPolicyTrainer(env, buffer, ppo, &quot;cpu&quot;)
+&gt;&gt;&gt; trainer.test(10)
+</code></pre></div>
 </dd>
 <dt id="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.train"><code class="name flex">
-<span>def <span class="ident">train</span></span>(<span>self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) ‑> None</span>
+<span>def <span class="ident">train</span></span>(<span>self,<br>num_iterations: int,<br>batch_size: int = 128,<br>num_epochs: int = 40,<br>test_interval: int = 100,<br>save_interval: int = 10) ‑> None</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def train(self, num_iterations: int, batch_size: int = 128, num_epochs: int = 40) -&gt; None:
+<pre><code class="python">def train(
+    self,
+    num_iterations: int,
+    batch_size: int = 128,
+    num_epochs: int = 40,
+    test_interval: int = 100,
+    save_interval: int = 10,
+) -&gt; None:
     &#34;&#34;&#34;Train the agent.
 
     Args:
@@ -779,14 +1126,22 @@ el.replaceWith(d);
     &#34;&#34;&#34;
 
     for iteration in range(num_iterations):
+        self.episode += 1
+
         self.collect_experiences()
         self.train_model(batch_size, num_epochs)
         self.memory.clear()
-        if self.logger:
-            self.logger.log(f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;)
 
-        if iteration % 10 == 0:
-            self.save_model(f&#34;model_{iteration}.pt&#34;)</code></pre>
+        if self.logger:
+            self.logger.log(
+                f&#34;On-policy Iteration {iteration + 1}/{num_iterations} completed.&#34;
+            )
+
+        if (iteration + 1) % test_interval == 0:
+            self.test()
+
+        if (iteration + 1) % save_interval == 0:
+            self.save_model(f&#34;{self.log_dir}/model_{iteration + 1}.pt&#34;)</code></pre>
 </details>
 <div class="desc"><p>Train the agent.</p>
 <h2 id="args">Args</h2>
@@ -939,10 +1294,16 @@ el.replaceWith(d);
     if len(self.memory) &lt; self.memory.buffer_size - 1:
         return
 
-    total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
+    total_loss = 0
+    for _ in range(num_epochs):
+        total_loss += self.agent.train_step(self.memory, batch_size)
+
+    self.agent.transfer_state_dict()
 
     if self.logger:
-        self.logger.log(f&#34;On-policy training step completed. Loss: {total_loss}&#34;)</code></pre>
+        self.logger.log(
+            f&#34;On-policy training step completed. Loss: {total_loss/num_epochs}&#34;
+        )</code></pre>
 </details>
 <div class="desc"><p>Perform a single training step.</p>
 <h2 id="args">Args</h2>
@@ -1018,6 +1379,7 @@ el.replaceWith(d);
 <li><code><b><a title="pixyzrl.trainer.base_trainer.BaseTrainer" href="../base_trainer.html#pixyzrl.trainer.base_trainer.BaseTrainer">BaseTrainer</a></b></code>:
 <ul class="hlist">
 <li><code><a title="pixyzrl.trainer.base_trainer.BaseTrainer.load_model" href="../base_trainer.html#pixyzrl.trainer.base_trainer.BaseTrainer.load_model">load_model</a></code></li>
+<li><code><a title="pixyzrl.trainer.base_trainer.BaseTrainer.save_model" href="../base_trainer.html#pixyzrl.trainer.base_trainer.BaseTrainer.save_model">save_model</a></code></li>
 </ul>
 </li>
 </ul>
@@ -1041,7 +1403,8 @@ el.replaceWith(d);
 <h4><code><a title="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer" href="#pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer">OnPolicyTrainer</a></code></h4>
 <ul class="">
 <li><code><a title="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.collect_experiences" href="#pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.collect_experiences">collect_experiences</a></code></li>
-<li><code><a title="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.save_model" href="#pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.save_model">save_model</a></code></li>
+<li><code><a title="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.save_video" href="#pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.save_video">save_video</a></code></li>
+<li><code><a title="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.test" href="#pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.test">test</a></code></li>
 <li><code><a title="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.train" href="#pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.train">train</a></code></li>
 <li><code><a title="pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.train_model" href="#pixyzrl.trainer.on_policy_trainer.trainer.OnPolicyTrainer.train_model">train_model</a></code></li>
 </ul>
@@ -1052,7 +1415,7 @@ el.replaceWith(d);
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

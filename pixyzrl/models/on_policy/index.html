@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.5">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>pixyzrl.models.on_policy API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -124,21 +124,39 @@ el.replaceWith(d);
 <li>pixyz.models.model.Model</li>
 <li>abc.ABC</li>
 </ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pixyzrl.models.on_policy.A2C.select_action"><code class="name flex">
+<span>def <span class="ident">select_action</span></span>(<span>self, state: torch.Tensor) ‑> dict[str, torch.Tensor]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def select_action(self, state: torch.Tensor) -&gt; dict[str, torch.Tensor]:
+    &#34;&#34;&#34;Select an action.&#34;&#34;&#34;
+    with torch.no_grad():
+        return self.actor.sample({self.actor.cond_var[0]: state}) | self.critic.sample({self.critic.cond_var[0]: state})</code></pre>
+</details>
+<div class="desc"><p>Select an action.</p></div>
+</dd>
+</dl>
 <h3>Inherited members</h3>
 <ul class="hlist">
 <li><code><b><a title="pixyzrl.models.base_model.RLModel" href="../base_model.html#pixyzrl.models.base_model.RLModel">RLModel</a></b></code>:
 <ul class="hlist">
 <li><code><a title="pixyzrl.models.base_model.RLModel.action_var" href="../base_model.html#pixyzrl.models.base_model.RLModel.action_var">action_var</a></code></li>
 <li><code><a title="pixyzrl.models.base_model.RLModel.is_on_policy" href="../base_model.html#pixyzrl.models.base_model.RLModel.is_on_policy">is_on_policy</a></code></li>
-<li><code><a title="pixyzrl.models.base_model.RLModel.select_action" href="../base_model.html#pixyzrl.models.base_model.RLModel.select_action">select_action</a></code></li>
-<li><code><a title="pixyzrl.models.base_model.RLModel.train_step" href="../base_model.html#pixyzrl.models.base_model.RLModel.train_step">train_step</a></code></li>
+<li><code><a title="pixyzrl.models.base_model.RLModel.load" href="../base_model.html#pixyzrl.models.base_model.RLModel.load">load</a></code></li>
+<li><code><a title="pixyzrl.models.base_model.RLModel.save" href="../base_model.html#pixyzrl.models.base_model.RLModel.save">save</a></code></li>
 </ul>
 </li>
 </ul>
 </dd>
 <dt id="pixyzrl.models.on_policy.PPO"><code class="flex name class">
 <span>class <span class="ident">PPO</span></span>
-<span>(</span><span>actor: pixyz.distributions.distributions.Distribution,<br>critic: pixyz.distributions.distributions.Distribution,<br>shared_net: pixyz.distributions.distributions.Distribution | None = None,<br>eps_clip: float = 0.2,<br>lr_actor: float = 0.0001,<br>lr_critic: float = 0.0003,<br>device: str = 'cpu',<br>mse_coef: float = 0.5,<br>entropy_coef: float = 0.01,<br>action_var: str = 'a')</span>
+<span>(</span><span>actor: pixyz.distributions.distributions.Distribution,<br>critic: pixyz.distributions.distributions.Distribution,<br>shared_net: pixyz.distributions.distributions.Distribution | None = None,<br>eps_clip: float = 0.2,<br>lr_actor: float = 0.0001,<br>lr_critic: float = 0.0003,<br>device: str = 'cpu',<br>mse_coef: float = 0.5,<br>entropy_coef: float = 0.01,<br>action_var: str = 'a',<br>scheduler: torch.optim.lr_scheduler.LRScheduler | None = None,<br>**kwargs: dict[str, typing.Any])</span>
 </code></dt>
 <dd>
 <details class="source">
@@ -160,6 +178,8 @@ el.replaceWith(d);
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
         action_var: str = &#34;a&#34;,
+        scheduler: lr_scheduler.LRScheduler | None = None,
+        **kwargs: dict[str, Any],
     ) -&gt; None:
         &#34;&#34;&#34;Initialize the PPO agent.
 
@@ -209,6 +229,7 @@ el.replaceWith(d);
         self.lr_critic = lr_critic
         self._is_on_policy = True
         self._action_var = action_var
+        self.scheduler = scheduler
 
         # Shared CNN layers (optional)
         self.shared_net = shared_net
@@ -221,30 +242,46 @@ el.replaceWith(d);
         # Critic network
         self.critic = critic
 
-        advantage = Parameter(&#34;A&#34;)
-        ratio = RatioLoss(self.actor, self.actor_old)
-        clip = ClipLoss(ratio, 1 - self.eps_clip, 1 + self.eps_clip)
-        ppo_loss = -MinLoss(clip * advantage, ratio * advantage)
+        ppo_loss = PPOClipLoss(self.actor, self.actor_old, self.eps_clip, &#34;A&#34;)
 
-        mse_loss = MSELoss(self.critic, &#34;r&#34;)
+        self.mse_loss = MSELoss(self.critic, &#34;r&#34;, reduction=&#34;none&#34;)
+        # self.mse_loss = ValueClipLoss(self.critic, &#34;r&#34;, 0.2)
 
         if self.shared_net is not None:  # A2C
-            loss = E(self.shared_net, ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
+            loss = E(
+                self.shared_net,
+                ppo_loss
+                + self.mse_coef * self.mse_loss
+                - self.entropy_coef * Entropy(self.actor),
+            ).mean()
         else:  # TRPO
-            loss = (ppo_loss + self.mse_coef * mse_loss - self.entropy_coef * Entropy(self.actor)).mean()
+            loss = (
+                ppo_loss
+                + self.mse_coef * self.mse_loss
+                - self.entropy_coef * Entropy(self.actor)
+            ).mean()
 
-        super().__init__(loss, distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []), optimizer=Adam, optimizer_params={})
+        super().__init__(
+            loss,
+            distributions=[self.actor, self.critic]
+            + ([self.shared_net] if self.shared_net else []),
+            optimizer=Adam,
+            optimizer_params={},
+            **kwargs,
+        )
 
         for dist in self.distributions:
             dist.to(device)
 
-        # Optimizer
         self.optimizer = torch.optim.Adam(
             [
-                {&#34;params&#34;: self.actor.parameters(), &#34;lr&#34;: self.lr_actor, &#34;clip_grad_value&#34;: 0.5, &#34;clip_grad_norm&#34;: 0.5},
-                {&#34;params&#34;: self.critic.parameters(), &#34;lr&#34;: self.lr_critic, &#34;clip_grad_value&#34;: 0.5, &#34;clip_grad_norm&#34;: 0.5},
+                {&#34;params&#34;: self.actor.parameters(), &#34;lr&#34;: self.lr_actor},
+                {&#34;params&#34;: self.critic.parameters(), &#34;lr&#34;: self.lr_critic},
             ],
         )
+
+        if self.scheduler is not None:
+            self.scheduler = self.scheduler(self.optimizer, **kwargs)
 
     def select_action(self, state: dict[str, torch.Tensor]) -&gt; dict[str, torch.Tensor]:
         &#34;&#34;&#34;Select an action.
@@ -285,32 +322,39 @@ el.replaceWith(d);
             &gt;&gt;&gt; ppo.select_action(state)[&#34;z&#34;].shape
             torch.Size([1, 128])
         &#34;&#34;&#34;
+
         with torch.no_grad():
             if self.shared_net is not None:
                 state = self.shared_net.sample(state)
             return self.actor_old.sample(state) | self.critic.sample(state)
 
-    def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float:
+    def train_step(self, memory: BaseBuffer, batch_size: int = 128) -&gt; float:
         &#34;&#34;&#34;Perform a single training step.
 
         Args:
             memory (BaseBuffer): Replay buffer.
             batch_size (int): Batch size.
-            num_epochs (int): Number of epochs.
 
         Returns:
             float: Total loss.
         &#34;&#34;&#34;
         total_loss = 0
 
-        for _ in range(num_epochs):
-            batch = memory.sample(batch_size)
+        dataloader = DataLoader(memory, batch_size=batch_size, shuffle=True)
+
+        for batch in dataloader:
             loss = self.train(batch)
             total_loss += loss
 
-        self.actor_old.load_state_dict(self.actor.state_dict())
+        return total_loss / len(dataloader)
 
-        return total_loss / num_epochs</code></pre>
+    def transfer_state_dict(self) -&gt; None:
+        &#34;&#34;&#34;Transfer the state dictionary.
+
+        Args:
+            state_dict (dict[str, torch.Tensor]): State dictionary.
+        &#34;&#34;&#34;
+        self.actor_old.load_state_dict(self.actor.state_dict())</code></pre>
 </details>
 <div class="desc"><p>PPO agent using Pixyz.</p>
 <p>Initialize the PPO agent.</p>
@@ -419,6 +463,7 @@ el.replaceWith(d);
         &gt;&gt;&gt; ppo.select_action(state)[&#34;z&#34;].shape
         torch.Size([1, 128])
     &#34;&#34;&#34;
+
     with torch.no_grad():
         if self.shared_net is not None:
             state = self.shared_net.sample(state)
@@ -467,34 +512,32 @@ torch.Size([1, 128])
 </code></pre></div>
 </dd>
 <dt id="pixyzrl.models.on_policy.PPO.train_step"><code class="name flex">
-<span>def <span class="ident">train_step</span></span>(<span>self,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>batch_size: int = 128,<br>num_epochs: int = 4) ‑> float</span>
+<span>def <span class="ident">train_step</span></span>(<span>self,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>batch_size: int = 128) ‑> float</span>
 </code></dt>
 <dd>
 <details class="source">
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float:
+<pre><code class="python">def train_step(self, memory: BaseBuffer, batch_size: int = 128) -&gt; float:
     &#34;&#34;&#34;Perform a single training step.
 
     Args:
         memory (BaseBuffer): Replay buffer.
         batch_size (int): Batch size.
-        num_epochs (int): Number of epochs.
 
     Returns:
         float: Total loss.
     &#34;&#34;&#34;
     total_loss = 0
 
-    for _ in range(num_epochs):
-        batch = memory.sample(batch_size)
+    dataloader = DataLoader(memory, batch_size=batch_size, shuffle=True)
+
+    for batch in dataloader:
         loss = self.train(batch)
         total_loss += loss
 
-    self.actor_old.load_state_dict(self.actor.state_dict())
-
-    return total_loss / num_epochs</code></pre>
+    return total_loss / len(dataloader)</code></pre>
 </details>
 <div class="desc"><p>Perform a single training step.</p>
 <h2 id="args">Args</h2>
@@ -503,13 +546,34 @@ torch.Size([1, 128])
 <dd>Replay buffer.</dd>
 <dt><strong><code>batch_size</code></strong> :&ensp;<code>int</code></dt>
 <dd>Batch size.</dd>
-<dt><strong><code>num_epochs</code></strong> :&ensp;<code>int</code></dt>
-<dd>Number of epochs.</dd>
 </dl>
 <h2 id="returns">Returns</h2>
 <dl>
 <dt><code>float</code></dt>
 <dd>Total loss.</dd>
+</dl></div>
+</dd>
+<dt id="pixyzrl.models.on_policy.PPO.transfer_state_dict"><code class="name flex">
+<span>def <span class="ident">transfer_state_dict</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def transfer_state_dict(self) -&gt; None:
+    &#34;&#34;&#34;Transfer the state dictionary.
+
+    Args:
+        state_dict (dict[str, torch.Tensor]): State dictionary.
+    &#34;&#34;&#34;
+    self.actor_old.load_state_dict(self.actor.state_dict())</code></pre>
+</details>
+<div class="desc"><p>Transfer the state dictionary.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>state_dict</code></strong> :&ensp;<code>dict[str, torch.Tensor]</code></dt>
+<dd>State dictionary.</dd>
 </dl></div>
 </dd>
 </dl>
@@ -519,6 +583,8 @@ torch.Size([1, 128])
 <ul class="hlist">
 <li><code><a title="pixyzrl.models.base_model.RLModel.action_var" href="../base_model.html#pixyzrl.models.base_model.RLModel.action_var">action_var</a></code></li>
 <li><code><a title="pixyzrl.models.base_model.RLModel.is_on_policy" href="../base_model.html#pixyzrl.models.base_model.RLModel.is_on_policy">is_on_policy</a></code></li>
+<li><code><a title="pixyzrl.models.base_model.RLModel.load" href="../base_model.html#pixyzrl.models.base_model.RLModel.load">load</a></code></li>
+<li><code><a title="pixyzrl.models.base_model.RLModel.save" href="../base_model.html#pixyzrl.models.base_model.RLModel.save">save</a></code></li>
 </ul>
 </li>
 </ul>
@@ -546,12 +612,16 @@ torch.Size([1, 128])
 <ul>
 <li>
 <h4><code><a title="pixyzrl.models.on_policy.A2C" href="#pixyzrl.models.on_policy.A2C">A2C</a></code></h4>
+<ul class="">
+<li><code><a title="pixyzrl.models.on_policy.A2C.select_action" href="#pixyzrl.models.on_policy.A2C.select_action">select_action</a></code></li>
+</ul>
 </li>
 <li>
 <h4><code><a title="pixyzrl.models.on_policy.PPO" href="#pixyzrl.models.on_policy.PPO">PPO</a></code></h4>
 <ul class="">
 <li><code><a title="pixyzrl.models.on_policy.PPO.select_action" href="#pixyzrl.models.on_policy.PPO.select_action">select_action</a></code></li>
 <li><code><a title="pixyzrl.models.on_policy.PPO.train_step" href="#pixyzrl.models.on_policy.PPO.train_step">train_step</a></code></li>
+<li><code><a title="pixyzrl.models.on_policy.PPO.transfer_state_dict" href="#pixyzrl.models.on_policy.PPO.transfer_state_dict">transfer_state_dict</a></code></li>
 </ul>
 </li>
 </ul>
@@ -560,7 +630,7 @@ torch.Size([1, 128])
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>

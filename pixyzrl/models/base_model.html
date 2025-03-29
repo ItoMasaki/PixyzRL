@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
-<meta name="generator" content="pdoc3 0.11.5">
+<meta name="generator" content="pdoc3 0.11.6">
 <title>pixyzrl.models.base_model API documentation</title>
 <meta name="description" content="">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
@@ -58,7 +58,6 @@ el.replaceWith(d);
 <pre><code class="python">class RLModel(Model, ABC):
     &#34;&#34;&#34;Base class for reinforcement learning models.&#34;&#34;&#34;
 
-    @abstractmethod
     def __init__(self, *args: Any, **kwargs: Any) -&gt; None:
         &#34;&#34;&#34;Initialize the model.
 
@@ -72,24 +71,54 @@ el.replaceWith(d);
         self._action_var = &#34;a&#34;
 
     @abstractmethod
-    def select_action(self, state: Any) -&gt; Any:
-        &#34;&#34;&#34;Select an action.&#34;&#34;&#34;
-        ...
+    def select_action(self, state: Any) -&gt; Any: ...
 
     @abstractmethod
-    def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float:
-        &#34;&#34;&#34;Perform a single training step.&#34;&#34;&#34;
-        ...
+    def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float: ...
+
+    @abstractmethod
+    def transfer_state_dict(self) -&gt; None: ...
 
     @property
     def is_on_policy(self) -&gt; bool:
-        &#34;&#34;&#34;Return whether the model is on-policy.&#34;&#34;&#34;
+        &#34;&#34;&#34;Return whether the model is on-policy.
+
+        Returns:
+            bool: Whether the model is on-policy.
+        &#34;&#34;&#34;
         return self._is_on_policy
 
     @property
     def action_var(self) -&gt; str:
-        &#34;&#34;&#34;Return the action variable.&#34;&#34;&#34;
-        return self._action_var</code></pre>
+        &#34;&#34;&#34;Return the action variable.
+
+        Returns:
+            str: Action variable.
+        &#34;&#34;&#34;
+        return self._action_var
+
+    def save(self, path: str) -&gt; None:
+        &#34;&#34;&#34;Save the trained model.
+
+        Args:
+            path (str): Path to save
+        &#34;&#34;&#34;
+        dists = [dist.state_dict() for dist in self.distributions]
+        torch.save({&#34;distributions&#34;: dists, &#34;optimizer&#34;: self.optimizer.state_dict()}, path)
+
+    def load(self, path: str) -&gt; None:
+        &#34;&#34;&#34;Load a trained model.
+
+        Args:
+            path (str): Path to load
+        &#34;&#34;&#34;
+        checkpoint = torch.load(path)
+        dists = list(self.distributions)
+        for dist, state_dict in zip(dists, checkpoint[&#34;distributions&#34;], strict=False):
+            dist.load_state_dict(state_dict)
+        self.optimizer.load_state_dict(checkpoint[&#34;optimizer&#34;])
+
+        self.transfer_state_dict()</code></pre>
 </details>
 <div class="desc"><p>Base class for reinforcement learning models.</p>
 <p>Initialize the model.</p>
@@ -120,10 +149,19 @@ el.replaceWith(d);
 </summary>
 <pre><code class="python">@property
 def action_var(self) -&gt; str:
-    &#34;&#34;&#34;Return the action variable.&#34;&#34;&#34;
+    &#34;&#34;&#34;Return the action variable.
+
+    Returns:
+        str: Action variable.
+    &#34;&#34;&#34;
     return self._action_var</code></pre>
 </details>
-<div class="desc"><p>Return the action variable.</p></div>
+<div class="desc"><p>Return the action variable.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>str</code></dt>
+<dd>Action variable.</dd>
+</dl></div>
 </dd>
 <dt id="pixyzrl.models.base_model.RLModel.is_on_policy"><code class="name">prop <span class="ident">is_on_policy</span> : bool</code></dt>
 <dd>
@@ -133,14 +171,76 @@ def action_var(self) -&gt; str:
 </summary>
 <pre><code class="python">@property
 def is_on_policy(self) -&gt; bool:
-    &#34;&#34;&#34;Return whether the model is on-policy.&#34;&#34;&#34;
+    &#34;&#34;&#34;Return whether the model is on-policy.
+
+    Returns:
+        bool: Whether the model is on-policy.
+    &#34;&#34;&#34;
     return self._is_on_policy</code></pre>
 </details>
-<div class="desc"><p>Return whether the model is on-policy.</p></div>
+<div class="desc"><p>Return whether the model is on-policy.</p>
+<h2 id="returns">Returns</h2>
+<dl>
+<dt><code>bool</code></dt>
+<dd>Whether the model is on-policy.</dd>
+</dl></div>
 </dd>
 </dl>
 <h3>Methods</h3>
 <dl>
+<dt id="pixyzrl.models.base_model.RLModel.load"><code class="name flex">
+<span>def <span class="ident">load</span></span>(<span>self, path: str) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load(self, path: str) -&gt; None:
+    &#34;&#34;&#34;Load a trained model.
+
+    Args:
+        path (str): Path to load
+    &#34;&#34;&#34;
+    checkpoint = torch.load(path)
+    dists = list(self.distributions)
+    for dist, state_dict in zip(dists, checkpoint[&#34;distributions&#34;], strict=False):
+        dist.load_state_dict(state_dict)
+    self.optimizer.load_state_dict(checkpoint[&#34;optimizer&#34;])
+
+    self.transfer_state_dict()</code></pre>
+</details>
+<div class="desc"><p>Load a trained model.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to load</dd>
+</dl></div>
+</dd>
+<dt id="pixyzrl.models.base_model.RLModel.save"><code class="name flex">
+<span>def <span class="ident">save</span></span>(<span>self, path: str) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save(self, path: str) -&gt; None:
+    &#34;&#34;&#34;Save the trained model.
+
+    Args:
+        path (str): Path to save
+    &#34;&#34;&#34;
+    dists = [dist.state_dict() for dist in self.distributions]
+    torch.save({&#34;distributions&#34;: dists, &#34;optimizer&#34;: self.optimizer.state_dict()}, path)</code></pre>
+</details>
+<div class="desc"><p>Save the trained model.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>path</code></strong> :&ensp;<code>str</code></dt>
+<dd>Path to save</dd>
+</dl></div>
+</dd>
 <dt id="pixyzrl.models.base_model.RLModel.select_action"><code class="name flex">
 <span>def <span class="ident">select_action</span></span>(<span>self, state: Any) ‑> Any</span>
 </code></dt>
@@ -150,11 +250,9 @@ def is_on_policy(self) -&gt; bool:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def select_action(self, state: Any) -&gt; Any:
-    &#34;&#34;&#34;Select an action.&#34;&#34;&#34;
-    ...</code></pre>
+def select_action(self, state: Any) -&gt; Any: ...</code></pre>
 </details>
-<div class="desc"><p>Select an action.</p></div>
+<div class="desc"></div>
 </dd>
 <dt id="pixyzrl.models.base_model.RLModel.train_step"><code class="name flex">
 <span>def <span class="ident">train_step</span></span>(<span>self,<br>memory: <a title="pixyzrl.memory.memory.BaseBuffer" href="../memory/memory.html#pixyzrl.memory.memory.BaseBuffer">BaseBuffer</a>,<br>batch_size: int = 128,<br>num_epochs: int = 4) ‑> float</span>
@@ -165,11 +263,22 @@ def select_action(self, state: Any) -&gt; Any:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">@abstractmethod
-def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float:
-    &#34;&#34;&#34;Perform a single training step.&#34;&#34;&#34;
-    ...</code></pre>
+def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -&gt; float: ...</code></pre>
 </details>
-<div class="desc"><p>Perform a single training step.</p></div>
+<div class="desc"></div>
+</dd>
+<dt id="pixyzrl.models.base_model.RLModel.transfer_state_dict"><code class="name flex">
+<span>def <span class="ident">transfer_state_dict</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def transfer_state_dict(self) -&gt; None: ...</code></pre>
+</details>
+<div class="desc"></div>
 </dd>
 </dl>
 </dd>
@@ -190,11 +299,14 @@ def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int 
 <ul>
 <li>
 <h4><code><a title="pixyzrl.models.base_model.RLModel" href="#pixyzrl.models.base_model.RLModel">RLModel</a></code></h4>
-<ul class="">
+<ul class="two-column">
 <li><code><a title="pixyzrl.models.base_model.RLModel.action_var" href="#pixyzrl.models.base_model.RLModel.action_var">action_var</a></code></li>
 <li><code><a title="pixyzrl.models.base_model.RLModel.is_on_policy" href="#pixyzrl.models.base_model.RLModel.is_on_policy">is_on_policy</a></code></li>
+<li><code><a title="pixyzrl.models.base_model.RLModel.load" href="#pixyzrl.models.base_model.RLModel.load">load</a></code></li>
+<li><code><a title="pixyzrl.models.base_model.RLModel.save" href="#pixyzrl.models.base_model.RLModel.save">save</a></code></li>
 <li><code><a title="pixyzrl.models.base_model.RLModel.select_action" href="#pixyzrl.models.base_model.RLModel.select_action">select_action</a></code></li>
 <li><code><a title="pixyzrl.models.base_model.RLModel.train_step" href="#pixyzrl.models.base_model.RLModel.train_step">train_step</a></code></li>
+<li><code><a title="pixyzrl.models.base_model.RLModel.transfer_state_dict" href="#pixyzrl.models.base_model.RLModel.transfer_state_dict">transfer_state_dict</a></code></li>
 </ul>
 </li>
 </ul>
@@ -203,7 +315,7 @@ def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int 
 </nav>
 </main>
 <footer id="footer">
-<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.5</a>.</p>
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
 </footer>
 </body>
 </html>
