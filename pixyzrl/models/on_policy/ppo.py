@@ -5,9 +5,8 @@ from typing import Any
 
 import torch
 from pixyz import distributions as dists
-from pixyz.losses import Entropy, MaxLoss, MinLoss, Parameter
+from pixyz.losses import Entropy
 from pixyz.losses import Expectation as E  # noqa: N817
-from pixyz.losses.losses import Detach
 from torch.optim import Adam, lr_scheduler
 from torch.utils.data import DataLoader
 

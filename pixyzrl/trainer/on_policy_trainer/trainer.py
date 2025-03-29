@@ -218,6 +218,10 @@ class OnPolicyTrainer(BaseTrainer):
                 if self.logger:
                     self.logger.log("Computing Monte Carlo returns and advantages.")
                 self.memory.compute_returns_and_advantages_mc()
+            elif self.value_estimate == "grpo":
+                if self.logger:
+                    self.logger.log("Computing GRPO returns and advantages.")
+                self.memory.compute_advantages_grpo()
             else:
                 if self.logger:
                     self.logger.log("Invalid value estimate method. Using GAE instead.")

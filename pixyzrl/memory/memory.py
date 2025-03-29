@@ -1,14 +1,9 @@
-import re
 from abc import abstractmethod
 from typing import Any
 
 import numpy as np
 import torch
-from more_itertools import last
-from pixyz.distributions import Distribution
 from torch.utils.data import Dataset
-
-import pixyzrl
 
 
 class BaseBuffer(Dataset):
@@ -481,6 +476,71 @@ class RolloutBuffer(BaseBuffer):
 
         self.buffer |= {"returns": returns, "advantages": advantages}
         return {"returns": returns, "advantages": advantages}
+
+    def compute_advantages_grpo(self) -> dict[str, torch.Tensor]:
+        """Compute returns and advantages for the stored trajectories.
+
+        Returns:
+            dict[str, torch.Tensor]: Returns and advantages.
+
+        Example:
+            >>> buffer = RolloutBuffer(3, {
+            ...     "obs": {"shape": (4,), "map": "o"},
+            ...     "action": {"shape": (1,), "map": "a"},
+            ...     "reward": {"shape": (1,), "map": "r"},
+            ...     "done": {"shape": (1,), "map": "d"},
+            ...     "value": {"shape": (1,), "map": "v"}
+            ... }, 1)
+            >>>
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
+            >>>
+            >>> last_value = torch.zeros(1)
+            >>> return_advantage = buffer.compute_returns_and_advantages_grpo()
+            >>> "returns" in return_advantage and "advantages" in return_advantage
+            True
+        """
+        for key, value in self.buffer.items():
+            self.buffer[key] = value[0 : self.pos]
+
+        T, N, _ = self.buffer["reward"].shape
+        advantages = np.zeros((T, N), dtype=np.float32)
+
+        rewards = self.buffer["reward"].detach().cpu().numpy().reshape(T, N)
+        dones = self.buffer["done"].detach().cpu().numpy().reshape(T, N).astype(bool)
+        cumulative_rewards = np.zeros((T, N), dtype=np.float32)
+
+        cumulative_rewards[0] = rewards[0]
+        for i in range(1, T):
+            cumulative_rewards[i] = rewards[i] + cumulative_rewards[i - 1] * (
+                1 - dones[i - 1]
+            )
+
+        for i in range(T):
+            if dones[i].any():
+                target_cumulative_reward = cumulative_rewards[i] * dones[i]
+                advantages[i] = (
+                    (target_cumulative_reward - np.mean(cumulative_rewards[dones]))
+                    / (np.std(cumulative_rewards[dones]) + 1e-8)
+                    * dones[i]
+                )
+
+        advantages[-1] = (
+            cumulative_rewards[-1] - np.mean(cumulative_rewards[dones])
+        ) / (np.std(cumulative_rewards[dones]) + 1e-8)
+
+        for i in reversed(range(advantages.shape[0] - 1)):
+            matching_advantages = advantages[i] == 0
+            advantages[i][matching_advantages] = advantages[i + 1][matching_advantages]
+
+        advantages = torch.tensor(advantages, dtype=torch.float32, device=self.device)
+
+        if self.advantage_normalization:
+            advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
+
+        self.buffer |= {"advantages": advantages.detach()}
+        return {"advantages": advantages}
 
 
 class ExperienceReplay(BaseBuffer):
