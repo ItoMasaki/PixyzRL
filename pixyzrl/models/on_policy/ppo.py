@@ -105,13 +105,13 @@ class PPO(RLModel):
             loss = E(
                 self.shared_net,
                 ppo_loss
-                + self.mse_coef * self.mse_loss
+                # + self.mse_coef * self.mse_loss
                 - self.entropy_coef * Entropy(self.actor),
             ).mean()
         else:  # TRPO
             loss = (
                 ppo_loss
-                + self.mse_coef * self.mse_loss
+                # + self.mse_coef * self.mse_loss
                 - self.entropy_coef * Entropy(self.actor)
             ).mean()
 
