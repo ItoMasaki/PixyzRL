@@ -99,11 +99,7 @@ class OnPolicyTrainer(BaseTrainer):
         self.transform = transform
         memory.device = device
         self.episode = 0
-        self.log_dir = (
-            logger.log_dir
-            if logger
-            else f"logs/{datetime.now(datetime.now().astimezone().tzinfo).strftime('%Y%m%d-%H%M%S')}"
-        )
+        self.log_dir = logger.log_dir if logger else f"logs/{datetime.now(datetime.now().astimezone().tzinfo).strftime('%Y%m%d-%H%M%S')}"
 
     def collect_experiences(self) -> None:
         """Collect experiences from the environment.
@@ -181,9 +177,7 @@ class OnPolicyTrainer(BaseTrainer):
                     obs = obs.permute(0, 3, 1, 2) / 255.0
 
                 action = self.agent.select_action({"o": obs.to(self.device)})
-                next_obs, reward, terminated, truncated, info = self.env.step(
-                    action[self.agent.action_var].cpu()
-                )
+                next_obs, reward, terminated, truncated, info = self.env.step(action[self.agent.action_var].cpu())
                 done = torch.logical_or(terminated, truncated)
 
                 self.memory.add(
@@ -303,9 +297,7 @@ class OnPolicyTrainer(BaseTrainer):
         self.agent.transfer_state_dict()
 
         if self.logger:
-            self.logger.log(
-                f"On-policy training step completed. Loss: {total_loss/num_epochs}"
-            )
+            self.logger.log(f"On-policy training step completed. Loss: {total_loss / num_epochs}")
 
     def test(self) -> None:
         """Test the agent.
@@ -389,9 +381,7 @@ class OnPolicyTrainer(BaseTrainer):
                         obs = obs.permute(0, 3, 1, 2) / 255.0
 
                     action = self.agent.select_action({"o": obs.to(self.device)})
-                    next_obs, reward, terminated, truncated, _ = self.env.step(
-                        action[self.agent.action_var].cpu().numpy()
-                    )
+                    next_obs, reward, terminated, truncated, _ = self.env.step(action[self.agent.action_var].cpu().numpy())
                     done = torch.logical_or(terminated, truncated)
 
                     obs = next_obs
@@ -422,9 +412,7 @@ class OnPolicyTrainer(BaseTrainer):
             im = plt.imshow(frame)
             ims.append([im])
 
-        ani = animation.ArtistAnimation(
-            fig, ims, interval=50, blit=True, repeat_delay=1000
-        )
+        ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True, repeat_delay=1000)
         ani.save(f"{self.log_dir}/test_{self.episode - 1}.mp4")
         fig.clear()
 
@@ -515,9 +503,7 @@ class OnPolicyTrainer(BaseTrainer):
             self.memory.clear()
 
             if self.logger:
-                self.logger.log(
-                    f"On-policy Iteration {iteration + 1}/{num_iterations} completed."
-                )
+                self.logger.log(f"On-policy Iteration {iteration + 1}/{num_iterations} completed.")
 
             if (iteration + 1) % test_interval == 0:
                 self.test()

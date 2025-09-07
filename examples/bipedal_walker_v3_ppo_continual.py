@@ -1,5 +1,6 @@
 import torch
 from pixyz.distributions import Deterministic, Normal
+from pixyz.losses import Entropy as H
 from torch import nn
 
 from pixyzrl.environments import Env
@@ -9,14 +10,14 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 from pixyzrl.utils import print_latex
 
-env = Env("BipedalWalker-v3", 8, render_mode="rgb_array")
+env = Env("BipedalWalkerHardcore-v3", 8, render_mode="rgb_array")
 action_dim = env.action_space
 obs_dim = env.observation_space
 
 
 class Actor(Normal):
-    def __init__(self):
-        super().__init__(var=["a"], cond_var=["o"], name="p")
+    def __init__(self, name="p") -> None:
+        super().__init__(var=["a"], cond_var=["o"], name=name)
 
         self.feature_extract = nn.Sequential(
             nn.Linear(*obs_dim, 64),
@@ -59,8 +60,11 @@ class Critic(Deterministic):
         return {"v": v}
 
 
-actor = Actor()
+actor = Actor("actor")
+actor_old = Actor("actor_{old}")
+actor_old.load_state_dict(actor.state_dict())
 critic = Critic()
+
 
 ppo = PPO(
     actor,
@@ -75,7 +79,7 @@ ppo = PPO(
 print_latex(ppo)
 
 buffer = RolloutBuffer(
-    8192,
+    8192 * 2,
     {
         "obs": {
             "shape": (*obs_dim,),
@@ -112,7 +116,5 @@ buffer = RolloutBuffer(
 )
 
 logger = Logger("bipedal_walker_v3_ppo_continual", log_types=["print"])
-
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
-# trainer.load_model("cartpole_v1_ppo_discrete_trainer/model_1200.pt")
-trainer.train(1000000, 1024, 10, save_interval=50, test_interval=10)
+trainer.train(1000000, 1024, 10, save_interval=50, test_interval=50)

@@ -4,31 +4,15 @@ from torch import nn
 
 from pixyzrl.environments import Env
 from pixyzrl.logger import Logger
+from pixyzrl.losses import PPOClipLoss
 from pixyzrl.memory import RolloutBuffer
-from pixyzrl.models import PPO
+from pixyzrl.models import PPO, ActorCritic
 from pixyzrl.trainer import OnPolicyTrainer
 from pixyzrl.utils import print_latex
 
 env = Env("CartPole-v1", 2, render_mode="rgb_array")
 action_dim = env.action_space
 obs_dim = env.observation_space
-
-
-class FeatureExtractor(Deterministic):
-    def __init__(self):
-        super().__init__(var=["s"], cond_var=["o"])
-
-        self._net = nn.Sequential(
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.LazyLinear(64),
-            nn.ReLU(),
-            nn.LazyLinear(64),
-            nn.ReLU(),
-        )
-
-    def forward(self, o: torch.Tensor):
-        return {"s": self._net(o)}
 
 
 class Actor(Categorical):
@@ -63,13 +47,14 @@ class Critic(Deterministic):
 
 
 actor = Actor()
+actor_old = Actor()
 critic = Critic()
-extractor = FeatureExtractor()
+
+loss = PPOClipLoss(actor, actor_old, 0.2)
 
 ppo = PPO(
     actor,
     critic,
-    extractor,
     entropy_coef=0.01,
     mse_coef=0.5,
     lr_actor=1e-4,
@@ -118,5 +103,4 @@ buffer = RolloutBuffer(
 logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
 
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
-# trainer.load_model("cartpole_v1_ppo_discrete_trainer/model_1200.pt")
 trainer.train(1000000, 32, 10, save_interval=50, test_interval=20)

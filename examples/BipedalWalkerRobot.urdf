@@ -1,0 +1,496 @@
+<?xml version="1.0"?>
+<robot name="BipedalWalkerRobot">
+  <material name="silver">
+    <color rgba="0.700 0.700 0.700 1.000" />
+  </material>
+  <transmission name="Revolute1_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute1">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute1_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 26_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 26">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 26_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 27_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 27">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 27_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 31_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 31">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 31_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 32_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 32">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 32_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 33_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 33">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 33_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 34_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 34">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 34_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 35_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 35">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 35_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 36_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 36">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 36_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <transmission name="Revolute 37_tran">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="Revolute 37">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="Revolute 37_actr">
+      <hardwareInterface>hardware_interface/EffortJointInterface</hardwareInterface>
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+  <gazebo>
+    <plugin filename="libgazebo_ros_control.so" name="control" />
+  </gazebo>
+  <gazebo reference="base_link">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+    <gravity>true</gravity>
+  </gazebo>
+  <gazebo reference="right_motor_1_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="left_motor_1_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="left_motor_2_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="right_shin_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="right_foot_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="right_thight_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="right_motor_2_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="left_foot_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="left_shin_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <gazebo reference="left_thight_1">
+    <material>Gazebo/Silver</material>
+    <mu1>0.2</mu1>
+    <mu2>0.2</mu2>
+    <selfCollide>true</selfCollide>
+  </gazebo>
+  <link name="base_link">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-5.076426587905222e-07 0.12004859782801987 0.059639999913675676" />
+      <mass value="7.541578426007267" />
+      <inertia ixx="0.113421" ixy="0.0" ixz="-0.0" iyy="0.109009" iyz="0.00196" izz="0.053362" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+      <geometry>
+        <mesh filename="meshes/base_link.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_motor_1_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.0008620656378392558 -0.03823971709196573 -1.3877787807814457e-17" />
+      <mass value="1.7040755059924255" />
+      <inertia ixx="0.002191" ixy="-1.6e-05" ixz="-0.0" iyy="0.001205" iyz="0.0" izz="0.002067" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.045 -0.155 -0.03" />
+      <geometry>
+        <mesh filename="meshes/right_motor_1_1.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.045 -0.155 -0.03" />
+      <geometry>
+        <mesh filename="meshes/right_motor_1_1.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_motor_1_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.0008621086787050716 -0.03824150149029372 -1.734723475976807e-17" />
+      <mass value="1.7039904298384632" />
+      <inertia ixx="0.002191" ixy="1.6e-05" ixz="0.0" iyy="0.001205" iyz="-0.0" izz="0.002067" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.045 -0.155 -0.03" />
+      <geometry>
+        <mesh filename="meshes/left_motor_1_1.stl" scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.045 -0.155 -0.03" />
+      <geometry>
+        <mesh
+          filename="meshes/left_motor_1_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_motor_2_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.01190893412651018 -0.002798829965549837 -0.018453210857961533" />
+      <mass value="1.3567686893206514" />
+      <inertia ixx="0.000851" ixy="-9.3e-05" ixz="0.000157" iyy="0.001056" iyz="2.9e-05"
+        izz="0.001101" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.0575 -0.085 -0.055" />
+      <geometry>
+        <mesh
+          filename="meshes/left_motor_2_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.0575 -0.085 -0.055" />
+      <geometry>
+        <mesh
+          filename="meshes/left_motor_2_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_shin_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.015192078474402265 -0.028054225177912274 0.02117639117169167" />
+      <mass value="1.964454150614171" />
+      <inertia ixx="0.005636" ixy="-0.000117" ixz="0.000142" iyy="0.002575" iyz="0.001986"
+        izz="0.00343" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.098471 -0.005149 0.044009" />
+      <geometry>
+        <mesh
+          filename="meshes/right_shin_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.098471 -0.005149 0.044009" />
+      <geometry>
+        <mesh
+          filename="meshes/right_shin_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_foot_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.01499994370037934 -0.028610927229239844 0.018726087871194536" />
+      <mass value="3.425309820656728" />
+      <inertia ixx="0.008932" ixy="-0.0" ixz="-0.0" iyy="0.006878" iyz="0.000772" izz="0.002831" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.128471 0.098923 -0.05" />
+      <geometry>
+        <mesh
+          filename="meshes/right_foot_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.128471 0.098923 -0.05" />
+      <geometry>
+        <mesh
+          filename="meshes/right_foot_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_thight_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.01337105632230666 -0.014540470150579618 -0.026688984787010116" />
+      <mass value="3.1405521433815324" />
+      <inertia ixx="0.008394" ixy="0.000184" ixz="0.000324" iyy="0.005611" iyz="-0.001673"
+        izz="0.003392" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.128471 -0.064837 -0.060122" />
+      <geometry>
+        <mesh
+          filename="meshes/right_thight_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.128471 -0.064837 -0.060122" />
+      <geometry>
+        <mesh
+          filename="meshes/right_thight_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="right_motor_2_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.01190893412643921 -0.0027988299655498233 -0.018453210857961554" />
+      <mass value="1.3567686893206528" />
+      <inertia ixx="0.000851" ixy="9.3e-05" ixz="-0.000157" iyy="0.001056" iyz="2.9e-05"
+        izz="0.001101" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="-0.0575 -0.085 -0.055" />
+      <geometry>
+        <mesh
+          filename="meshes/right_motor_2_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="-0.0575 -0.085 -0.055" />
+      <geometry>
+        <mesh
+          filename="meshes/right_motor_2_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_foot_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.01499994370037934 -0.028610927229239844 0.01872608787119452" />
+      <mass value="3.425309820656728" />
+      <inertia ixx="0.008932" ixy="0.0" ixz="0.0" iyy="0.006878" iyz="0.000772" izz="0.002831" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.128471 0.098923 -0.05" />
+      <geometry>
+        <mesh
+          filename="meshes/left_foot_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.128471 0.098923 -0.05" />
+      <geometry>
+        <mesh
+          filename="meshes/left_foot_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_shin_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="-0.015192078474402251 -0.028054225177912288 0.021176391171691754" />
+      <mass value="1.9644541506141713" />
+      <inertia ixx="0.005636" ixy="0.000117" ixz="-0.000142" iyy="0.002575" iyz="0.001986"
+        izz="0.00343" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.098471 -0.005149 0.044009" />
+      <geometry>
+        <mesh
+          filename="meshes/left_shin_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.098471 -0.005149 0.044009" />
+      <geometry>
+        <mesh
+          filename="meshes/left_shin_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <link name="left_thight_1">
+    <inertial>
+      <origin rpy="0 0 0" xyz="0.01337105632230666 -0.014540470150579611 -0.02668898478701013" />
+      <mass value="3.1405521433815324" />
+      <inertia ixx="0.008394" ixy="-0.000184" ixz="-0.000324" iyy="0.005611" iyz="-0.001673"
+        izz="0.003392" />
+    </inertial>
+    <visual>
+      <origin rpy="0 0 0" xyz="0.128471 -0.064837 -0.060122" />
+      <geometry>
+        <mesh
+          filename="meshes/left_thight_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+      <material name="silver" />
+    </visual>
+    <collision>
+      <origin rpy="0 0 0" xyz="0.128471 -0.064837 -0.060122" />
+      <geometry>
+        <mesh
+          filename="meshes/left_thight_1.stl"
+          scale="0.001 0.001 0.001" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="Revolute1" type="continuous">
+    <origin rpy="0 0 0" xyz="0.045 0.155 0.03" />
+    <parent link="base_link" />
+    <child link="right_motor_1_1" />
+    <axis xyz="0.0 -1.0 0.0" />
+  </joint>
+  <joint name="Revolute 26" type="continuous">
+    <origin rpy="0 0 0" xyz="-0.045 0.155 0.03" />
+    <parent link="base_link" />
+    <child link="left_motor_1_1" />
+    <axis xyz="0.0 -1.0 0.0" />
+  </joint>
+  <joint name="Revolute 27" type="continuous">
+    <origin rpy="0 0 0" xyz="-0.0125 -0.07 0.025" />
+    <parent link="left_motor_1_1" />
+    <child link="left_motor_2_1" />
+    <axis xyz="0.0 0.0 -1.0" />
+  </joint>
+  <joint name="Revolute 31" type="continuous">
+    <origin rpy="0 0 0" xyz="-0.03 -0.059688 -0.104131" />
+    <parent link="right_thight_1" />
+    <child link="right_shin_1" />
+    <axis xyz="1.0 0.0 0.0" />
+  </joint>
+  <joint name="Revolute 32" type="continuous">
+    <origin rpy="0 0 0" xyz="0.03 -0.104072 0.094009" />
+    <parent link="right_shin_1" />
+    <child link="right_foot_1" />
+    <axis xyz="1.0 0.0 0.0" />
+  </joint>
+  <joint name="Revolute 33" type="continuous">
+    <origin rpy="0 0 0" xyz="0.070971 -0.020163 0.005122" />
+    <parent link="right_motor_2_1" />
+    <child link="right_thight_1" />
+    <axis xyz="1.0 0.0 0.0" />
+  </joint>
+  <joint name="Revolute 34" type="continuous">
+    <origin rpy="0 0 0" xyz="0.0125 -0.07 0.025" />
+    <parent link="right_motor_1_1" />
+    <child link="right_motor_2_1" />
+    <axis xyz="0.0 0.0 1.0" />
+  </joint>
+  <joint name="Revolute 35" type="continuous">
+    <origin rpy="0 0 0" xyz="-0.03 -0.104072 0.094009" />
+    <parent link="left_shin_1" />
+    <child link="left_foot_1" />
+    <axis xyz="-1.0 0.0 0.0" />
+  </joint>
+  <joint name="Revolute 36" type="continuous">
+    <origin rpy="0 0 0" xyz="0.03 -0.059688 -0.104131" />
+    <parent link="left_thight_1" />
+    <child link="left_shin_1" />
+    <axis xyz="1.0 0.0 0.0" />
+  </joint>
+  <joint name="Revolute 37" type="continuous">
+    <origin rpy="0 0 0" xyz="-0.070971 -0.020163 0.005122" />
+    <parent link="left_motor_2_1" />
+    <child link="left_thight_1" />
+    <axis xyz="-1.0 0.0 0.0" />
+  </joint>
+</robot>

@@ -3,6 +3,7 @@ from typing import Any
 
 import torch
 from pixyz.models import Model
+from torch.utils.data import DataLoader
 
 from pixyzrl.memory import BaseBuffer
 
@@ -23,10 +24,8 @@ class RLModel(Model, ABC):
         self._action_var = "a"
 
     @abstractmethod
+    @torch.no_grad()
     def select_action(self, state: Any) -> Any: ...
-
-    @abstractmethod
-    def train_step(self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4) -> float: ...
 
     @abstractmethod
     def transfer_state_dict(self) -> None: ...
@@ -48,6 +47,26 @@ class RLModel(Model, ABC):
             str: Action variable.
         """
         return self._action_var
+
+    def train_step(self, memory: BaseBuffer, batch_size: int = 128) -> float:
+        """Perform a single training step.
+
+        Args:
+            memory (BaseBuffer): Replay buffer.
+            batch_size (int): Batch size.
+
+        Returns:
+            float: Total loss.
+        """
+        total_loss = 0
+
+        dataloader = DataLoader(memory, batch_size=batch_size, shuffle=True)
+
+        for batch in dataloader:
+            loss = self.train(batch)
+            total_loss += loss
+
+        return total_loss / len(dataloader)
 
     def save(self, path: str) -> None:
         """Save the trained model.

@@ -9,84 +9,79 @@ from pixyzrl.models import PPO
 from pixyzrl.trainer import OnPolicyTrainer
 from pixyzrl.utils import print_latex
 
-env = Env("CarRacing-v3", 2, render_mode="rgb_array")
+env = Env("CarRacing-v3", 4, render_mode="rgb_array")
 action_dim = env.action_space
 obs_dim = env.observation_space[::-1]
 
 
-class Actor(Normal):
-    def __init__(self, action_dim: int) -> None:
-        super().__init__(var=["a"], cond_var=["o"], name="p")
+class SharedNet(Deterministic):
+    def __init__(self):
+        super().__init__(var=["s"], cond_var=["o"], name="shared_net")
 
         self.feature_extract = nn.Sequential(
             nn.LazyConv2d(32, kernel_size=8, stride=4),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.LazyConv2d(64, kernel_size=4, stride=2),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.LazyConv2d(64, kernel_size=3, stride=1),
-            nn.ReLU(),
+            nn.SiLU(),
             nn.Flatten(),
+            nn.LazyLinear(1024),
+            nn.SiLU(),
         )
+
+    def forward(self, o: torch.Tensor):
+        h = self.feature_extract(o)
+        return {"s": h}
+
+
+class Actor(Normal):
+    def __init__(self, name="p") -> None:
+        super().__init__(var=["a"], cond_var=["s"], name=name)
 
         self._loc = nn.Sequential(
             nn.LazyLinear(1024),
-            nn.Tanh(),
-            nn.LazyLinear(128),
             nn.Tanh(),
             nn.LazyLinear(action_dim),
             nn.Tanh(),
         )
 
         self._scale = nn.Sequential(
-            nn.LazyLinear(2048),
-            nn.Tanh(),
-            nn.LazyLinear(128),
+            nn.LazyLinear(1024),
             nn.Tanh(),
             nn.LazyLinear(action_dim),
             nn.Softplus(),
         )
 
-    def forward(self, o: torch.Tensor) -> dict[str, torch.Tensor]:
-        h = self.feature_extract(o)
-        loc = self._loc(h)
-        scale = self._scale(h) + 1e-5
+    def forward(self, s: torch.Tensor) -> dict[str, torch.Tensor]:
+        loc = self._loc(s)
+        scale = self._scale(s) + 1e-5
         return {"loc": loc, "scale": scale}
 
 
 class Critic(Deterministic):
     def __init__(self) -> None:
-        super().__init__(var=["v"], cond_var=["o"], name="f")
-
-        self.feature_extract = nn.Sequential(
-            nn.LazyConv2d(32, kernel_size=8, stride=4),
-            nn.ReLU(),
-            nn.LazyConv2d(64, kernel_size=4, stride=2),
-            nn.ReLU(),
-            nn.LazyConv2d(64, kernel_size=3, stride=1),
-            nn.ReLU(),
-            nn.Flatten(),
-        )
+        super().__init__(var=["v"], cond_var=["s"], name="f")
 
         self.net = nn.Sequential(
             nn.LazyLinear(1024),
             nn.Tanh(),
-            nn.LazyLinear(128),
-            nn.Tanh(),
             nn.LazyLinear(1),
         )
 
-    def forward(self, o: torch.Tensor) -> dict[str, torch.Tensor]:
-        h = self.feature_extract(o)
-        v = self.net(h)
+    def forward(self, s: torch.Tensor) -> dict[str, torch.Tensor]:
+        v = self.net(s)
         return {"v": v}
 
 
-actor = Actor(action_dim)
+actor = Actor()
 critic = Critic()
+shared_net = SharedNet()
 
 ppo = PPO(
     actor,
     critic,
+    shared_net=shared_net,
     entropy_coef=0.01,
     mse_coef=1.0,
     lr_actor=1e-4,
@@ -97,7 +92,7 @@ ppo = PPO(
 print_latex(ppo)
 
 buffer = RolloutBuffer(
-    2048,
+    4096,
     {
         "obs": {
             "shape": (*obs_dim,),
@@ -127,10 +122,10 @@ buffer = RolloutBuffer(
             "map": "A",
         },
     },
-    2,
+    4,
     advantage_normalization=True,
 )
 
 logger = Logger("car_racing_v3_ppo_continual", log_types=["print"])
 trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
-trainer.train(1000000, 512, 10, save_interval=50, test_interval=20)
+trainer.train(1000000, 1024, 10, save_interval=50, test_interval=50)

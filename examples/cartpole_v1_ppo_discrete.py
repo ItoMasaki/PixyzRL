@@ -1,16 +1,70 @@
-"""Proximal Policy Optimization (PPO) agent using Pixyz."""
-
-from copy import deepcopy
-from typing import Any
-
 import torch
-from pixyz import distributions as dists
-from pixyz.losses import Entropy as H
-from pixyz.losses import Expectation as E  # noqa: N817
-from torch.optim import Adam, lr_scheduler
+from pixyz.distributions import Categorical, Deterministic
+from torch import nn
 
-from pixyzrl.losses import MSELoss, PPOClipLoss
-from pixyzrl.models.base_model import RLModel
+from pixyzrl.environments import Env
+from pixyzrl.logger import Logger
+from pixyzrl.losses import PPOClipLoss
+from pixyzrl.memory import RolloutBuffer
+from pixyzrl.memory.memory import BaseBuffer
+from pixyzrl.models import PPO, RLModel
+from pixyzrl.trainer import OnPolicyTrainer
+from pixyzrl.utils import print_latex
+
+env = Env("CartPole-v1", 2, render_mode="rgb_array")
+action_dim = env.action_space
+obs_dim = env.observation_space
+
+
+class Actor(Categorical):
+    def __init__(self):
+        super().__init__(var=["a"], cond_var=["s"], name="p")
+
+        self._prob = nn.Sequential(
+            nn.Linear(64, 64),
+            nn.Tanh(),
+            nn.Linear(64, action_dim),
+            nn.Softmax(dim=-1),
+        )
+
+    def forward(self, s: torch.Tensor):
+        probs = self._prob(s)
+        return {"probs": probs}
+
+
+class Critic(Deterministic):
+    def __init__(self):
+        super().__init__(var=["v"], cond_var=["s"], name="f")
+
+        self.net = nn.Sequential(
+            nn.Linear(64, 64),
+            nn.Tanh(),
+            nn.Linear(64, 1),
+        )
+
+    def forward(self, s: torch.Tensor):
+        v = self.net(s)
+        return {"v": v}
+
+
+actor = Actor()
+actor_old = Actor()
+critic = Critic()
+
+loss = PPOClipLoss(actor, actor_old, 0.2)
+
+
+class OnPolicy(RLModel):
+    def __init__(self) -> None:
+        pass
+
+    def select_action(self, state: torch.Tensor) -> dict[str, torch.Tensor]:
+        pass
+
+    def train_step(
+        self, memory: BaseBuffer, batch_size: int = 128, num_epochs: int = 4
+    ) -> float:
+        return super().train_step(memory, batch_size, num_epochs)
 
 
 class PPO(RLModel):
@@ -28,8 +82,6 @@ class PPO(RLModel):
         mse_coef: float = 0.5,
         entropy_coef: float = 0.01,
         action_var: str = "a",
-        advantage_var: str = "A",
-        reward_var: str = "r",
         scheduler: lr_scheduler.LRScheduler | None = None,
         **kwargs: dict[str, Any],
     ) -> None:
@@ -94,14 +146,29 @@ class PPO(RLModel):
         # Critic network
         self.critic = critic
 
-        ppo_loss = PPOClipLoss(self.actor, self.actor_old, self.eps_clip, advantage_var)
-        self.mse_loss = MSELoss(self.critic, reward_var)
+        ppo_loss = PPOClipLoss(self.actor, self.actor_old, self.eps_clip, "A")
 
-        loss = E(self.shared_net, ppo_loss + self.mse_coef * self.mse_loss - self.entropy_coef * H(self.actor)).mean() if self.shared_net is not None else (ppo_loss + self.mse_coef * self.mse_loss - self.entropy_coef * H(self.actor)).mean()
+        self.mse_loss = MSELoss(self.critic, "r", reduction="none")
+        # self.mse_loss = ValueClipLoss(self.critic, "r", 0.2)
+
+        if self.shared_net is not None:  # A2C
+            loss = E(
+                self.shared_net,
+                ppo_loss
+                # + self.mse_coef * self.mse_loss
+                - self.entropy_coef * Entropy(self.actor),
+            ).mean()
+        else:  # TRPO
+            loss = (
+                ppo_loss
+                # + self.mse_coef * self.mse_loss
+                - self.entropy_coef * Entropy(self.actor)
+            ).mean()
 
         super().__init__(
             loss,
-            distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []),
+            distributions=[self.actor, self.critic]
+            + ([self.shared_net] if self.shared_net else []),
             optimizer=Adam,
             optimizer_params={},
             **kwargs,
@@ -165,6 +232,26 @@ class PPO(RLModel):
                 state = self.shared_net.sample(state)
             return self.actor_old.sample(state) | self.critic.sample(state)
 
+    def train_step(self, memory: BaseBuffer, batch_size: int = 128) -> float:
+        """Perform a single training step.
+
+        Args:
+            memory (BaseBuffer): Replay buffer.
+            batch_size (int): Batch size.
+
+        Returns:
+            float: Total loss.
+        """
+        total_loss = 0
+
+        dataloader = DataLoader(memory, batch_size=batch_size, shuffle=True)
+
+        for batch in dataloader:
+            loss = self.train(batch)
+            total_loss += loss
+
+        return total_loss / len(dataloader)
+
     def transfer_state_dict(self) -> None:
         """Transfer the state dictionary.
 
@@ -172,3 +259,57 @@ class PPO(RLModel):
             state_dict (dict[str, torch.Tensor]): State dictionary.
         """
         self.actor_old.load_state_dict(self.actor.state_dict())
+
+
+# ppo = PPO(
+#     actor,
+#     critic,
+#     entropy_coef=0.01,
+#     mse_coef=0.5,
+#     lr_actor=1e-4,
+#     lr_critic=3e-4,
+#     device="mps",
+#     # clip_grad_norm=0.5,
+# )
+# print_latex(ppo)
+
+# buffer = RolloutBuffer(
+#     1024,
+#     {
+#         "obs": {
+#             "shape": (*obs_dim,),
+#             "map": "o",
+#         },
+#         "value": {
+#             "shape": (1,),
+#             "map": "v",
+#         },
+#         "action": {
+#             "shape": (action_dim,),
+#             "map": "a",
+#         },
+#         "reward": {
+#             "shape": (1,),
+#         },
+#         "done": {
+#             "shape": (1,),
+#         },
+#         "returns": {
+#             "shape": (1,),
+#             "map": "r",
+#         },
+#         "advantages": {
+#             "shape": (1,),
+#             "map": "A",
+#         },
+#     },
+#     2,
+#     advantage_normalization=True,
+#     lam=0.95,
+#     gamma=0.99,
+# )
+
+# logger = Logger("cartpole_v1_ppo_discrete_trainer", log_types=["print"])
+
+# trainer = OnPolicyTrainer(env, buffer, ppo, "gae", "mps", logger=logger)
+# trainer.train(1000000, 32, 10, save_interval=50, test_interval=20)
