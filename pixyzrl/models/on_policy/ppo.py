@@ -97,11 +97,25 @@ class PPO(RLModel):
         ppo_loss = PPOClipLoss(self.actor, self.actor_old, self.eps_clip, advantage_var)
         self.mse_loss = MSELoss(self.critic, reward_var)
 
-        loss = E(self.shared_net, ppo_loss + self.mse_coef * self.mse_loss - self.entropy_coef * H(self.actor)).mean() if self.shared_net is not None else (ppo_loss + self.mse_coef * self.mse_loss - self.entropy_coef * H(self.actor)).mean()
+        loss = (
+            E(
+                self.shared_net,
+                ppo_loss
+                + self.mse_coef * self.mse_loss
+                - self.entropy_coef * H(self.actor),
+            ).mean()
+            if self.shared_net is not None
+            else (
+                ppo_loss
+                + self.mse_coef * self.mse_loss
+                - self.entropy_coef * H(self.actor)
+            ).mean()
+        )
 
         super().__init__(
             loss,
-            distributions=[self.actor, self.critic] + ([self.shared_net] if self.shared_net else []),
+            distributions=[self.actor, self.critic]
+            + ([self.shared_net] if self.shared_net else []),
             optimizer=Adam,
             optimizer_params={},
             **kwargs,

@@ -61,16 +61,25 @@ class Logger:
             level=log_level,
             format=log_format,
             handlers=[
-                RotatingFileHandler(log_file, maxBytes=max_log_size, backupCount=backup_count),
+                RotatingFileHandler(
+                    log_file, maxBytes=max_log_size, backupCount=backup_count
+                ),
                 logging.StreamHandler(),
             ],
         )
 
         self.logger = logging.getLogger("PixyzRLLogger")
-        self.writer = SummaryWriter(log_dir) if "tensorboard" in self.log_types else None
+        self.writer = (
+            SummaryWriter(log_dir) if "tensorboard" in self.log_types else None
+        )
         self.global_step = 0
 
-    def log(self, message: str | dict[str, Any], level: int = logging.INFO, step: int | None = None) -> None:
+    def log(
+        self,
+        message: str | dict[str, Any],
+        level: int = logging.INFO,
+        step: int | None = None,
+    ) -> None:
         """Logs a message or a dictionary of values based on selected log types.
 
         Args:
