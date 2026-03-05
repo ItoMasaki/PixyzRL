@@ -17,7 +17,8 @@ def is_env_notebook() -> bool:
     if "get_ipython" not in globals():
         # Python shell
         return False
-    env_name = get_ipython().__class__.__name__  # type: ignore # noqa: F821, PGH003
+    ip = get_ipython()  # type: ignore # noqa: F821, PGH003
+    env_name = ip.__class__.__name__
     # Return the negated condition directly
     return env_name != "TerminalInteractiveShell"
 
@@ -29,13 +30,16 @@ def print_latex(obj: Any) -> Math | str | None:
         obj (Any): Object to be printed in latex format.
 
     Returns:
-        Math | str | None: Math object if the environment is Jupyter Notebook, string if not, None otherwise.
+        Math | str | None: Math object if in Jupyter Notebook, string
+        otherwise, None if not available.
 
     Examples:
         >>> from pixyz.distributions import Normal
         >>> from pixyz.losses import KullbackLeibler
-        >>> p = Normal(loc=0., scale=1., var=["x"], cond_var=["y"], features_shape=[1], name="p")
-        >>> q = Normal(loc=0., scale=1., var=["x"], cond_var=["y"], features_shape=[1], name="q")
+        >>> p = Normal(loc=0., scale=1., var=["x"], cond_var=["y"],
+        ...            features_shape=[1], name="p")
+        >>> q = Normal(loc=0., scale=1., var=["x"], cond_var=["y"],
+        ...            features_shape=[1], name="q")
         >>> print_latex(KullbackLeibler(p, q))
         D_{KL} \\left[p(x|y)||q(x|y) \\right]
     """
