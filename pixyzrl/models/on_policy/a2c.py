@@ -2,8 +2,9 @@
 
 import torch
 from pixyz import distributions as dists
-from pixyz.losses import Entropy, Parameter
+from pixyz.losses import Entropy
 from pixyz.losses import Expectation as E  # noqa: N817
+from pixyz.losses import Parameter
 from torch.optim import Adam
 
 from pixyzrl.losses import MSELoss
@@ -43,9 +44,18 @@ class A2C(RLModel):
         actor_loss = -(E(self.actor, advantage)).mean()
         mse_loss = MSELoss(self.critic, "r")
 
-        loss = actor_loss + self.mse_coef * mse_loss.mean() - self.entropy_coef * Entropy(self.actor).mean()
+        loss = (
+            actor_loss
+            + self.mse_coef * mse_loss.mean()
+            - self.entropy_coef * Entropy(self.actor).mean()
+        )
 
-        super().__init__(loss, distributions=[self.actor, self.critic], optimizer=Adam, optimizer_params={})
+        super().__init__(
+            loss,
+            distributions=[self.actor, self.critic],
+            optimizer=Adam,
+            optimizer_params={},
+        )
 
         # Optimizer
         self.optimizer = Adam(
@@ -58,4 +68,6 @@ class A2C(RLModel):
     def select_action(self, state: torch.Tensor) -> dict[str, torch.Tensor]:
         """Select an action."""
         with torch.no_grad():
-            return self.actor.sample({self.actor.cond_var[0]: state}) | self.critic.sample({self.critic.cond_var[0]: state})
+            return self.actor.sample(
+                {self.actor.cond_var[0]: state}
+            ) | self.critic.sample({self.critic.cond_var[0]: state})
