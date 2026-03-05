@@ -1,11 +1,11 @@
 # humanoid_headcam_force_gym.py
 import time
-from typing import Optional, Tuple, Dict, Any
+from typing import Any, Dict, Optional, Tuple
 
-import numpy as np
-import gymnasium as gym
-from gymnasium import spaces
 import genesis as gs
+import gymnasium as gym
+import numpy as np
+from gymnasium import spaces
 
 
 class HumanoidHeadCamForceEnv(gym.Env):

@@ -40,7 +40,11 @@ def print_latex(obj: Any) -> Math | str | None:
         D_{KL} \\left[p(x|y)||q(x|y) \\right]
     """
 
-    if isinstance(obj, pixyz.distributions.distributions.Distribution | pixyz.distributions.distributions.DistGraph):
+    if isinstance(
+        obj,
+        pixyz.distributions.distributions.Distribution
+        | pixyz.distributions.distributions.DistGraph,
+    ):
         latex_text = obj.prob_joint_factorized_and_text
     elif isinstance(obj, pixyz.losses.losses.Loss):
         latex_text = obj.loss_text

@@ -11,7 +11,14 @@ from pixyzrl.models.base_model import RLModel
 class BaseTrainer(ABC):
     """Base class for reinforcement learning trainers."""
 
-    def __init__(self, env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> None:
+    def __init__(
+        self,
+        env: BaseEnv,
+        memory: BaseBuffer,
+        agent: RLModel,
+        device: torch.device | str = "cpu",
+        logger: Logger | None = None,
+    ) -> None:
         """Initialize the trainer.
 
         Args:

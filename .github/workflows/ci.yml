@@ -38,10 +38,10 @@ jobs:
         run: isort --check-only --diff pixyzrl examples
 
       - name: Check formatting
-        run: black --check pixyzrl examples
+        run: black --check pixyzrl
 
       - name: Lint
-        run: flake8 pixyzrl examples
+        run: flake8 pixyzrl
 
       - name: Type check
         run: mypy pixyzrl --ignore-missing-imports
