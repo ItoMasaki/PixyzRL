@@ -6,10 +6,9 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Any
 
-import sympy
-
 import gymnasium as gym
 import numpy as np
+import sympy
 import torch
 from pixyz.distributions import Deterministic
 from pixyz.losses.losses import Loss
