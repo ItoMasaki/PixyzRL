@@ -1,8 +1,9 @@
 import torch
 from pixyz import distributions as dist
 from pixyz.losses import Expectation as E
-from pixyz.losses import IterativeLoss, LogProb, MaxLoss
+from pixyz.losses import IterativeLoss
 from pixyz.losses import KullbackLeibler as KL
+from pixyz.losses import LogProb, MaxLoss
 from pixyz.models import Model
 from pixyz.utils import epsilon
 from torch import nn

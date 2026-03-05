@@ -43,7 +43,9 @@ class BaseEnv(ABC):
         ...
 
     @abstractmethod
-    def step(self, action: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
+    def step(
+        self, action: Any
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """Step through the environment."""
         ...
 
@@ -73,7 +75,10 @@ class BaseEnv(ABC):
             >>> env = Env("CartPole-v1")
             >>> obs_shape = env.observation_space
         """
-        if hasattr(self._observation_space, "shape") and self._observation_space.shape is not None:
+        if (
+            hasattr(self._observation_space, "shape")
+            and self._observation_space.shape is not None
+        ):
             return self._observation_space.shape[1:]
         msg = "Unsupported observation space type"
         raise ValueError(msg)
@@ -85,7 +90,9 @@ class BaseEnv(ABC):
             return int(self._action_space.n)
         if isinstance(self._action_space, MultiDiscrete):
             return int(self._action_space.nvec[-1])
-        if hasattr(self._action_space, "shape") and (self._action_space.shape is not None):
+        if hasattr(self._action_space, "shape") and (
+            self._action_space.shape is not None
+        ):
             return self._action_space.shape[-1]
         msg = "Unsupported action space type"
         raise ValueError(msg)
@@ -162,7 +169,9 @@ class Env(BaseEnv):
         obs, info = self._env.reset(seed=self.seed, options=kwargs)
         return torch.Tensor(obs), info
 
-    def step(self, action: Any) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
+    def step(
+        self, action: Any
+    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, dict[str, Any]]:
         """Take a step in the environment with support for both discrete and continuous actions.
 
         Args:
@@ -196,7 +205,9 @@ class Env(BaseEnv):
         obs, reward, terminated, truncated, info = self._env.step(action)
         return (
             torch.Tensor(obs),
-            torch.Tensor([reward] if isinstance(reward, float | int) else reward).reshape(-1, 1),
+            torch.Tensor(
+                [reward] if isinstance(reward, float | int) else reward
+            ).reshape(-1, 1),
             torch.tensor(
                 [terminated] if isinstance(terminated, bool) else terminated,
                 dtype=torch.bool,
@@ -259,7 +270,9 @@ class BipedalRobotEnv(gym.Env[Any, Any]):
             {"idx": 16, "lower": -0.465, "upper": 0.165},
         ]
 
-        self.action_space = spaces.Box(low=-1.0, high=1.0, shape=(len(self.lower_upper),), dtype=np.float32)
+        self.action_space = spaces.Box(
+            low=-1.0, high=1.0, shape=(len(self.lower_upper),), dtype=np.float32
+        )
         self.observation_space = spaces.Box(
             low=-np.inf,
             high=np.inf,
@@ -276,7 +289,10 @@ class BipedalRobotEnv(gym.Env[Any, Any]):
         # Create Terrain
         numHeightfieldRows = 256
         numHeightfieldColumns = 256
-        heightfieldData = [random.uniform(0, 0.0) for _ in range(numHeightfieldRows * numHeightfieldColumns)]
+        heightfieldData = [
+            random.uniform(0, 0.0)
+            for _ in range(numHeightfieldRows * numHeightfieldColumns)
+        ]
         terrainShape = p.createCollisionShape(
             shapeType=p.GEOM_HEIGHTFIELD,
             meshScale=[0.1, 0.1, 1],
@@ -286,8 +302,12 @@ class BipedalRobotEnv(gym.Env[Any, Any]):
             numHeightfieldColumns=numHeightfieldColumns,
             physicsClientId=self.client_id,
         )
-        self.terrain = p.createMultiBody(0, terrainShape, physicsClientId=self.client_id)
-        p.resetBasePositionAndOrientation(self.terrain, [0, 0, 0], [0, 0, 0, 1], physicsClientId=self.client_id)
+        self.terrain = p.createMultiBody(
+            0, terrainShape, physicsClientId=self.client_id
+        )
+        p.resetBasePositionAndOrientation(
+            self.terrain, [0, 0, 0], [0, 0, 0, 1], physicsClientId=self.client_id
+        )
 
         # Load Robot
         cubeStartPos = [0, 0, 0.57]
@@ -308,7 +328,9 @@ class BipedalRobotEnv(gym.Env[Any, Any]):
                 physicsClientId=self.client_id,
             )
 
-    def step(self, action: NDArray[np.float32]) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
+    def step(
+        self, action: NDArray[np.float32]
+    ) -> tuple[Any, SupportsFloat, bool, bool, dict[str, Any]]:
         # Action [-1, 1] -> [-0.165, 0.365]
 
         for joint_idx, joint_action in enumerate(action):
@@ -322,13 +344,19 @@ class BipedalRobotEnv(gym.Env[Any, Any]):
 
         p.stepSimulation(physicsClientId=self.client_id)
 
-        body_height = p.getLinkState(self.botId, 1, physicsClientId=self.client_id)[0][2]
+        body_height = p.getLinkState(self.botId, 1, physicsClientId=self.client_id)[0][
+            2
+        ]
         obs = self._get_observation()
 
-        reward = 0.1 if (body_height > 0.455) and (body_height < 0.475) else -0.1  # Reward for staying high (simplified)
+        reward = (
+            0.1 if (body_height > 0.455) and (body_height < 0.475) else -0.1
+        )  # Reward for staying high (simplified)
         reward = -p.getLinkState(self.botId, 0, physicsClientId=self.client_id)[0][1]
 
-        collision = p.getContactPoints(self.botId, self.terrain, -1, -1, physicsClientId=self.client_id)
+        collision = p.getContactPoints(
+            self.botId, self.terrain, -1, -1, physicsClientId=self.client_id
+        )
         if len(collision) > 0:
             reward = -3
         done = len(collision) > 0
@@ -344,9 +372,13 @@ class BipedalRobotEnv(gym.Env[Any, Any]):
 
         return obs, reward, done, done, info
 
-    def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None) -> tuple[NDArray[np.float32], dict[str, Any]]:
+    def reset(
+        self, *, seed: int | None = None, options: dict[str, Any] | None = None
+    ) -> tuple[NDArray[np.float32], dict[str, Any]]:
         super().reset(seed=seed, options=options)
-        p.resetBasePositionAndOrientation(self.botId, [0, 0, 0.57], [0, 0, 0, 1], physicsClientId=self.client_id)
+        p.resetBasePositionAndOrientation(
+            self.botId, [0, 0, 0.57], [0, 0, 0, 1], physicsClientId=self.client_id
+        )
         for joint_idx in range(p.getNumJoints(self.botId)):
             p.resetJointState(self.botId, joint_idx, 0, physicsClientId=self.client_id)
         self.step_counter = 0
@@ -362,12 +394,16 @@ class BipedalRobotEnv(gym.Env[Any, Any]):
             )[0]
             for joint_idx in range(len(self.lower_upper))
         ]
-        base_link_quat = p.getLinkState(self.botId, 0, physicsClientId=self.client_id)[1]
+        base_link_quat = p.getLinkState(self.botId, 0, physicsClientId=self.client_id)[
+            1
+        ]
         return np.array([*joint_positions, *base_link_quat], dtype=np.float32)
 
     def render(self, mode: str = "human") -> Any:
         if mode == "rgb_array":
-            width, height, _, _, _, _ = p.getCameraImage(320, 240, physicsClientId=self.client_id)
+            width, height, _, _, _, _ = p.getCameraImage(
+                320, 240, physicsClientId=self.client_id
+            )
             return np.array(width).reshape((240, 320, 3))
         return None
 

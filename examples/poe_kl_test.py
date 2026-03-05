@@ -1,7 +1,6 @@
+import torch
 from pixyz.distributions import Normal, ProductOfNormal
 from pixyz.losses import KullbackLeibler
-
-import torch
 from torch.nn import functional as F
 
 

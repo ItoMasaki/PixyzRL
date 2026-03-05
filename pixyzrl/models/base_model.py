@@ -75,7 +75,9 @@ class RLModel(Model, ABC):
             path (str): Path to save
         """
         dists = [dist.state_dict() for dist in self.distributions]
-        torch.save({"distributions": dists, "optimizer": self.optimizer.state_dict()}, path)
+        torch.save(
+            {"distributions": dists, "optimizer": self.optimizer.state_dict()}, path
+        )
 
     def load(self, path: str) -> None:
         """Load a trained model.
