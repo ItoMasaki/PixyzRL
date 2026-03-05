@@ -34,7 +34,9 @@ class PPOClipLoss(Loss):
     tensor(0.)  # Expected output
     """
 
-    def __init__(self, p: Distribution, q: Distribution, clip: float, adv_var: str = "A") -> None:
+    def __init__(
+        self, p: Distribution, q: Distribution, clip: float, adv_var: str = "A"
+    ) -> None:
         super().__init__([*p.cond_var, *p.var, adv_var])
 
         self.p = p
@@ -48,9 +50,13 @@ class PPOClipLoss(Loss):
 
     @property
     def _symbol(self) -> sympy.Symbol:
-        return sympy.Symbol(f"-min(\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}, clip(\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}, 1-{self.clip}, 1+{self.clip}))")
+        return sympy.Symbol(
+            f"-min(\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}, clip(\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}, 1-{self.clip}, 1+{self.clip}))"
+        )
 
-    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         loss, x_dict = self.loss(x_dict, **kwargs)
 
         return loss, {}
@@ -107,9 +113,23 @@ class RatioLoss(Loss):
     def _symbol(self) -> sympy.Symbol:
         return sympy.Symbol(f"\\frac{{{self.p.prob_text}}}{{{self.q.prob_text}}}")
 
-    def forward(self, x_dict: dict[str, Any], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[None, None]]:
-        p_log_prob = self.p.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
-        q_log_prob = self.q.log_prob(sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs).eval(x_dict).sum(dim=-1)
+    def forward(
+        self, x_dict: dict[str, Any], **kwargs: dict[str, Any]
+    ) -> tuple[torch.Tensor, dict[None, None]]:
+        p_log_prob = (
+            self.p.log_prob(
+                sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs
+            )
+            .eval(x_dict)
+            .sum(dim=-1)
+        )
+        q_log_prob = (
+            self.q.log_prob(
+                sum_features=self.sum_features, feature_dims=self.feature_dims, **kwargs
+            )
+            .eval(x_dict)
+            .sum(dim=-1)
+        )
 
         ratio = torch.exp(p_log_prob - q_log_prob.detach()).reshape(-1, 1)
 
@@ -154,7 +174,9 @@ class ClipLoss(LossSelfOperator):
     def _symbol(self) -> sympy.Symbol:
         return sympy.Symbol(f"clip({self.loss1.loss_text}, {self.min}, {self.max})")
 
-    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         loss, x_dict = self.loss1(x_dict, **kwargs)
         loss = torch.clamp(loss, self.min, self.max)
 
@@ -200,7 +222,9 @@ class MSELoss(Loss):
         """Return the symbol of the loss."""
         return sympy.Symbol(f"MSE({self.p.prob_text}, {self.var})")
 
-    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]) -> tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, bool | torch.Size]
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         """Forward pass."""
         pred = self.p.sample(x_dict, **kwargs)[self.p.var[0]].squeeze()
         loss = self.mse(pred, x_dict[self.var].squeeze())
@@ -241,13 +265,19 @@ class ValueClipLoss(Loss):
 
     @property
     def _symbol(self) -> sympy.Symbol:
-        return sympy.Symbol(f"max(|{self.p.prob_text} - {self.vtarget_var}|^2, |clip({self.p.prob_text}, -{self.clip}, {self.clip}) - {self.vtarget_var}|^2)")
+        return sympy.Symbol(
+            f"max(|{self.p.prob_text} - {self.vtarget_var}|^2, |clip({self.p.prob_text}, -{self.clip}, {self.clip}) - {self.vtarget_var}|^2)"
+        )
 
-    def forward(self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]) -> tuple[torch.Tensor, dict[str, Any]]:
+    def forward(
+        self, x_dict: dict[str, torch.Tensor], **kwargs: dict[str, Any]
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
         old_value_prediction = self.p.sample(x_dict)[self.p.var[0]].detach()
         value_prediction = self.p.sample(x_dict)[self.p.var[0]]
 
-        value_prediction_clipped = old_value_prediction + torch.clamp(value_prediction - old_value_prediction, -self.clip, self.clip)
+        value_prediction_clipped = old_value_prediction + torch.clamp(
+            value_prediction - old_value_prediction, -self.clip, self.clip
+        )
         loss = torch.max(
             torch.square(x_dict[self.vtarget_var] - value_prediction),
             torch.square(x_dict[self.vtarget_var] - value_prediction_clipped),

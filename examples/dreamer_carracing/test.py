@@ -1,14 +1,14 @@
 import fcntl
-import termios
-import sys
 import os
-import numpy as np
+import sys
+import termios
 
 import gymnasium as gym
+import numpy as np
 import torch
-from models import RecurrentStateSpaceModel, Actor
-from utils import _images_to_observation, postprocess_observation
 from matplotlib import pyplot as plt
+from models import Actor, RecurrentStateSpaceModel
+from utils import _images_to_observation, postprocess_observation
 
 belief_size = 200
 state_size = 30
