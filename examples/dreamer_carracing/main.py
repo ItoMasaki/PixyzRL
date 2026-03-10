@@ -1,25 +1,24 @@
 from __future__ import annotations
-from datetime import datetime
-import torch
-from torch import optim
-from tensorboardX import SummaryWriter
-from tqdm import tqdm
-import gc
 
-from pixyzrl.environments import Env
-from pixyz.losses import LogProb, Parameter
-from pixyz.models import Model
+import gc
+from datetime import datetime
+
+import torch
 from memory import ExperienceReplay
 from models import Actor, Critic, RecurrentStateSpaceModel
+from pixyz.losses import LogProb, Parameter
+from pixyz.models import Model
+from tensorboardX import SummaryWriter
+from torch import optim
+from tqdm import tqdm
 from utils import (
     FreezeParameters,
     imagine_ahead,
     lambda_return,
 )
-from pixyzrl.environments.env import ResizeObservation, BitDepthQuantize, ScaleAction
 
-
-
+from pixyzrl.environments import Env
+from pixyzrl.environments.env import BitDepthQuantize, ResizeObservation, ScaleAction
 
 # ============================================
 # Config
