@@ -25,16 +25,13 @@ class BaseEnv(ABC):
         self._render_mode = "rgb_array"
 
     @abstractmethod
-    def reset(self, **kwargs: dict[str, Any]):
-        ...
+    def reset(self, **kwargs: dict[str, Any]): ...
 
     @abstractmethod
-    def step(self, action: Any):
-        ...
+    def step(self, action: Any): ...
 
     @abstractmethod
-    def close(self) -> None:
-        ...
+    def close(self) -> None: ...
 
     @property
     def num_envs(self) -> int:
@@ -96,9 +93,7 @@ class Env(BaseEnv):
 
             return env
 
-        self._env = gym.vector.SyncVectorEnv(
-            [make_single_env for _ in range(num_envs)]
-        )
+        self._env = gym.vector.SyncVectorEnv([make_single_env for _ in range(num_envs)])
 
         self._env.reset(seed=seed)
 
@@ -301,9 +296,7 @@ class _ScaleActionWrapper(gym.ActionWrapper):
         if self.clip:
             action = np.clip(action, self.from_low, self.from_high)
 
-        action = (action - self.from_low) / (
-            self.from_high - self.from_low + 1e-8
-        )
+        action = (action - self.from_low) / (self.from_high - self.from_low + 1e-8)
 
         action = action * (self.to_high - self.to_low) + self.to_low
 
@@ -324,12 +317,10 @@ class _BitDepthQuantizeWrapper(gym.ObservationWrapper):
 
     def observation(self, obs):
         # Quantise to given bit depth and centre
-        obs = np.floor(obs / (2 ** (8 - self.bit_depth))) / (
-            2 ** self.bit_depth
-        ) - 0.5
+        obs = np.floor(obs / (2 ** (8 - self.bit_depth))) / (2**self.bit_depth) - 0.5
         # Dequantise (to approx. match likelihood of PDF of continuous images vs. PMF of discrete images)
         return obs + np.random.uniform(
-            0, 1 / (2 ** self.bit_depth), size=obs.shape
+            0, 1 / (2**self.bit_depth), size=obs.shape
         ).astype(np.float32)
 
 
