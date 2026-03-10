@@ -7,9 +7,13 @@ from typing import Any, Callable, List
 
 import cv2
 import gymnasium as gym
+import math
 import numpy as np
 import torch
-from gymnasium.spaces import Box, Discrete, MultiDiscrete, Space
+import time
+from typing import Callable, List
+from gymnasium.spaces import Box
+from gymnasium.spaces import Discrete, MultiDiscrete, Space
 
 
 class BaseEnv(ABC):
@@ -67,7 +71,7 @@ class Env(BaseEnv):
         enable_render: bool = False,
         render_scale: float = 1.0,
         render_fps: int = 30,
-        render_interval: int = 10,   # ← 追加
+        render_interval: int = 10,  # ← 追加
         **kwargs,
     ):
         super().__init__(env_name, num_envs, seed)
@@ -159,7 +163,7 @@ class Env(BaseEnv):
         for i in range(n):
             r = i // cols
             c_ = i % cols
-            grid[r*h:(r+1)*h, c_*w:(c_+1)*w] = frames[i]
+            grid[r * h : (r + 1) * h, c_ * w : (c_ + 1) * w] = frames[i]
 
         return grid
 
@@ -200,10 +204,8 @@ class Env(BaseEnv):
         cv2.waitKey(1)
 
 
-
 class NormalizeObservation(gym.ObservationWrapper):
     def __init__(self, normalize_factor: float = 255):
-
         self.normalize_factor = normalize_factor
 
     def observation(self, obs):
@@ -263,12 +265,14 @@ class ResizeObservation:
             self.channel_first,
         )
 
+
 class BitDepthQuantize:
     def __init__(self, bit_depth=5):
         self.bit_depth = bit_depth
 
     def __call__(self, env: gym.Env):
         return _BitDepthQuantizeWrapper(env, self.bit_depth)
+
 
 class _ScaleActionWrapper(gym.ActionWrapper):
     def __init__(
@@ -282,18 +286,10 @@ class _ScaleActionWrapper(gym.ActionWrapper):
     ):
         super().__init__(env)
 
-        self.from_low = np.broadcast_to(
-            from_low, env.action_space.shape
-        )
-        self.from_high = np.broadcast_to(
-            from_high, env.action_space.shape
-        )
-        self.to_low = np.broadcast_to(
-            to_low, env.action_space.shape
-        )
-        self.to_high = np.broadcast_to(
-            to_high, env.action_space.shape
-        )
+        self.from_low = np.broadcast_to(from_low, env.action_space.shape)
+        self.from_high = np.broadcast_to(from_high, env.action_space.shape)
+        self.to_low = np.broadcast_to(to_low, env.action_space.shape)
+        self.to_high = np.broadcast_to(to_high, env.action_space.shape)
         self.clip = clip
 
         # policy側が出力するレンジ
@@ -316,7 +312,8 @@ class _ScaleActionWrapper(gym.ActionWrapper):
         action = action * (self.to_high - self.to_low) + self.to_low
 
         return action
-    
+
+
 class _BitDepthQuantizeWrapper(gym.ObservationWrapper):
     def __init__(self, env: gym.Env, bit_depth: int):
         super().__init__(env)
@@ -331,10 +328,15 @@ class _BitDepthQuantizeWrapper(gym.ObservationWrapper):
 
     def observation(self, obs):
         # Quantise to given bit depth and centre
-        obs = np.floor(obs / (2 ** (8 - self.bit_depth))) / (2 ** self.bit_depth) - 0.5
+        obs = np.floor(obs / (2 ** (8 - self.bit_depth))) / (
+            2 ** self.bit_depth
+        ) - 0.5
         # Dequantise (to approx. match likelihood of PDF of continuous images vs. PMF of discrete images)
-        return obs + np.random.uniform(0, 1 / (2 ** self.bit_depth), size=obs.shape).astype(np.float32)
-    
+        return obs + np.random.uniform(
+            0, 1 / (2 ** self.bit_depth), size=obs.shape
+        ).astype(np.float32)
+
+
 class _ResizeObservationWrapper(gym.ObservationWrapper):
     def __init__(
         self,
@@ -381,7 +383,6 @@ class _ResizeObservationWrapper(gym.ObservationWrapper):
         )
 
     def observation(self, obs):
-
         if self.input_channel_first:
             obs = np.transpose(obs, (1, 2, 0))
 
