@@ -34,7 +34,7 @@
 |CartPole-v1 ( GRPO ) TEST||
 |<video src=https://github.com/user-attachments/assets/c4889b64-0936-4f22-8778-466b15e7a4cc/>||
 
-
+SAC example: `examples/pendulum_v1_sac.py`
 
 ## Installation
 
