@@ -3,12 +3,11 @@
 from abc import ABC, abstractmethod
 from typing import Any, cast
 
-from gymnasium.vector import VectorEnv
-
 import gymnasium as gym
 import numpy as np
 import torch
 from gymnasium.spaces import Discrete, MultiDiscrete, Space
+from gymnasium.vector import VectorEnv
 
 
 class BaseEnv(ABC):
