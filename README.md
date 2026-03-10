@@ -220,7 +220,7 @@ PixyzRL
 ## Future Work
 
 - [x] Implement **Soft Actor-Critic (SAC)**
-- [ ] Implement **Deep Q-Network (DQN)**
+- [x] Implement **Deep Q-Network (DQN)**
 - [ ] Implement **Dreamer** (model-based RL)
 - [ ] Integrate with **ChatGPT for automatic architecture generation**
 - [ ] Integrate with **[Genesis](https://genesis-world.readthedocs.io/en/latest/user_guide/overview/what_is_genesis.html)**
