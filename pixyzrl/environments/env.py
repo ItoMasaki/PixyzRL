@@ -181,8 +181,9 @@ class Env(BaseEnv):
             >>> import torch
             >>> env = Env("CartPole-v1")
             >>> obs, info = env.reset()
-            >>> action = torch.Tensor(1)
-            >>> obs, reward, terminated, truncated, info = env.step({"a": torch.argmax(action).item()})
+            >>> action = torch.zeros((1, 2))
+            >>> obs, reward, terminated, truncated, info = env.step({"a": action})
+            >>> env.close()
         """
         if self._env.action_space.shape is None:
             msg = "Unsupported action space type"

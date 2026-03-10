@@ -104,7 +104,8 @@ class BaseBuffer(Dataset):
             >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
             >>> buffer.add(obs=np.random.rand(4), action=np.random.rand(1), reward=np.random.rand(1), done=np.random.rand(1))
             >>>
-            >>> buffer[0]
+            >>> sorted(buffer[0].keys())
+            ['a', 'd', 'o', 'r']
         """
 
         mini_batch = {}
@@ -494,9 +495,8 @@ class RolloutBuffer(BaseBuffer):
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
             >>> buffer.add(obs=np.zeros(4), action=np.zeros(1), reward=np.ones(1), done=np.zeros(1), value=np.zeros(1))
             >>>
-            >>> last_value = torch.zeros(1)
-            >>> return_advantage = buffer.compute_returns_and_advantages_grpo()
-            >>> "returns" in return_advantage and "advantages" in return_advantage
+            >>> return_advantage = buffer.compute_advantages_grpo()
+            >>> "advantages" in return_advantage
             True
         """
         for key, value in self.buffer.items():
