@@ -553,9 +553,13 @@ class RolloutBuffer(BaseBuffer):
 
         for i in reversed(range(advantages_np.shape[0] - 1)):
             matching_advantages = advantages_np[i] == 0
-            advantages_np[i][matching_advantages] = advantages_np[i + 1][matching_advantages]
+            advantages_np[i][matching_advantages] = advantages_np[i + 1][
+                matching_advantages
+            ]
 
-        advantages = torch.tensor(advantages_np, dtype=torch.float32, device=self.device)
+        advantages = torch.tensor(
+            advantages_np, dtype=torch.float32, device=self.device
+        )
 
         if self.advantage_normalization:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
@@ -670,7 +674,10 @@ class PrioritizedExperienceReplay(BaseBuffer):
         probabilities = priorities / priorities.sum()
         sample_size = batch_size or self.batch_size
         indices = np.random.choice(
-            len(probabilities), sample_size, p=probabilities.cpu().numpy(), replace=False
+            len(probabilities),
+            sample_size,
+            p=probabilities.cpu().numpy(),
+            replace=False,
         )
         weights = (len(probabilities) * probabilities[indices]) ** (-self.beta)
         weights /= weights.max()
