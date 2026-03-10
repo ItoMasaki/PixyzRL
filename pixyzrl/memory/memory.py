@@ -29,7 +29,7 @@ class BaseBuffer(Dataset):
             ...     "done": {"shape": (1,), "map": "d"}
             ... }, 1)
         """
-        self.buffer = {}
+        self.buffer: dict[str, torch.Tensor] = {}
 
         self._device = "cpu"
         self.buffer_size = buffer_size
@@ -117,7 +117,7 @@ class BaseBuffer(Dataset):
 
         return mini_batch
 
-    def add(self, **kwargs: dict[str, torch.Tensor]) -> None:
+    def add(self, **kwargs: Any) -> None:
         """Add a new experience to the buffer.
 
         Args:
@@ -139,12 +139,14 @@ class BaseBuffer(Dataset):
         self.pos = self.pos % self.buffer_size
         for k, v in kwargs.items():
             if isinstance(v, np.ndarray):
-                tensor_v: torch.Tensor = torch.from_numpy(v).to(self.device)
+                tensor_v = torch.from_numpy(v).to(self.device)
+            elif isinstance(v, torch.Tensor):
+                tensor_v = v
             else:
-                tensor_v: torch.Tensor = v
+                tensor_v = torch.tensor(v, device=self.device)
 
             if "transform" in self.env_dict[k]:
-                tensor_v: torch.Tensor = self.env_dict[k]["transform"](tensor_v)
+                tensor_v = self.env_dict[k]["transform"](tensor_v)
 
             self.buffer[k][self.pos] = tensor_v.reshape(
                 self.n_envs, *self.env_dict[k]["shape"]
@@ -246,6 +248,27 @@ class BaseBuffer(Dataset):
             >>> returns_advantages = buffer.compute_returns_and_advantages_n_step(0.99, 2)
         """
         ...
+
+    def compute_advantages_grpo(self) -> dict[str, torch.Tensor]:
+        """Compute GRPO advantages for the stored trajectories."""
+        msg = "compute_advantages_grpo is only available for rollout buffers"
+        raise NotImplementedError(msg)
+
+    def sample(self, batch_size: int) -> dict[str, torch.Tensor]:
+        """Sample a random batch from the buffer."""
+        valid_size = min(self.pos, self.buffer_size)
+        if valid_size == 0:
+            msg = "Cannot sample from an empty buffer"
+            raise ValueError(msg)
+
+        batch_size = min(batch_size, valid_size)
+        indices = np.random.choice(valid_size, batch_size, replace=False)
+        return {k: v[indices] for k, v in self.buffer.items()}
+
+    @property
+    def full(self) -> bool:
+        """Whether the internal circular buffer has wrapped around."""
+        return self.pos >= self.buffer_size
 
     @property
     def device(self) -> str:
@@ -503,7 +526,7 @@ class RolloutBuffer(BaseBuffer):
             self.buffer[key] = value[0 : self.pos]
 
         T, N, _ = self.buffer["reward"].shape
-        advantages = np.zeros((T, N), dtype=np.float32)
+        advantages_np = np.zeros((T, N), dtype=np.float32)
 
         rewards = self.buffer["reward"].detach().cpu().numpy().reshape(T, N)
         dones = self.buffer["done"].detach().cpu().numpy().reshape(T, N).astype(bool)
@@ -518,21 +541,21 @@ class RolloutBuffer(BaseBuffer):
         for i in range(T):
             if dones[i].any():
                 target_cumulative_reward = cumulative_rewards[i] * dones[i]
-                advantages[i] = (
+                advantages_np[i] = (
                     (target_cumulative_reward - np.mean(cumulative_rewards[dones]))
                     / (np.std(cumulative_rewards[dones]) + 1e-8)
                     * dones[i]
                 )
 
-        advantages[-1] = (
+        advantages_np[-1] = (
             cumulative_rewards[-1] - np.mean(cumulative_rewards[dones])
         ) / (np.std(cumulative_rewards[dones]) + 1e-8)
 
-        for i in reversed(range(advantages.shape[0] - 1)):
-            matching_advantages = advantages[i] == 0
-            advantages[i][matching_advantages] = advantages[i + 1][matching_advantages]
+        for i in reversed(range(advantages_np.shape[0] - 1)):
+            matching_advantages = advantages_np[i] == 0
+            advantages_np[i][matching_advantages] = advantages_np[i + 1][matching_advantages]
 
-        advantages = torch.tensor(advantages, dtype=torch.float32, device=self.device)
+        advantages = torch.tensor(advantages_np, dtype=torch.float32, device=self.device)
 
         if self.advantage_normalization:
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
@@ -560,10 +583,11 @@ class ExperienceReplay(BaseBuffer):
             "next_states": {"shape": state_shape},
             "dones": {"shape": (1,), "dtype": torch.bool},
         }
-        super().__init__(buffer_size, env_dict, None, device)
+        super().__init__(buffer_size, env_dict, n_envs=1)
+        self.device = device
         self.batch_size = batch_size
 
-    def add(
+    def add(  # type: ignore[override]
         self,
         state: np.ndarray,
         action: np.ndarray,
@@ -580,9 +604,9 @@ class ExperienceReplay(BaseBuffer):
             dones=done,
         )
 
-    def sample(self) -> dict[str, torch.Tensor]:
+    def sample(self, batch_size: int | None = None) -> dict[str, torch.Tensor]:
         """Sample a batch of experiences."""
-        return super().sample(self.batch_size)
+        return super().sample(batch_size or self.batch_size)
 
     def clear(self) -> None:
         """Clear the buffer."""
@@ -611,12 +635,13 @@ class PrioritizedExperienceReplay(BaseBuffer):
             "dones": {"shape": (1,), "dtype": torch.bool},
             "priorities": {"shape": (1,), "dtype": torch.float32},
         }
-        super().__init__(buffer_size, env_dict, None, device)
+        super().__init__(buffer_size, env_dict, n_envs=1)
+        self.device = device
         self.batch_size = batch_size
         self.alpha = alpha
         self.beta = beta
 
-    def add(
+    def add(  # type: ignore[override]
         self,
         state: np.ndarray,
         action: np.ndarray,
@@ -635,7 +660,7 @@ class PrioritizedExperienceReplay(BaseBuffer):
             priorities=priority**self.alpha,
         )
 
-    def sample(self) -> dict[str, torch.Tensor]:
+    def sample(self, batch_size: int | None = None) -> dict[str, torch.Tensor]:
         """Sample a batch of experiences with prioritization."""
         priorities = (
             self.buffer["priorities"][: self.pos]
@@ -643,8 +668,9 @@ class PrioritizedExperienceReplay(BaseBuffer):
             else self.buffer["priorities"]
         )
         probabilities = priorities / priorities.sum()
+        sample_size = batch_size or self.batch_size
         indices = np.random.choice(
-            len(probabilities), self.batch_size, p=probabilities.numpy(), replace=False
+            len(probabilities), sample_size, p=probabilities.cpu().numpy(), replace=False
         )
         weights = (len(probabilities) * probabilities[indices]) ** (-self.beta)
         weights /= weights.max()

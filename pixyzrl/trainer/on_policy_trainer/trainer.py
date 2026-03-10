@@ -96,7 +96,7 @@ class OnPolicyTrainer(BaseTrainer):
         super().__init__(env, memory, agent, device, logger)
         self.value_estimate = value_estimate
         self.transform = transform
-        memory.device = device
+        memory.device = str(device)
         self.episode = 0
         self.log_dir = (
             logger.log_dir
@@ -165,16 +165,13 @@ class OnPolicyTrainer(BaseTrainer):
         >>> trainer.collect_experiences()  # doctest: +SKIP
         """
         obs, info = self.env.reset()
-        done = False
-        total_reward = 0
+        done = torch.zeros((self.env.num_envs, 1), dtype=torch.bool)
+        total_reward = np.zeros((self.env.num_envs, 1), dtype=float)
         total_rewards = []
-        idx = 1
 
         with torch.no_grad():
             # Collect on-policy experiences
             while len(self.memory) < self.memory.buffer_size - 1:
-                idx += 1
-
                 if len(obs[0].shape) == 3:
                     obs = obs.permute(0, 3, 1, 2) / 255.0
 
@@ -189,7 +186,7 @@ class OnPolicyTrainer(BaseTrainer):
                     action=action[self.agent.action_var].detach(),
                     reward=reward.detach(),
                     done=done.detach(),
-                    value=action[self.agent.critic.var[0]].cpu().detach(),
+                    value=action[self.agent.critic.var[0]].detach(),
                 )
                 obs = next_obs
                 total_reward += reward.detach().numpy().astype(float)
@@ -203,7 +200,7 @@ class OnPolicyTrainer(BaseTrainer):
                 if self.env.render_mode == "rgb_array":
                     self.env.render()
 
-            total_rewards += np.round(total_reward.reshape(-1), 1).tolist()
+            total_rewards.extend(np.round(total_reward.reshape(-1), 1).tolist())
 
             if self.logger:
                 self.logger.log(f"Rewards: {' '.join([str(r) for r in total_rewards])}")
@@ -293,7 +290,7 @@ class OnPolicyTrainer(BaseTrainer):
         if len(self.memory) < self.memory.buffer_size - 1:
             return
 
-        total_loss = 0
+        total_loss = 0.0
         for _ in range(num_epochs):
             total_loss += self.agent.train_step(self.memory, batch_size)
 
@@ -367,20 +364,17 @@ class OnPolicyTrainer(BaseTrainer):
         >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
         >>> trainer.test()  # doctest: +SKIP
         """
-        total_reward = 0
+        total_reward = np.zeros((self.env.num_envs, 1), dtype=float)
         total_rewards = []
 
         obs, info = self.env.reset()
-        idx = 0
-        self.frames = []
+        self.frames: list[np.ndarray[Any, Any]] = []
 
         with torch.no_grad():
             for _ in range(5):
-                done = [False]
+                done = torch.zeros((self.env.num_envs, 1), dtype=torch.bool)
 
-                while not done[0]:
-                    idx += 1
-
+                while not bool(done[0].item()):
                     if len(obs[0].shape) == 3:
                         obs = obs.permute(0, 3, 1, 2) / 255.0
 
@@ -394,14 +388,16 @@ class OnPolicyTrainer(BaseTrainer):
 
                     total_reward += reward.detach().numpy().astype(float)
 
-                    if done[0]:
-                        idx = 0
-                        self.frames.append(np.zeros_like(self.frames[-1]))
-                        total_rewards.append(np.round(total_reward[0].item(), 1))
-                        total_reward *= 1 - done[0].detach().numpy()
+                    if bool(done[0].item()):
+                        if self.frames:
+                            self.frames.append(np.zeros_like(self.frames[-1]))
+                        total_rewards.append(np.round(float(total_reward[0].item()), 1))
+                        total_reward *= 1 - done.detach().cpu().numpy().astype(bool)
                         break
 
-                    self.frames.append(self.env.render(return_frame=True)[0])
+                    frame = self.env.render(return_frame=True)
+                    if frame is not None:
+                        self.frames.append(frame[0])
 
         fig = plt.figure()
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1)

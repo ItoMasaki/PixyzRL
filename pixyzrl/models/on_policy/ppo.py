@@ -132,7 +132,7 @@ class PPO(RLModel):
         )
 
         if self.scheduler is not None:
-            self.scheduler = self.scheduler(self.optimizer, **kwargs)
+            self.scheduler.step()
 
     def select_action(self, state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         """Select an action.

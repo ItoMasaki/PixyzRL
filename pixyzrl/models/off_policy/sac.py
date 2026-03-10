@@ -84,10 +84,10 @@ class SAC(RLModel):
         )
 
         if self.auto_entropy_tuning:
-            self.log_alpha = torch.nn.Parameter(
+            self.log_alpha: torch.Tensor = torch.nn.Parameter(
                 torch.log(torch.tensor([float(alpha)], device=device))
             )
-            self.alpha_optimizer = Adam([self.log_alpha], lr=self.lr_alpha)
+            self.alpha_optimizer: Adam | None = Adam([self.log_alpha], lr=self.lr_alpha)
         else:
             self.log_alpha = torch.log(torch.tensor([float(alpha)], device=device))
             self.alpha_optimizer = None

@@ -32,7 +32,7 @@ def create_trainer(
     Example:
     """
     if agent.is_on_policy:
-        return OnPolicyTrainer(env, memory, agent, device, logger)
+        return OnPolicyTrainer(env, memory, agent, device=device, logger=logger)
 
     return OffPolicyTrainer(env, memory, agent, device, logger)
 
