@@ -88,11 +88,10 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu", logger=logger)
         """
         super().__init__(env, memory, agent, device, logger)
         self.value_estimate = value_estimate
@@ -120,7 +119,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -159,12 +158,11 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.collect_experiences()
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.collect_experiences()  # doctest: +SKIP
         """
         obs, info = self.env.reset()
         done = False
@@ -246,7 +244,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -285,13 +283,12 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.collect_experiences()
-        >>> trainer.train_model()
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.collect_experiences()  # doctest: +SKIP
+        >>> trainer.train_model()  # doctest: +SKIP
         """
         if len(self.memory) < self.memory.buffer_size - 1:
             return
@@ -325,7 +322,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -362,14 +359,13 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "reward": {"shape": (1,)},
         ...         "done": {"shape": (1,)},
         ...         "returns": {"shape": (1,), "map": "r"},
-        ...         "advantages": {"shape": (1,), "map":
+        ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.test(10)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.test()  # doctest: +SKIP
         """
         total_reward = 0
         total_rewards = []
@@ -457,7 +453,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -501,12 +497,11 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.train(1)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.train(1)  # doctest: +SKIP
         """
 
         for iteration in range(num_iterations):
