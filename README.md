@@ -16,6 +16,7 @@
 
 [**PixyzRL**](https://github.com/ItoMasaki/PixyzRL) is a reinforcement learning (RL) framework based on **probabilistic generative models** and **Bayesian theory**. Built on top of the [Pixyz](https://github.com/masa-su/pixyz) library, it provides a modular and flexible design to enable uncertainty-aware decision-making and improve sample efficiency. PixyzRL supports:
 - **Probabilistic Policy Optimization** (e.g., PPO, A2C)
+- **Soft Actor-Critic (SAC)** for continuous-control off-policy learning
 - **On-policy and Off-policy Learning**
 - **Memory Management for RL (Replay Buffer, Rollout Buffer)**
 - **Advantage calculations are supported by MC / GAE / GRPO**
@@ -218,6 +219,7 @@ PixyzRL
 
 ## Future Work
 
+- [x] Implement **Soft Actor-Critic (SAC)**
 - [ ] Implement **Deep Q-Network (DQN)**
 - [ ] Implement **Dreamer** (model-based RL)
 - [ ] Integrate with **ChatGPT for automatic architecture generation**

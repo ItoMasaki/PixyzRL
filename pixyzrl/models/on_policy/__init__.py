@@ -1,4 +1,4 @@
 from .a2c import A2C
-from .actor_critic import ActorCritic
+from .ppo import PPO
 
-__all__ = ["A2C", "ActorCritic"]
+__all__ = ["A2C", "PPO"]
