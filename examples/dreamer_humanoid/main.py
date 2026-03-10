@@ -4,7 +4,7 @@ import warnings
 from datetime import datetime
 
 # import gymnasium as gym
-from envs.genesis_test import HumanoidHeadCamForceEnv
+from examples.dreamer_humanoid.humanoid import HumanoidHeadCamForceEnv
 import numpy as np
 import torch
 from memory import ExperienceReplay
@@ -108,8 +108,7 @@ best_reward = -100000
 env = HumanoidHeadCamForceEnv(
         humanoid_xml="xml/humanoid.xml",
         backend="cpu",
-        show_viewer=True,
-        force_scale=50.0,
+        show_viewer=False,
         alive_bonus=0.01,  # 生存報酬
         w_upright=1.0,
         w_motion=0.01,
@@ -133,9 +132,8 @@ for i in range(10000000):
 
         # Test phase: collect data
 
-        for ep in range(10):
+        for ep in range(50):
             observation, info = env.reset()
-            print(observation)
             total_rewards.append(0.0)
             total_pred_rewards.append(0.0)
             h_t = torch.zeros(1, belief_size).to(device)
@@ -147,7 +145,7 @@ for i in range(10000000):
                     pose = torch.from_numpy(observation["pose"]).unsqueeze(0).to(device)
                     observation = _images_to_observation(observation["image"], 5, (64, 64)).to(device)
 
-                    return_dict = rssm.predict(observation, a_t, h_t, torch.tensor([[1.0]], device=device), pose)
+                    return_dict = rssm.predict(observation, pose, a_t, h_t, torch.tensor([[1.0]], device=device))
 
                     # Policyから行動をサンプル
                     a_t = policy.sample_action(h_t, return_dict["s_t"])
@@ -161,10 +159,10 @@ for i in range(10000000):
 
                     memory.append(
                         observation,  # torch.Tensor (C,H,W)
+                        pose,
                         a_t,
-                        reward / 10.0,
+                        reward,
                         done,
-                        pose
                     )
 
                     h_t = return_dict["h_tp1"]
@@ -201,10 +199,10 @@ for i in range(10000000):
     pbar = tqdm(range(100), desc="Training", total=100)
 
     for idx in pbar:
-        obs, act, rwd, trm, pose = memory.sample(batch_size, batch_length + 10)
+        obs, pose, act, rwd, trm = memory.sample(batch_size, batch_length + 10)
 
-        test_loss, return_dict = rssm.test({"o_t": obs[:10], "a_t": act[:10], "h_t": torch.zeros(batch_size, belief_size).to(device), "r_t": rwd[:10].reshape(-1, batch_size, 1), "e_t": trm[:10], "d_t": trm[:10] * 0.999, "p_t": pose[:10].reshape(-1, batch_size, 27)})
-        train_loss, return_dict = rssm.train({"o_t": obs[10:], "a_t": act[10:], "h_t": return_dict.get("h_t"), "r_t": rwd[10:].reshape(-1, batch_size, 1), "e_t": trm[10:], "d_t": trm[10:] * 0.999, "p_t": pose[10:].reshape(-1, batch_size, 27)})
+        test_loss, return_dict = rssm.test({"o_t": obs[:10], "a_t": act[:10], "h_t": torch.zeros(batch_size, belief_size).to(device), "r_t": rwd[:10].reshape(-1, batch_size, 1), "e_t": trm[:10], "d_t": trm[:10] * 0.999, "p_t": pose[:10].reshape(-1, batch_size, 54),})
+        train_loss, return_dict = rssm.train({"o_t": obs[10:], "a_t": act[10:], "h_t": return_dict.get("h_t"), "r_t": rwd[10:].reshape(-1, batch_size, 1), "e_t": trm[10:], "d_t": trm[10:] * 0.999, "p_t": pose[10:].reshape(-1, batch_size, 54)})
 
         with FreezeParameters(rssm.distributions):
             imged_beliefs, imged_prior_states, actions = imagine_ahead(return_dict.get("s_t").detach(), return_dict.get("h_t").detach(), policy, rssm.transition, rssm.stochastic, planning_horizon=50)

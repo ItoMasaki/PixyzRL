@@ -10,6 +10,7 @@ class ExperienceReplay():
     self.size = size
     self.observations = np.empty((size, observation_size) if symbolic_env else (
         size, 3, 64, 64), dtype=np.float32 if symbolic_env else np.uint8)
+    self.poses = np.empty((size, 54), dtype=np.float32)
     self.actions = np.empty((size, action_size), dtype=np.float32)
     self.rewards = np.empty((size, ), dtype=np.float32)
     self.nonterminals = np.empty((size, 1), dtype=np.float32)
@@ -19,12 +20,13 @@ class ExperienceReplay():
     self.steps, self.episodes = 0, 0
     self.bit_depth = bit_depth
 
-  def append(self, observation, action, reward, done):
+  def append(self, observation, pose, action, reward, done):
     if self.symbolic_env:
       self.observations[self.idx] = observation.numpy()
     else:
       self.observations[self.idx] = postprocess_observation(observation.numpy(
       ), self.bit_depth)  # Decentre and discretise visual observations (to save memory)
+    self.poses[self.idx] = pose.numpy()
     self.actions[self.idx] = action.numpy()
     self.rewards[self.idx] = reward
     self.nonterminals[self.idx] = not done
@@ -50,7 +52,7 @@ class ExperienceReplay():
     if not self.symbolic_env:
       # Undo discretisation for visual observations
       preprocess_observation_(observations, self.bit_depth)
-    return observations.reshape(L, n, *observations.shape[1:]), self.actions[vec_idxs].reshape(L, n, -1), self.rewards[vec_idxs].reshape(L, n), self.nonterminals[vec_idxs].reshape(L, n, 1)
+    return observations.reshape(L, n, *observations.shape[1:]), self.poses[vec_idxs].reshape(L, n, -1), self.actions[vec_idxs].reshape(L, n, -1), self.rewards[vec_idxs].reshape(L, n), self.nonterminals[vec_idxs].reshape(L, n, 1)
 
   # Returns a batch of sequence chunks uniformly sampled from the memory
   def sample(self, n, L):

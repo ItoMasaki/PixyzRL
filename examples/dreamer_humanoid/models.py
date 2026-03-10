@@ -10,25 +10,30 @@ from torch import nn
 
 class RecurrentStateSpaceModel(Model):
     def __init__(self, state_size: int, belief_size: int, device: str):
-        self.encoder = Encoder(state_size).to(device)
+        # self.encoder = Encoder(state_size).to(device)
+        self.enc_img = EncoderImg(state_size).to(device)
+        self.enc_pose = EncoderPose(state_size).to(device)
+
+        self.encoder = dist.ProductOfNormal([self.enc_img, self.enc_pose])
         self.decoder = Decoder().to(device)
+        self.decoder_pose = DecoderPose().to(device)
         self.reward_decoder = Reward().to(device)
         self.discount = Discount().to(device)
         self.transition = Transition(belief_size).to(device)
         self.stochastic = Stochastic(state_size).to(device)
 
-        model_modules = [self.encoder, self.decoder, self.reward_decoder, self.transition, self.stochastic, self.discount]
+        model_modules = [self.encoder, self.decoder, self.reward_decoder, self.transition, self.stochastic, self.discount, self.decoder_pose]
 
         free_nats = 3.0
-        rec_obs = -E(self.encoder * self.transition, LogProb(self.decoder) + LogProb(self.reward_decoder) + LogProb(self.discount))
+        rec_obs = -E(self.encoder * self.transition, LogProb(self.decoder) + LogProb(self.reward_decoder) + LogProb(self.discount) + LogProb(self.decoder_pose))
         kl = MaxLoss(KL(self.encoder, self.stochastic), free_nats)
         step_loss = rec_obs + kl
-        loss = IterativeLoss(step_loss=step_loss, series_var=["o_t", "a_t", "e_t", "r_t", "d_t"], update_value={"h_tp1": "h_t"}).mean()
+        loss = IterativeLoss(step_loss=step_loss, series_var=["o_t", "p_t", "a_t", "e_t", "r_t", "d_t"], update_value={"h_tp1": "h_t"}).mean()
 
         super().__init__(loss=loss, distributions=model_modules, optimizer=torch.optim.Adam, optimizer_params={"lr": 1e-3}, clip_grad_norm=100.0)
 
-    def predict(self, o_t: torch.Tensor, a_t: torch.Tensor, h_t: torch.Tensor, e_t: torch.Tensor) -> dict[str, torch.Tensor]:
-        s_t = self.encoder.sample({"o_t": o_t, "h_t": h_t})["s_t"]
+    def predict(self, o_t: torch.Tensor, p_t: torch.Tensor, a_t: torch.Tensor, h_t: torch.Tensor, e_t: torch.Tensor) -> dict[str, torch.Tensor]:
+        s_t = self.encoder.sample({"o_t": o_t, "p_t": p_t, "h_t": h_t})["s_t"]
         o_t = self.decoder.sample_mean({"h_t": h_t, "s_t": s_t})
         r_t = self.reward_decoder.sample_mean({"h_t": h_t, "s_t": s_t})
         d_t = self.discount.sample_mean({"h_t": h_t, "s_t": s_t})
@@ -99,7 +104,7 @@ class Stochastic(dist.Normal):
         return {"loc": loc, "scale": scale}
 
 
-class Encoder(dist.Normal):
+class EncoderImg(dist.Normal):
     def __init__(self, state_size: int):
         super().__init__(var=["s_t"], cond_var=["h_t", "o_t"], name="q")
 
@@ -130,6 +135,39 @@ class Encoder(dist.Normal):
 
     def forward(self, o_t: torch.Tensor, h_t: torch.Tensor) -> dict[str, torch.Tensor]:
         h = self.backbone(o_t)
+        h = torch.cat([h, h_t], dim=-1)
+
+        loc = self._loc(h)
+        scale = self._scale(h) + epsilon()
+
+        return {"loc": loc, "scale": scale}
+    
+
+class EncoderPose(dist.Normal):
+    def __init__(self, state_size: int):
+        super().__init__(var=["s_t"], cond_var=["h_t", "p_t"], name="q")
+
+        self.backbone = nn.Sequential(
+            nn.LazyLinear(200),
+            nn.SiLU(),
+            nn.LazyLinear(state_size),
+        )
+
+        self._loc = nn.Sequential(
+            nn.LazyLinear(200),
+            nn.SiLU(),
+            nn.LazyLinear(state_size),
+        )
+
+        self._scale = nn.Sequential(
+            nn.LazyLinear(200),
+            nn.SiLU(),
+            nn.LazyLinear(state_size),
+            nn.Softplus(),
+        )
+
+    def forward(self, p_t: torch.Tensor, h_t: torch.Tensor) -> dict[str, torch.Tensor]:
+        h = self.backbone(p_t)
         h = torch.cat([h, h_t], dim=-1)
 
         loc = self._loc(h)
@@ -168,6 +206,32 @@ class Decoder(dist.Normal):
         loc = self._loc(h)
 
         return {"loc": loc, "scale": 1.0}
+    
+
+class DecoderPose(dist.Normal):
+    def __init__(self, pose_dim: int = 54, activation_function: str = "SiLU"):
+        super().__init__(var=["p_t"], cond_var=["h_t", "s_t"], name="p")
+
+        act_fn = getattr(nn, activation_function)
+
+        self.backbone = nn.Sequential(
+            nn.LazyLinear(200),
+            act_fn(),
+            nn.LazyLinear(200),
+            act_fn(),
+        )
+
+        self._loc = nn.Sequential(
+            nn.LazyLinear(pose_dim),
+        )
+
+    def forward(self, h_t: torch.Tensor, s_t: torch.Tensor) -> dict[str, torch.Tensor | float]:
+        h = torch.cat([h_t, s_t], dim=-1)
+        h = self.backbone(h)
+
+        loc = self._loc(h)
+
+        return {"loc": loc, "scale": 1.0}
 
 
 class Reward(dist.Normal):
@@ -188,7 +252,7 @@ class Reward(dist.Normal):
         )
 
     def forward(self, h_t: torch.Tensor, s_t: torch.Tensor) -> dict[str, torch.Tensor]:
-        h = torch.concatenate([h_t, s_t], dim=-1)
+        h = torch.cat([h_t, s_t], dim=-1)
         h = self.backbone(h)
 
         loc = self._loc(h)
@@ -213,7 +277,7 @@ class Discount(dist.Bernoulli):
         )
 
     def forward(self, h_t: torch.Tensor, s_t: torch.Tensor) -> dict[str, torch.Tensor]:
-        h = torch.concatenate([h_t, s_t], dim=-1)
+        h = torch.cat([h_t, s_t], dim=-1)
         h = self.backbone(h)
 
         probs = self._probs(h)
@@ -238,7 +302,7 @@ class Critic(dist.Normal):
         )
 
     def forward(self, h_t: torch.Tensor, s_t: torch.Tensor) -> dict[str, torch.Tensor]:
-        h = torch.concatenate([h_t, s_t], dim=-1)
+        h = torch.cat([h_t, s_t], dim=-1)
         h = self.backbone(h)
 
         loc = self._loc(h)
@@ -258,7 +322,6 @@ class Actor(dist.Normal):
 
         self._loc = nn.Sequential(
             nn.LazyLinear(action_size),
-            nn.Tanh(),
         )
 
         self._scale = nn.Sequential(

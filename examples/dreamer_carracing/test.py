@@ -1,7 +1,3 @@
-import fcntl
-import termios
-import sys
-import os
 import numpy as np
 
 import gymnasium as gym
@@ -13,7 +9,7 @@ from matplotlib import pyplot as plt
 belief_size = 200
 state_size = 30
 device = "cpu"
-checkpoint_num = 131
+checkpoint_num = 167
 total_rewards = [[0.0]]
 img_total_rewards = [[0.0]]
 
