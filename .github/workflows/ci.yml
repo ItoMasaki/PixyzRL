@@ -46,7 +46,7 @@ jobs:
       - name: Type check
         run: mypy pixyzrl --ignore-missing-imports
 
-  test:
+  tests:
     name: Test (py${{ matrix.python-version }})
     runs-on: ubuntu-latest
     strategy:
@@ -91,10 +91,23 @@ jobs:
           name: pixyzrl-py311
           fail_ci_if_error: false
 
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    needs: tests
+    if: always()
+    steps:
+      - name: Verify matrix test job result
+        run: |
+          if [ "${{ needs.tests.result }}" != "success" ]; then
+            echo "Matrix tests did not succeed: ${{ needs.tests.result }}"
+            exit 1
+          fi
+
   package:
     name: Build package
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, tests]
 
     steps:
       - name: Checkout
