@@ -1,17 +1,15 @@
 """Single Gym environment wrapper."""
 
+import math
+import time
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Callable, List
 
+import cv2
 import gymnasium as gym
 import numpy as np
 import torch
-from gymnasium.spaces import Discrete, MultiDiscrete, Space
-from typing import Callable, List
-import cv2
-from gymnasium.spaces import Box
-import math
-import time
+from gymnasium.spaces import Box, Discrete, MultiDiscrete, Space
 
 
 class BaseEnv(ABC):
