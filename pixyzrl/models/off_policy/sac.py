@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+
 import torch
 from pixyz import distributions as dists
 from torch.optim import Adam
