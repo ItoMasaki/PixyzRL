@@ -22,26 +22,27 @@ class OffPolicyTrainer(BaseTrainer):
 
     def collect_experiences(self) -> None:
         obs, info = self.env.reset()
-        done = False
+        done = torch.zeros((self.env.num_envs, 1), dtype=torch.bool)
 
-        while not done:
+        while not bool(done.any().item()):
             action = self.agent.select_action({"o": obs.to(self.device)})
 
             if self.env.is_discrete:
-                next_obs, reward, done, _, _ = self.env.step(
+                next_obs, reward, terminated, truncated, _ = self.env.step(
                     torch.argmax(action[self.agent.action_var].cpu())
                 )
             else:
-                next_obs, reward, done, _, _ = self.env.step(
+                next_obs, reward, terminated, truncated, _ = self.env.step(
                     action[self.agent.action_var].cpu().numpy()
                 )
+            done = torch.logical_or(terminated, truncated)
 
             self.memory.add(
-                obs=obs,
-                action=action[self.agent.action_var].cpu().numpy(),
-                reward=reward,
-                done=done,
-                value=action[self.agent.critic.var[0]].cpu().detach(),
+                obs=obs.detach(),
+                action=action[self.agent.action_var].detach(),
+                reward=reward.detach(),
+                done=done.detach(),
+                value=action[self.agent.critic.var[0]].detach(),
             )
             obs = next_obs
 
@@ -52,7 +53,9 @@ class OffPolicyTrainer(BaseTrainer):
         if len(self.memory) < self.memory.buffer_size:
             return
 
-        total_loss = self.agent.train_step(self.memory, batch_size, num_epochs)
+        total_loss = 0.0
+        for _ in range(num_epochs):
+            total_loss += self.agent.train_step(self.memory, batch_size)
 
         if self.logger:
             self.logger.log(

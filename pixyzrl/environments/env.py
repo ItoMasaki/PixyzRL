@@ -1,7 +1,9 @@
 """Single Gym environment wrapper."""
 
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, cast
+
+from gymnasium.vector import VectorEnv
 
 import gymnasium as gym
 import numpy as np
@@ -27,11 +29,11 @@ class BaseEnv(ABC):
         self.env_name = env_name
         self.seed = seed
 
-        self._observation_space = Space()
-        self._action_space = Space()
+        self._observation_space: Space[Any] = Space()
+        self._action_space: Space[Any] = Space()
         self._is_discrete = False
         self._num_envs = num_envs
-        self._env = None
+        self._env: VectorEnv | None = None
         self._render_mode = "rgb_array"
 
     @abstractmethod
@@ -52,7 +54,7 @@ class BaseEnv(ABC):
         ...
 
     @abstractmethod
-    def render(self) -> None:
+    def render(self, return_frame: bool = False) -> Any:
         """Render the environment."""
         ...
 
@@ -100,7 +102,7 @@ class BaseEnv(ABC):
         return self._is_discrete
 
     @property
-    def env(self) -> gym.Env[Any, Any] | None:
+    def env(self) -> VectorEnv | None:
         """Return the gym environment."""
         return self._env
 
@@ -136,16 +138,22 @@ class Env(BaseEnv):
         """
         super().__init__(env_name, num_envs=num_envs, seed=seed)
 
+        wrappers = kwargs.pop("wrappers", None)
         self._env = gym.make_vec(
             env_name,
             num_envs=num_envs,
             render_mode=render_mode,
             vectorization_mode="sync",
+            wrappers=cast(Any, wrappers),
             **kwargs,
         )
 
         self.action_var = action_var
         self._render_mode = render_mode
+        if self._env is None:
+            msg = "Failed to create gym vector environment"
+            raise RuntimeError(msg)
+
         self._env.reset(seed=seed)
 
         self._num_envs = num_envs
@@ -163,6 +171,9 @@ class Env(BaseEnv):
             >>> env = Env("CartPole-v1")
             >>> obs, info = env.reset()
         """
+        if self._env is None:
+            msg = "Environment is not initialized"
+            raise RuntimeError(msg)
         obs, info = self._env.reset(seed=self.seed, options=kwargs)
         return torch.Tensor(obs), info
 
@@ -185,6 +196,10 @@ class Env(BaseEnv):
             >>> obs, reward, terminated, truncated, info = env.step({"a": action})
             >>> env.close()
         """
+        if self._env is None:
+            msg = "Environment is not initialized"
+            raise RuntimeError(msg)
+
         if self._env.action_space.shape is None:
             msg = "Unsupported action space type"
             raise ValueError(msg)
@@ -224,7 +239,8 @@ class Env(BaseEnv):
             >>> env = Env("CartPole-v1")
             >>> env.close()
         """
-        self._env.close()
+        if self._env is not None:
+            self._env.close()
 
     def render(self, return_frame: bool = False) -> Any:
         """Render the environment.
@@ -234,6 +250,9 @@ class Env(BaseEnv):
             >>> env.render()
         """
         if return_frame:
+            if self._env is None:
+                msg = "Environment is not initialized"
+                raise RuntimeError(msg)
             return self._env.render()
 
         return None
