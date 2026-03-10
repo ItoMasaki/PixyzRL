@@ -5,9 +5,9 @@ from abc import ABC, abstractmethod
 from typing import Any, SupportsFloat
 
 import gymnasium as gym
+import numpy as np
 import pybullet as p
 import pybullet_data as pd
-import numpy as np
 import torch
 from gymnasium import spaces
 from gymnasium.spaces import Discrete, MultiDiscrete, Space
