@@ -16,7 +16,7 @@ class PPOClipLoss(Loss):
     --------
     >>> import torch
     >>> from pixyz.distributions import Normal
-    >>> from pixyz.losses import PPOClipLoss
+    >>> from pixyzrl.losses import PPOClipLoss
     ...
     >>> class P(Normal):
     ...
@@ -27,11 +27,13 @@ class PPOClipLoss(Loss):
     ...         return {"loc": x, "scale": torch.nn.functional.softplus(x)}
     ...
     >>> p = P()
-    >>> ppo_clip_loss = PPOClipLoss(p, 0.2)
+    >>> q = P()
+    >>> ppo_clip_loss = PPOClipLoss(p, q, 0.2)
     >>> x = torch.zeros(1, 128)
     >>> z = torch.zeros(1, 128)
-    >>> ppo_clip_loss.eval({"z": z, "x": x})
-    tensor(0.)  # Expected output
+    >>> A = torch.ones(1, 1)
+    >>> ppo_clip_loss.eval({"z": z, "x": x, "A": A}).shape
+    torch.Size([1, 1])
     """
 
     def __init__(
@@ -204,7 +206,7 @@ class MSELoss(Loss):
     >>> y = torch.rand(1, 128)
     >>>
     >>> mse_loss.eval({"x": x, "y": y}).shape
-    torch.Size([])
+    torch.Size([128])
 
     """
 
@@ -238,7 +240,7 @@ class ValueClipLoss(Loss):
     --------
     >>> import torch
     >>> from pixyz.distributions import Normal
-    >>> from pixyz.losses import ValueClipLoss
+    >>> from pixyzrl.losses import ValueClipLoss
     ...
     >>> class P(Normal):
     ...
@@ -249,11 +251,12 @@ class ValueClipLoss(Loss):
     ...         return {"loc": x, "scale": torch.nn.functional.softplus(x)}
     ...
     >>> p = P()
-    >>> value_clip_loss = ValueClipLoss(p, 0.2)
+    >>> value_clip_loss = ValueClipLoss(p, "v_target", 0.2)
     >>> x = torch.zeros(1, 128)
     >>> z = torch.zeros(1, 128)
-    >>> value_clip_loss.eval({"z": z, "x": x})
-    tensor(0.)  # Expected output
+    >>> v_target = torch.zeros(1, 128)
+    >>> value_clip_loss.eval({"x": x, "z": z, "v_target": v_target}).shape
+    torch.Size([1, 128])
     """
 
     def __init__(self, p: Distribution, vtarget_var: str, clip: float) -> None:
