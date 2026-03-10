@@ -20,11 +20,11 @@ class BaseEnv(ABC):
         self.env_name = env_name
         self.seed = seed
 
-        self._observation_space = Space()
-        self._action_space = Space()
+        self._observation_space: Space[Any] = Space()
+        self._action_space: Space[Any] = Space()
         self._is_discrete = False
         self._num_envs = num_envs
-        self._env = None
+        self._env: gym.vector.SyncVectorEnv | None = None
         self._render_mode = "rgb_array"
 
     @abstractmethod
@@ -55,6 +55,13 @@ class BaseEnv(ABC):
     @property
     def is_discrete(self) -> bool:
         return self._is_discrete
+
+    @property
+    def render_mode(self) -> str:
+        return self._render_mode
+
+    @abstractmethod
+    def render(self, return_frame: bool = False) -> np.ndarray[Any, Any] | None: ...
 
 
 class Env(BaseEnv):
@@ -115,10 +122,12 @@ class Env(BaseEnv):
     # --------------------------------------------------
 
     def reset(self, **kwargs):
+        assert self._env is not None
         obs, info = self._env.reset(seed=self.seed, options=kwargs)
         return torch.as_tensor(obs, dtype=torch.float32), info
 
     def step(self, action):
+        assert self._env is not None
         if isinstance(action, torch.Tensor):
             action = action.detach().cpu().numpy()
 
@@ -142,6 +151,7 @@ class Env(BaseEnv):
         )
 
     def close(self):
+        assert self._env is not None
         self._env.close()
         if self.enable_render:
             cv2.destroyAllWindows()
@@ -165,21 +175,24 @@ class Env(BaseEnv):
 
         return grid
 
-    def render(self):
+    def render(self, return_frame: bool = False) -> np.ndarray[Any, Any] | None:
+        assert self._env is not None
         now = time.time()
         if now - self._last_render_time < 1.0 / self.render_fps:
-            return
+            return None
 
         self._last_render_time = now
 
-        frames = self._env.render()
+        frames_raw: Any = self._env.render()
+        frames: np.ndarray[Any, Any]
 
         # 🔥 ここが重要
-        if isinstance(frames, tuple):
-            frames = np.stack(frames, axis=0)
-
-        if isinstance(frames, list):
-            frames = np.stack(frames, axis=0)
+        if isinstance(frames_raw, tuple):
+            frames = np.stack(frames_raw, axis=0)
+        elif isinstance(frames_raw, list):
+            frames = np.stack(frames_raw, axis=0)
+        else:
+            frames = np.asarray(frames_raw)
 
         # もし単一環境なら (H,W,C) → (1,H,W,C)
         if frames.ndim == 3:
@@ -198,8 +211,12 @@ class Env(BaseEnv):
 
         grid = cv2.cvtColor(grid, cv2.COLOR_RGB2BGR)
 
+        if return_frame:
+            return grid
+
         cv2.imshow(self._window_name, grid)
         cv2.waitKey(1)
+        return None
 
 
 class NormalizeObservation(gym.ObservationWrapper):
@@ -284,10 +301,16 @@ class _ScaleActionWrapper(gym.ActionWrapper):
     ):
         super().__init__(env)
 
-        self.from_low = np.broadcast_to(from_low, env.action_space.shape)
-        self.from_high = np.broadcast_to(from_high, env.action_space.shape)
-        self.to_low = np.broadcast_to(to_low, env.action_space.shape)
-        self.to_high = np.broadcast_to(to_high, env.action_space.shape)
+        if not isinstance(env.action_space, Box):
+            raise TypeError("ScaleAction only works with Box action spaces.")
+        if env.action_space.shape is None:
+            raise ValueError("Action space must define a shape.")
+        action_shape = env.action_space.shape
+
+        self.from_low = np.broadcast_to(from_low, action_shape)
+        self.from_high = np.broadcast_to(from_high, action_shape)
+        self.to_low = np.broadcast_to(to_low, action_shape)
+        self.to_high = np.broadcast_to(to_high, action_shape)
         self.clip = clip
 
         # policy側が出力するレンジ
