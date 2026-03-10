@@ -5,7 +5,10 @@ import time
 from abc import ABC, abstractmethod
 from typing import Any, Callable, List
 
-import cv2
+try:
+    import cv2
+except ModuleNotFoundError:  # pragma: no cover - optional dependency
+    cv2 = None
 import gymnasium as gym
 import numpy as np
 import torch
@@ -70,6 +73,10 @@ class Env(BaseEnv):
         super().__init__(env_name, num_envs, seed)
 
         self.enable_render = enable_render
+        if self.enable_render and cv2 is None:
+            raise ModuleNotFoundError(
+                "OpenCV is required for rendering. Install `opencv-python` to use enable_render=True."
+            )
         self.render_scale = render_scale
         self.render_fps = render_fps
         self._last_render_time = 0.0
