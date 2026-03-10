@@ -150,7 +150,9 @@ class SAC(RLModel):
                         next_obs,
                         next_action,
                     )
-                    target_q = torch.min(target_q1, target_q2) - self.alpha * next_log_prob
+                    target_q = (
+                        torch.min(target_q1, target_q2) - self.alpha * next_log_prob
+                    )
                     target = rewards + (1.0 - dones) * self.gamma * target_q
 
                 current_q1 = self._critic_value(self.critic1, obs, actions)
@@ -221,9 +223,11 @@ class SAC(RLModel):
                 "actor_optimizer": self.actor_optimizer.state_dict(),
                 "critic_optimizer": self.critic_optimizer.state_dict(),
                 "log_alpha": self.log_alpha.detach().cpu(),
-                "alpha_optimizer": self.alpha_optimizer.state_dict()
-                if self.alpha_optimizer is not None
-                else None,
+                "alpha_optimizer": (
+                    self.alpha_optimizer.state_dict()
+                    if self.alpha_optimizer is not None
+                    else None
+                ),
             },
             path,
         )

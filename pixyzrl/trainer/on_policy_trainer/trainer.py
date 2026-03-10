@@ -412,9 +412,7 @@ class OnPolicyTrainer(BaseTrainer):
         Thread(target=self.save_video, args=(fig, self.frames)).start()
 
         if self.logger:
-            self.logger.log(
-                f"Testing completed. Total reward: {total_rewards}"
-            )
+            self.logger.log(f"Testing completed. Total reward: {total_rewards}")
 
     def save_video(self, fig: plt.Figure, frames: list[Any]) -> None:
         """Save the test video."""
