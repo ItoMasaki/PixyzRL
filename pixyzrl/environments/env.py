@@ -7,13 +7,9 @@ from typing import Any, Callable, List
 
 import cv2
 import gymnasium as gym
-import math
 import numpy as np
 import torch
-import time
-from typing import Callable, List
-from gymnasium.spaces import Box
-from gymnasium.spaces import Discrete, MultiDiscrete, Space
+from gymnasium.spaces import Box, Discrete, MultiDiscrete, Space
 
 
 class BaseEnv(ABC):
