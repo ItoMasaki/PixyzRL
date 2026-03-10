@@ -38,6 +38,7 @@ class DQN(RLModel):
 
         self.q_network = q_network.to(device)
         self.target_q_network = deepcopy(q_network).to(device)
+        self.critic = self.q_network
 
         self.obs_var = obs_var or q_network.cond_var[0]
         self.next_obs_var = next_obs_var
@@ -53,6 +54,7 @@ class DQN(RLModel):
         self.epsilon_end = epsilon_end
         self.epsilon_decay_steps = max(1, epsilon_decay_steps)
         self.global_step = 0
+        self.training_step = 0
 
         dummy_loss = -self.q_network.log_prob().mean()
         super().__init__(
@@ -74,6 +76,8 @@ class DQN(RLModel):
     @torch.no_grad()
     def select_action(self, state: dict[str, torch.Tensor]) -> dict[str, torch.Tensor]:
         obs = state[self.obs_var].to(self.device)
+        if obs.ndim == 1:
+            obs = obs.unsqueeze(0)
         q_values = self.q_network.sample_mean({self.obs_var: obs})
         greedy_actions = torch.argmax(q_values, dim=-1)
 
@@ -95,7 +99,7 @@ class DQN(RLModel):
             num_classes=q_values.shape[-1],
         ).float()
 
-        return {self.action_var: action_one_hot}
+        return {self.action_var: action_one_hot, self.q_var: q_values}
 
     def train_step(
         self,
@@ -135,8 +139,8 @@ class DQN(RLModel):
                 loss.backward()
                 self.optimizer.step()
 
-                self.global_step += 1
-                if self.global_step % self.target_update_interval == 0:
+                self.training_step += 1
+                if self.training_step % self.target_update_interval == 0:
                     self.transfer_state_dict()
 
                 total_loss += float(loss.detach())
@@ -154,6 +158,7 @@ class DQN(RLModel):
                 "target_q_network": self.target_q_network.state_dict(),
                 "optimizer": self.optimizer.state_dict(),
                 "global_step": self.global_step,
+                "training_step": self.training_step,
             },
             path,
         )
@@ -164,3 +169,4 @@ class DQN(RLModel):
         self.target_q_network.load_state_dict(checkpoint["target_q_network"])
         self.optimizer.load_state_dict(checkpoint["optimizer"])
         self.global_step = int(checkpoint.get("global_step", 0))
+        self.training_step = int(checkpoint.get("training_step", 0))
