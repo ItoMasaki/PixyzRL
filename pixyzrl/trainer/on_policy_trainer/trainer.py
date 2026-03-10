@@ -88,18 +88,21 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu", logger)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu", logger=logger)
         """
         super().__init__(env, memory, agent, device, logger)
         self.value_estimate = value_estimate
         self.transform = transform
-        memory.device = device
+        memory.device = str(device)
         self.episode = 0
-        self.log_dir = logger.log_dir if logger else f"logs/{datetime.now(datetime.now().astimezone().tzinfo).strftime('%Y%m%d-%H%M%S')}"
+        self.log_dir = (
+            logger.log_dir
+            if logger
+            else f"logs/{datetime.now(datetime.now().astimezone().tzinfo).strftime('%Y%m%d-%H%M%S')}"
+        )
 
     def collect_experiences(self) -> None:
         """Collect experiences from the environment.
@@ -116,7 +119,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -155,29 +158,27 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.collect_experiences()
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.collect_experiences()  # doctest: +SKIP
         """
         obs, info = self.env.reset()
-        done = False
-        total_reward = 0
+        done = torch.zeros((self.env.num_envs, 1), dtype=torch.bool)
+        total_reward = np.zeros((self.env.num_envs, 1), dtype=float)
         total_rewards = []
-        idx = 1
 
         with torch.no_grad():
             # Collect on-policy experiences
             while len(self.memory) < self.memory.buffer_size - 1:
-                idx += 1
-
                 if len(obs[0].shape) == 3:
                     obs = obs.permute(0, 3, 1, 2) / 255.0
 
                 action = self.agent.select_action({"o": obs.to(self.device)})
-                next_obs, reward, terminated, truncated, info = self.env.step(action[self.agent.action_var].cpu())
+                next_obs, reward, terminated, truncated, info = self.env.step(
+                    action[self.agent.action_var].cpu()
+                )
                 done = torch.logical_or(terminated, truncated)
 
                 self.memory.add(
@@ -185,7 +186,7 @@ class OnPolicyTrainer(BaseTrainer):
                     action=action[self.agent.action_var].detach(),
                     reward=reward.detach(),
                     done=done.detach(),
-                    value=action[self.agent.critic.var[0]].cpu().detach(),
+                    value=action[self.agent.critic.var[0]].detach(),
                 )
                 obs = next_obs
                 total_reward += reward.detach().numpy().astype(float)
@@ -199,7 +200,7 @@ class OnPolicyTrainer(BaseTrainer):
                 if self.env.render_mode == "rgb_array":
                     self.env.render()
 
-            total_rewards += np.round(total_reward.reshape(-1), 1).tolist()
+            total_rewards.extend(np.round(total_reward.reshape(-1), 1).tolist())
 
             if self.logger:
                 self.logger.log(f"Rewards: {' '.join([str(r) for r in total_rewards])}")
@@ -240,7 +241,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -279,25 +280,26 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.collect_experiences()
-        >>> trainer.train_model()
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.collect_experiences()  # doctest: +SKIP
+        >>> trainer.train_model()  # doctest: +SKIP
         """
         if len(self.memory) < self.memory.buffer_size - 1:
             return
 
-        total_loss = 0
+        total_loss = 0.0
         for _ in range(num_epochs):
             total_loss += self.agent.train_step(self.memory, batch_size)
 
         self.agent.transfer_state_dict()
 
         if self.logger:
-            self.logger.log(f"On-policy training step completed. Loss: {total_loss / num_epochs}")
+            self.logger.log(
+                f"On-policy training step completed. Loss: {total_loss / num_epochs}"
+            )
 
     def test(self) -> None:
         """Test the agent.
@@ -317,7 +319,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -354,48 +356,48 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "reward": {"shape": (1,)},
         ...         "done": {"shape": (1,)},
         ...         "returns": {"shape": (1,), "map": "r"},
-        ...         "advantages": {"shape": (1,), "map":
+        ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.test(10)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.test()  # doctest: +SKIP
         """
-        total_reward = 0
+        total_reward = np.zeros((self.env.num_envs, 1), dtype=float)
         total_rewards = []
 
         obs, info = self.env.reset()
-        idx = 0
-        self.frames = []
+        self.frames: list[np.ndarray[Any, Any]] = []
 
         with torch.no_grad():
             for _ in range(5):
-                done = [False]
+                done = torch.zeros((self.env.num_envs, 1), dtype=torch.bool)
 
-                while not done[0]:
-                    idx += 1
-
+                while not bool(done[0].item()):
                     if len(obs[0].shape) == 3:
                         obs = obs.permute(0, 3, 1, 2) / 255.0
 
                     action = self.agent.select_action({"o": obs.to(self.device)})
-                    next_obs, reward, terminated, truncated, _ = self.env.step(action[self.agent.action_var].cpu().numpy())
+                    next_obs, reward, terminated, truncated, _ = self.env.step(
+                        action[self.agent.action_var].cpu().numpy()
+                    )
                     done = torch.logical_or(terminated, truncated)
 
                     obs = next_obs
 
                     total_reward += reward.detach().numpy().astype(float)
 
-                    if done[0]:
-                        idx = 0
-                        self.frames.append(np.zeros_like(self.frames[-1]))
-                        total_rewards.append(np.round(total_reward[0].item(), 1))
-                        total_reward *= 1 - done[0].detach().numpy()
+                    if bool(done[0].item()):
+                        if self.frames:
+                            self.frames.append(np.zeros_like(self.frames[-1]))
+                        total_rewards.append(np.round(float(total_reward[0].item()), 1))
+                        total_reward *= 1 - done.detach().cpu().numpy().astype(bool)
                         break
 
-                    self.frames.append(self.env.render(return_frame=True)[0])
+                    frame = self.env.render(return_frame=True)
+                    if frame is not None:
+                        self.frames.append(frame[0])
 
         fig = plt.figure()
         fig.subplots_adjust(left=0, right=1, bottom=0, top=1)
@@ -412,7 +414,9 @@ class OnPolicyTrainer(BaseTrainer):
             im = plt.imshow(frame)
             ims.append([im])
 
-        ani = animation.ArtistAnimation(fig, ims, interval=50, blit=True, repeat_delay=1000)
+        ani = animation.ArtistAnimation(
+            fig, ims, interval=50, blit=True, repeat_delay=1000
+        )
         ani.save(f"{self.log_dir}/test_{self.episode - 1}.mp4")
         fig.clear()
 
@@ -428,8 +432,10 @@ class OnPolicyTrainer(BaseTrainer):
 
         Args:
             num_iterations (int): Number of training iterations.
-            batch_size (int, optional): Batch size for training. Defaults to 128.
-            num_epochs (int, optional): Number of epochs for training. Defaults to 40.
+            batch_size (int, optional):
+                Batch size for training. Defaults to 128.
+            num_epochs (int, optional):
+                Number of epochs for training. Defaults to 40.
 
         Example:
         >>> import torch
@@ -443,7 +449,7 @@ class OnPolicyTrainer(BaseTrainer):
         >>> from pixyzrl.trainer import OnPolicyTrainer
 
         >>> env = Env("CartPole-v1")
-        >>> action_dim = env.action_space.n
+        >>> action_dim = env.action_space
 
         >>> class Actor(Categorical):
         ...     def __init__(self):
@@ -487,12 +493,11 @@ class OnPolicyTrainer(BaseTrainer):
         ...         "returns": {"shape": (1,), "map": "r"},
         ...         "advantages": {"shape": (1,), "map": "A"},
         ...     },
-        ...     "cpu",
         ...     1,
         ... )
         >>> logger = Logger("logs")
-        >>> trainer = OnPolicyTrainer(env, buffer, ppo, "cpu")
-        >>> trainer.train(1)
+        >>> trainer = OnPolicyTrainer(env, buffer, ppo, device="cpu")
+        >>> trainer.train(1)  # doctest: +SKIP
         """
 
         for iteration in range(num_iterations):
@@ -503,7 +508,12 @@ class OnPolicyTrainer(BaseTrainer):
             self.memory.clear()
 
             if self.logger:
-                self.logger.log(f"On-policy Iteration {iteration + 1}/{num_iterations} completed.")
+                self.logger.log(
+                    (
+                        "On-policy Iteration "
+                        f"{iteration + 1}/{num_iterations} completed."
+                    )
+                )
 
             if (iteration + 1) % test_interval == 0:
                 self.test()

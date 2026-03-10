@@ -1,3 +1,3 @@
-from .env import BaseEnv, Env # BipedalRobotEnv
+from .env import BaseEnv, Env
 
-__all__ = ["BaseEnv","Env",]# "BipedalRobotEnv", ]
+__all__ = ["BaseEnv", "Env"]

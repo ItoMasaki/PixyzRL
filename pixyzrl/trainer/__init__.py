@@ -10,7 +10,13 @@ from .off_policy_trainer.trainer import OffPolicyTrainer
 from .on_policy_trainer.trainer import OnPolicyTrainer
 
 
-def create_trainer(env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: torch.device | str = "cpu", logger: Logger | None = None) -> BaseTrainer:
+def create_trainer(
+    env: BaseEnv,
+    memory: BaseBuffer,
+    agent: RLModel,
+    device: torch.device | str = "cpu",
+    logger: Logger | None = None,
+) -> BaseTrainer:
     """Create a trainer based on the type of agent.
 
     Args:
@@ -26,7 +32,7 @@ def create_trainer(env: BaseEnv, memory: BaseBuffer, agent: RLModel, device: tor
     Example:
     """
     if agent.is_on_policy:
-        return OnPolicyTrainer(env, memory, agent, device, logger)
+        return OnPolicyTrainer(env, memory, agent, device=device, logger=logger)
 
     return OffPolicyTrainer(env, memory, agent, device, logger)
 

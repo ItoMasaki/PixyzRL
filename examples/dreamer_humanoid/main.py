@@ -3,10 +3,11 @@ from __future__ import annotations
 import warnings
 from datetime import datetime
 
-# import gymnasium as gym
-from examples.dreamer_humanoid.humanoid import HumanoidHeadCamForceEnv
 import numpy as np
 import torch
+
+# import gymnasium as gym
+from envs.genesis_test import HumanoidHeadCamForceEnv
 from memory import ExperienceReplay
 from models import (
     Actor,
